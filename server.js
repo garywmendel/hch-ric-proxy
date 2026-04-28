@@ -1,4 +1,4 @@
-    // GoTab Proxy Server for Hill Country Hospitality — RIC v1
+// GoTab Proxy Server for Hill Country Hospitality — RIC v1
 // Deploy on Railway. Set env vars: GOTAB_ID, GOTAB_SECRET, GOTAB_LOCATION_UUID
 
 import express from "express";
@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const GOTAB_ID           = process.env.GOTAB_ID;
 const GOTAB_SECRET       = process.env.GOTAB_SECRET;
 const GOTAB_LOCATION_UUID = process.env.GOTAB_LOCATION_UUID;
-const GOTAB_AUTH_URL     = "https://gotab.io/api/v2/auth/token";
+const GOTAB_AUTH_URL     = "https://gotab.io/api/oauth/token";
 const GOTAB_GRAPH_URL    = "https://gotab.io/api/v2/graph";
 
 app.use(cors());
@@ -22,14 +22,13 @@ async function getBearerToken() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      client_id:     GOTAB_ID,
-      client_secret: GOTAB_SECRET,
-      grant_type:    "client_credentials",
+      api_access_id:     GOTAB_ID,
+      api_access_secret: GOTAB_SECRET,
     }),
   });
   if (!res.ok) throw new Error(`GoTab auth failed: ${res.status}`);
   const data = await res.json();
-  return data.access_token;
+  return data.token;
 }
 
 // ── GraphQL query: today's tabs for the location ─────────────────────────────
