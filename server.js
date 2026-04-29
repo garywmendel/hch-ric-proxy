@@ -251,9 +251,14 @@ app.get("/api/ric", async (req, res) => {
   res.json({ ok: true, ...result });
 });
 
-
 // Health
 app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.0" }));
 
 // Serve RIC app
-app.get("/", (_req, res) => res.sendFile("index.html", { root: "." }));
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+app.use(express.static(__dirname));
+app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
+
+app.listen(PORT, () => console.log(`RIC proxy v2 running on port ${PORT}`));
