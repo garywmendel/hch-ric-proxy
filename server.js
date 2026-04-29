@@ -30,7 +30,12 @@ app.options("*", cors());
 app.use(express.json());
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const today = () => new Date().toISOString().split("T")[0];
+const toET = (d = new Date()) => new Date(d.toLocaleString("en-US", { timeZone: "America/New_York" }));
+const today = () => {
+  const et = toET();
+  return `${et.getFullYear()}-${String(et.getMonth()+1).padStart(2,"0")}-${String(et.getDate()).padStart(2,"0")}`;
+};
+const nowET = () => toET().toISOString().replace("T"," ").slice(0,19) + " ET";
 
 // ── GoTab: auth ──────────────────────────────────────────────────────────────
 async function getGoTabToken() {
@@ -102,7 +107,7 @@ function normalizeGoTab(tabs) {
   tax_total = +(tax_total / 100).toFixed(2);
   tip_total = +(tip_total / 100).toFixed(2);
 
-  return { net_sales, tab_count, bar_sales, voids, comps, tax_total, tip_total, data_as_of: new Date().toISOString() };
+  return { net_sales, tab_count, bar_sales, voids, comps, tax_total, tip_total, data_as_of: nowET() };
 }
 
 // ── 7Shifts: fetch & normalize ───────────────────────────────────────────────
@@ -140,7 +145,7 @@ async function fetch7Shifts(date) {
     labor_pct:       null,
     overtime_hours:  +overtime_hours.toFixed(1),
     no_shows, shift_count: shifts.length, punch_count: punches.length,
-    data_as_of: new Date().toISOString(),
+    data_as_of: nowET(),
   };
 }
 
