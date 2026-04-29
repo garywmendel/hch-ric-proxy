@@ -94,13 +94,13 @@ function normalizeGoTab(tabs) {
     }
   }
 
-  const scale = net_sales > 500000 ? 100 : 1;
-  net_sales = +(net_sales / scale).toFixed(2);
-  bar_sales = +(bar_sales / scale).toFixed(2);
-  voids     = +(voids     / scale).toFixed(2);
-  comps     = +(comps     / scale).toFixed(2);
-  tax_total = +(tax_total / scale).toFixed(2);
-  tip_total = +(tip_total / scale).toFixed(2);
+  // GoTab returns all monetary values in cents — always divide by 100
+  net_sales = +(net_sales / 100).toFixed(2);
+  bar_sales = +(bar_sales / 100).toFixed(2);
+  voids     = +(voids     / 100).toFixed(2);
+  comps     = +(comps     / 100).toFixed(2);
+  tax_total = +(tax_total / 100).toFixed(2);
+  tip_total = +(tip_total / 100).toFixed(2);
 
   return { net_sales, tab_count, bar_sales, voids, comps, tax_total, tip_total, data_as_of: new Date().toISOString() };
 }
