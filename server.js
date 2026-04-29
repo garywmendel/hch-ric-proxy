@@ -254,4 +254,7 @@ app.get("/api/ric", async (req, res) => {
 // Health
 app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.0" }));
 
+// Serve RIC app
+app.get("/", (_req, res) => res.sendFile("index.html", { root: "." }));
+
 app.listen(PORT, () => console.log(`RIC proxy v2 running on port ${PORT}`));
