@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Hill Country Intelligence Controller</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#fff;--bg1:#f5f5f3;--bg2:#eeede8;
+  --t0:#1a1a18;--t1:#6b6b67;--t2:#9a9992;
+  --b0:rgba(0,0,0,0.35);--b1:rgba(0,0,0,0.22);--b2:rgba(0,0,0,0.1);
+  --green:#1D9E75;--green-bg:#e1f5ee;--green-t:#085041;
+  --amber:#BA7517;--amber-bg:#faeeda;--amber-t:#633806;
+  --blue:#185FA5;--blue-bg:#e6f1fb;--blue-t:#0C447C;
+  --red-bg:#fff0f0;--red-t:#7a0000;
+  --r-md:8px;--r-lg:12px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"SF Mono","Fira Code",monospace;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --bg0:#1c1c1a;--bg1:#252522;--bg2:#2e2e2b;
+    --t0:#f0efe8;--t1:#9a9992;--t2:#6b6b67;
+    --b0:rgba(255,255,255,0.3);--b1:rgba(255,255,255,0.18);--b2:rgba(255,255,255,0.08);
+    --green-bg:#04342c;--green-t:#9FE1CB;
+    --amber-bg:#412402;--amber-t:#FAC775;
+    --blue-bg:#042C53;--blue-t:#85B7EB;
+    --red-bg:#2a1010;--red-t:#f09595;
+  }
+}
+html,body{height:100%;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
+#shell{max-width:820px;margin:0 auto;background:var(--bg0);min-height:100vh;border-left:0.5px solid var(--b2);border-right:0.5px solid var(--b2)}
+.hdr{padding:14px 16px 0;border-bottom:0.5px solid var(--b2)}
+.hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.logo-wrap{flex-shrink:0;line-height:0}
+.logo-wrap svg{height:28px;width:auto;display:block}
+.hdr-meta{flex:1;min-width:0;overflow:hidden}
+.hdr-meta h1{font-size:14px;font-weight:500;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.hdr-meta p{font-size:11px;color:var(--t1);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 16px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:10px 13px;font-size:13px;font-weight:400;color:var(--t1);cursor:pointer;border:none;background:none;font-family:var(--font);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.tab.active{color:var(--t0);font-weight:500;border-bottom-color:var(--t0)}
+.tab:hover:not(.active){color:var(--t0)}
+.panel{display:none;padding:16px}
+.panel.active{display:block}
+.sys-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+@media(min-width:480px){.sys-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:640px){.sys-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
+.sys-card{background:var(--bg1);border:0.5px solid var(--b2);border-radius:var(--r-md);padding:8px 10px;display:flex;align-items:center;gap:7px}
+.sys-card.on{border-color:var(--green);background:var(--green-bg)}
+.sys-card.err{border-color:#E24B4A;background:var(--red-bg)}
+.sys-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0}
+.sys-info{flex:1;min-width:0}
+.sys-name{font-size:11px;font-weight:500;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sys-domain{font-size:10px;color:var(--t1)}
+.sys-dot{width:7px;height:7px;border-radius:50%;background:var(--b1);flex-shrink:0;transition:background 0.3s}
+.sys-dot.live{background:var(--green)}
+.sys-dot.sync{background:var(--amber);animation:blink 0.8s infinite}
+.sys-dot.err{background:#E24B4A}
+.prog-bar{height:3px;background:var(--b2);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.prog-fill{height:100%;background:var(--blue);border-radius:2px;transition:width 0.4s}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--bg1);border-radius:var(--r-md);padding:9px 10px}
+.stat-label{font-size:10px;color:var(--t1);margin-bottom:2px}
+.stat-val{font-size:15px;font-weight:500;color:var(--t0);line-height:1.2}
+.flags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.flag{padding:4px 10px;border-radius:100px;font-size:11px;font-weight:500}
+.flag.warn{background:var(--amber-bg);color:var(--amber-t)}
+.flag.crit{background:var(--red-bg);color:var(--red-t)}
+.flag.ok{background:var(--green-bg);color:var(--green-t)}
+.flag.info{background:var(--blue-bg);color:var(--blue-t)}
+.btn-primary{width:100%;padding:13px;background:var(--t0);color:var(--bg0);font-size:14px;font-weight:500;border:none;border-radius:var(--r-md);cursor:pointer;font-family:var(--font);transition:opacity 0.15s;-webkit-tap-highlight-color:transparent;min-height:48px}
+.btn-primary:active{opacity:0.75}
+.btn-primary:disabled{opacity:0.35;cursor:not-allowed}
+.btn-sec{padding:9px 14px;font-size:12px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:none;color:var(--t1);cursor:pointer;font-family:var(--font);min-height:40px;-webkit-tap-highlight-color:transparent}
+.btn-sec:active{background:var(--bg1)}
+.status{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg1);border-radius:var(--r-md);margin-bottom:12px;font-size:12px;color:var(--t1)}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--b1);flex-shrink:0}
+.sdot.thinking{background:var(--amber);animation:blink 0.8s infinite}
+.sdot.done{background:var(--green)}
+.sdot.err{background:#E24B4A}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.report-wrap{background:var(--bg0);border:0.5px solid var(--b2);border-radius:var(--r-lg);padding:1rem 1.1rem}
+.report-text{font-size:13px;line-height:1.8;color:var(--t0);white-space:pre-wrap;word-break:break-word}
+.report-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--b2);flex-wrap:wrap}
+.disclaimer{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{padding:6px 11px;border-radius:100px;font-size:12px;border:0.5px solid var(--b1);color:var(--t1);background:none;cursor:pointer;font-family:var(--font);min-height:34px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
+.chip:active{background:var(--bg1);color:var(--t0)}
+.field-label{font-size:11px;font-weight:500;color:var(--t1);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:block}
+.field-group{margin-bottom:14px}
+.inp{width:100%;padding:10px 11px;font-size:14px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;appearance:none;min-height:44px}
+.inp:focus{outline:none;border-color:var(--b0)}
+textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:400px){.row2{grid-template-columns:1fr}}
+.teams-card{background:var(--blue-bg);border:0.5px solid var(--b2);border-radius:var(--r-lg);padding:1rem 1.1rem;margin-top:12px}
+.teams-title{font-size:13px;font-weight:500;color:var(--blue-t);margin-bottom:6px}
+.teams-body{font-size:12px;color:var(--blue-t);line-height:1.7}
+.teams-code{background:var(--bg0);border:0.5px solid var(--b1);border-radius:var(--r-md);padding:10px;font-family:var(--mono);font-size:11px;color:var(--t0);margin-top:8px;white-space:pre-wrap;word-break:break-all;line-height:1.6;overflow-x:auto}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+</style>
+</head>
+<body>
+<div id="shell">
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="logo-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 258">
+        <defs><style>.hr{fill:red}.hd{fill:#1a1a18}@media(prefers-color-scheme:dark){.hd{fill:#f0efe8}}</style></defs>
+        <polygon class="hr" points="72.2 131.6 86.8 176.4 134 176.4 95.8 204.2 110.4 249 72.2 221.3 34.1 249 48.6 204.2 10.5 176.4 57.6 176.4 72.2 131.6"/>
+        <path class="hd" d="M74.6,113.7v-34.4c1-.3,1.8-1.2,1.8-2.4l.5-32.5c0-1.7,1.7-3.8,2-5.6h0c0-.3,0-.5,0-.7h0s.7-7.3.7-7.3h1c.1.9.4,1.4,1.3,1.5,1,0,2-.7,2.2-1.6.3-1.4-.8-2.6-2.1-2.6s-1.3.6-1.4,1.4h-.8c0,0,.5-5.3.5-5.3h1c.1.9.5,1.4,1.3,1.4.9,0,1.7-.5,2-1.4.5-1.5-.6-2.8-2-2.8s-1.2.5-1.4,1.3h-.9c0,0,.5-5.2.5-5.2h1.1c.1.8.5,1.4,1.4,1.4.9,0,1.7-.5,2-1.4.5-1.5-.6-2.8-2-2.8s-1.2.5-1.4,1.3h-.9c0,0,.4-3.8.4-3.8.1-1.5-1-2.7-2.5-2.7h-13.6c-1.5,0-2.6,1.3-2.5,2.7l.4,3.9h-.9c-.1-.8-.5-1.4-1.4-1.4-.9,0-1.7.5-2,1.4-.5,1.5.6,2.8,2,2.8s1.2-.5,1.4-1.3h1.1c0,0,.5,5.2.5,5.2h-.9c-.1-.9-.5-1.4-1.3-1.4-.9,0-1.7.5-2,1.4-.5,1.5.6,2.8,2,2.8s1.2-.5,1.4-1.3h1c0,0,.5,5.3.5,5.3h-.8c-.1-.8-.4-1.4-1.3-1.4-1,0-2,.7-2.2,1.6-.3,1.4.8,2.6,2.1,2.6s1.3-.6,1.4-1.4h1c0,0,.7,7.2.7,7.2h0c0,.2,0,.4,0,.7h0c.4,1.8,2,3.9,2,5.6l.5,32.5c0,1.1.8,2.1,1.8,2.4v34.4c-6.6.3-10.5,5.8-10.5,12.4l-2.7,37.4,12.3-40.4c1.4-2.4,4.8-2.4,6.2,0l12.3,40.4-2.7-37.4c0-6.6-3.8-12.1-10.3-12.4z"/>
+        <path class="hd" d="M261.7,114.8v-26.4h13.6v-21.1h-33v21.1h13.8v26.4h-66.5v-26.4h17.6v-52.7h-17.6V9.4h66.5v26.3h-13.8v15.9h33v-15.9h-13.6V9.4h66.3v26.3h-17.6v52.7h17.6v26.4h-66.3z"/>
+        <path class="hd" d="M339.9,114.8v-26.4h17.6v-52.7h-17.6V9.4h70.3v26.3h-17.6v52.7h17.6v26.4h-70.3z"/>
+        <path class="hd" d="M421.8,114.8v-26.4h17.6v-52.7h-17.6V9.4h70.3v26.3h-17.6v52.7h28.1v-21.1h29.9v47.5h-110.8z"/>
+        <path class="hd" d="M541.7,114.8v-26.4h17.6v-52.7h-17.6V9.4h70.3v26.3h-17.6v52.7h28.1v-21.1h29.9v47.5h-110.8z"/>
+        <path class="hd" d="M246.6,249c-36.8,0-56.9-24.7-56.9-55.2s21.8-53.8,51.7-53.8,26.3,8.4,30.5,16.9v-15h27.4v49.2h-28.1c0-12.7-9.4-23.6-22.1-23.6s-20.8,13.1-20.8,26.4,6.7,29.8,20.8,29.8,21.1-9.7,21.1-23.9h29.1c0,23.6-14.1,49.3-52.7,49.3z"/>
+        <path class="hd" d="M363.1,249c-30.1,0-54.5-24.5-54.5-54.5s24.5-54.4,54.5-54.4,54.5,24.3,54.5,54.4-24.5,54.5-54.5,54.5zM363.1,166.4c-11.7,0-17.6,11.1-17.6,28.1s5.9,28.1,17.6,28.1,17.6-11,17.6-28.1-5.9-28.1-17.6-28.1z"/>
+        <path class="hd" d="M531.8,168.1v47.5c0,20.2-15.2,33.5-52,33.5s-47.5-7.2-47.5-29.9v-51h-14.1v-26.3h64.4v26.3h-15.2v40.5c0,14.1,7,17.6,17.6,17.6s19.4-5.3,19.4-17.6v-40.5h-15.9v-26.3h58.1v26.3h-14.8z"/>
+        <path class="hd" d="M666,168.1v79.1h-19.4l-49.2-52.7v26.3h17.6v26.4h-59.7v-26.4h17.6v-52.7h-17.6v-26.3h38.7l47.5,50.9v-24.6h-15.2v-26.3h57.4v26.3h-17.6z"/>
+        <path class="hd" d="M785.5,192.7v-24.6h-15.9v52.7h15.9v26.4h-65.1v-26.4h15.9v-52.7h-15.9v24.6h-28.1v-50.9h121.3v50.9h-28.1z"/>
+        <path class="hd" d="M927.7,249c-18.3,0-33.3-6.7-33.3-31.9s-8.9-14.8-14.1-14.8-5.3.8-5.3.8v17.6h12.4v26.4h-65.1v-26.4h17.6v-52.7h-17.6v-26.3h83.3c17.6,0,34.4,10.5,34.4,31.6s-12.4,23.3-29.9,23.9h0c2.8.4,8,1.4,12.4,3.7,12.7,6.9,9.8,25.9,15.7,25.7,3.5,0,3.5-3.9,3.5-8.6v-4.4h12.4s.7,6.2.7,9.6c0,14.8-7,25.7-27.1,25.7zM890.9,168.1h-15.9v19.4h15.9c6.3,0,13.4-.8,13.4-9.8s-7-9.6-13.4-9.6z"/>
+        <path class="hd" d="M1054.9,168.1l-28.1,45.7v7h12.4v26.4h-61.6v-26.4h14.1v-7l-31.6-45.7h-14.1v-26.3h65.1v26.3h-15.9l16.6,25.7,16.9-25.7h-14.1v-26.3h54.4v26.3h-14.1z"/>
+      </svg>
+    </div>
+    <div class="hdr-meta">
+      <h1>Intelligence controller</h1>
+      <p>Hill Country BBQ — New York</p>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('live',this)">Live systems</button>
+    <button class="tab" onclick="showTab('report',this)">Daily report</button>
+    <button class="tab" onclick="showTab('qa',this)">Ask RIC</button>
+    <button class="tab" onclick="showTab('teams',this)">Teams</button>
+  </div>
+</div>
+
+<div id="tab-live" class="panel active">
+  <h2 class="sr-only">Live system connections</h2>
+  <div class="sys-grid" id="sys-grid"></div>
+  <div class="prog-bar"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+  <div class="stat-row">
+    <div class="stat"><div class="stat-label">Connected</div><div class="stat-val" id="s-conn">0 / 11</div></div>
+    <div class="stat"><div class="stat-label">Last sync</div><div class="stat-val" id="s-time" style="font-size:12px;margin-top:2px">—</div></div>
+    <div class="stat"><div class="stat-label">Status</div><div class="stat-val" id="s-status" style="font-size:12px;margin-top:2px">Ready</div></div>
+  </div>
+  <div id="live-flags" class="flags"></div>
+  <button class="btn-primary" id="sync-btn" onclick="runSync()">Fetch data + generate daily report</button>
+</div>
+
+<div id="tab-report" class="panel">
+  <h2 class="sr-only">Daily intelligence report</h2>
+  <div id="report-out">
+    <div class="status"><div class="sdot"></div><span>No report yet — go to Live systems and generate one.</span></div>
+  </div>
+</div>
+
+<div id="tab-qa" class="panel">
+  <h2 class="sr-only">Ask the RIC a question</h2>
+  <div class="chips">
+    <button class="chip" onclick="setQ('What is our true brisket margin after trim loss and current beef prices?')">Brisket margin</button>
+    <button class="chip" onclick="setQ('How does delivery profitability compare to dine-in after platform fees?')">Delivery vs dine-in</button>
+    <button class="chip" onclick="setQ('What labor changes would have the biggest impact on prime cost?')">Labor optimization</button>
+    <button class="chip" onclick="setQ('Where are our biggest hidden profit opportunities?')">Hidden opportunities</button>
+    <button class="chip" onclick="setQ('How do we benchmark against top NYC BBQ operators?')">NYC benchmarks</button>
+    <button class="chip" onclick="setQ('What anomalies in today\'s data need immediate attention?')">Anomaly review</button>
+  </div>
+  <div class="field-group">
+    <textarea class="inp" id="qa-inp" placeholder="Ask any financial, operational, or strategic question..." style="margin-bottom:8px"></textarea>
+    <button class="btn-primary" id="qa-btn" onclick="askQ()">Ask RIC</button>
+  </div>
+  <div id="qa-out"></div>
+</div>
+
+<div id="tab-teams" class="panel">
+  <h2 class="sr-only">Microsoft Teams integration</h2>
+  <div class="field-group">
+    <label class="field-label">Teams delivery mode</label>
+    <select class="inp" id="teams-mode">
+      <option>Incoming webhook (daily report card)</option>
+      <option>Teams bot (interactive Q&A)</option>
+      <option>Teams tab (embedded app)</option>
+    </select>
+  </div>
+  <div class="field-group">
+    <label class="field-label">Webhook URL</label>
+    <input class="inp" type="url" id="teams-url" placeholder="https://outlook.office.com/webhook/..." autocomplete="off" autocorrect="off" autocapitalize="none"/>
+  </div>
+  <div class="field-group">
+    <label class="field-label">Channel &amp; schedule</label>
+    <div class="row2">
+      <input class="inp" type="text" id="teams-chan" placeholder="#daily-intel-nyc" autocorrect="off" autocapitalize="none"/>
+      <select class="inp" id="teams-time">
+        <option>7:00 AM daily</option>
+        <option>6:30 AM daily</option>
+        <option>8:00 AM daily</option>
+        <option>On demand only</option>
+      </select>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="sendTeamsPreview()">Send test card to Teams</button>
+  <div id="teams-out"></div>
+  <div class="teams-card" style="margin-top:16px">
+    <div class="teams-title">Teams tab embed</div>
+    <div class="teams-body">Add this app as a tab in any Teams channel via the "Website" tab configurator. No installation required — runs in the Teams browser surface, fully mobile-compatible.</div>
+    <div class="teams-code">Tab URL: https://ric.hillcountryhospitality.com
+Manifest ID: com.hch.ric.v1
+Scopes: team, groupchat, personal
+SSO: Microsoft Entra ID (M365 tenant)</div>
+  </div>
+  <div class="teams-card" style="margin-top:12px">
+    <div class="teams-title">Adaptive card payload (daily report)</div>
+    <div class="teams-body">The daily report is delivered as a Teams Adaptive Card with anomaly badges and a link to the full report.</div>
+    <div class="teams-code">{
+  "type": "message",
+  "attachments": [{
+    "contentType":
+      "application/vnd.microsoft.card.adaptive",
+    "content": {
+      "type": "AdaptiveCard",
+      "version": "1.5",
+      "body": [
+        { "type": "TextBlock",
+          "text": "Hill Country BBQ — Daily Intel",
+          "weight": "Bolder", "size": "Medium" },
+        { "type": "TextBlock",
+          "text": "April 29, 2026 | 7:00 AM",
+          "isSubtle": true, "spacing": "None" },
+        { "type": "FactSet", "facts": [
+          { "title": "Net revenue", "value": "$21,340" },
+          { "title": "Labor %", "value": "26.8% ✓" },
+          { "title": "Food cost %", "value": "33.2% ✓" },
+          { "title": "Covers", "value": "312" },
+          { "title": "Flags", "value": "2 warnings" }
+        ]},
+        { "type": "ActionSet", "actions": [
+          { "type": "Action.OpenUrl",
+            "title": "View full report",
+            "url": "https://ric.hillcountryhospitality.com" }
+        ]}
+      ]
+    }
+  }]
+}</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const PROXY = "";
+
+const SYSTEMS = [
+  {id:"gotab",    name:"GoTab",         domain:"POS & Revenue", color:"#185FA5", icon:"GT"},
+  {id:"quickbooks",name:"QuickBooks",   domain:"Financials",    color:"#1D9E75", icon:"QB"},
+  {id:"7shifts",  name:"7Shifts",       domain:"Labor",         color:"#534AB7", icon:"7S"},
+  {id:"marginedge",name:"MarginEdge",   domain:"Food Cost",     color:"#D85A30", icon:"ME"},
+  {id:"opentable",name:"OpenTable",     domain:"Reservations",  color:"#A32D2D", icon:"OT"},
+  {id:"tripleseat",name:"TripleSeat",   domain:"Events",        color:"#854F0B", icon:"TS"},
+  {id:"mailchimp",name:"Mailchimp",     domain:"Marketing",     color:"#3B6D11", icon:"MC"},
+  {id:"ga4",      name:"GA4",           domain:"Digital",       color:"#185FA5", icon:"GA"},
+  {id:"m365",     name:"Microsoft 365", domain:"Comms",         color:"#534AB7", icon:"M3"},
+  {id:"marqii",   name:"Marqii",        domain:"Reputation",    color:"#1D9E75", icon:"MQ"},
+  {id:"doordash", name:"DoorDash",      domain:"Delivery",      color:"#993C1D", icon:"DD"},
+];
+
+const MOCK = {
+  gotab:       {net_sales:18420,tab_count:312,voids:340,comps:210,bar_sales:4820,tax_total:1420,tip_total:3100},
+  quickbooks:  {total_revenue:21340,cogs:6830,gross_profit:14510,operating_expenses:9210,net_income:5300},
+  "7shifts":   {scheduled_hours:184,actual_hours:191,labor_cost:5730,labor_pct:26.8,overtime_hours:14,no_shows:1},
+  marginedge:  {food_cost:6830,food_cost_pct:33.2,top_variance:"Beef Brisket",variance_pct:4.1,pending_invoices:3},
+  opentable:   {reservations:87,covers:198,no_shows:6,peak_time:"7:30 PM",waitlist:12},
+  tripleseat:  {events_today:2,event_revenue:4200,leads_active:8},
+  mailchimp:   {emails_sent:2400,open_rate:28.4,click_rate:6.1,new_subscribers:14},
+  ga4:         {sessions:1840,users:1210,online_orders:43,conversion_rate:2.3},
+  m365:        {unread_emails:7,flagged_items:2,meetings_today:3},
+  marqii:      {avg_rating:4.6,new_reviews:8,positive:6,negative:1,response_rate:88},
+  doordash:    {orders:68,delivery_revenue:1820,avg_order_value:26.76,cancelled:2,avg_rating:4.7},
+};
+
+const SYS_PROMPT = `You are the Restaurant Intelligence Controller (RIC) for Hill Country BBQ, New York. Analyze live operational data from 11 integrated systems and produce clear, actionable daily intelligence reports for GM and store leadership. Be direct, specific, and write for someone reading at 7am before service. Use dollar amounts and percentages. Flag anomalies clearly. When data is marked as mock/demo, note it briefly but still provide useful analysis.`;
+
+let sysSt = {};
+let lastReport = "";
+let fetchedData = {};
+let sourceMap = {};
+SYSTEMS.forEach(s => sysSt[s.id] = "idle");
+
+function buildGrid() {
+  const g = document.getElementById("sys-grid");
+  g.innerHTML = "";
+  SYSTEMS.forEach(s => {
+    const d = document.createElement("div");
+    d.className = "sys-card";
+    d.id = "sc-" + s.id;
+    d.innerHTML = `<div class="sys-icon" style="background:${s.color}22;color:${s.color}">${s.icon}</div><div class="sys-info"><div class="sys-name">${s.name}</div><div class="sys-domain">${s.domain}</div></div><div class="sys-dot" id="dot-${s.id}"></div>`;
+    g.appendChild(d);
+  });
+}
+buildGrid();
+
+function updDot(id, state) {
+  sysSt[id] = state;
+  const dot  = document.getElementById("dot-" + id);
+  const card = document.getElementById("sc-" + id);
+  if (!dot || !card) return;
+  dot.className  = "sys-dot" + (state === "connected" ? " live" : state === "sync" ? " sync" : state === "err" ? " err" : "");
+  card.className = "sys-card"  + (state === "connected" ? " on"   : state === "err"  ? " err"  : "");
+}
+
+async function runSync() {
+  const btn = document.getElementById("sync-btn");
+  btn.disabled = true;
+  btn.textContent = "Contacting proxy...";
+  document.getElementById("s-status").textContent = "Fetching";
+  document.getElementById("live-flags").innerHTML = "";
+  SYSTEMS.forEach(s => updDot(s.id, "idle"));
+  fetchedData = {};
+  sourceMap   = {};
+
+  // Show live sources syncing immediately
+  updDot("gotab",   "sync");
+  updDot("7shifts", "sync");
+  btn.textContent = "Fetching live data...";
+
+  // Hit combined proxy endpoint
+  let ricLive = {};
+  try {
+    const res = await fetch(`${PROXY}/api/ric`);
+    if (!res.ok) throw new Error(`Proxy ${res.status}`);
+    ricLive = await res.json();
+  } catch(e) {
+    console.warn("Proxy unreachable, using full mock:", e.message);
+  }
+
+  // Populate fetchedData
+  let done = 0;
+  for (const s of SYSTEMS) {
+    if (sysSt[s.id] !== "sync") updDot(s.id, "sync");
+    await sleep(120 + Math.random() * 180);
+
+    if (ricLive[s.id]) {
+      fetchedData[s.id] = ricLive[s.id];
+      sourceMap[s.id]   = "live";
+      updDot(s.id, "connected");
+    } else if (ricLive.sources?.[s.id]?.startsWith("error")) {
+      fetchedData[s.id] = MOCK[s.id];
+      sourceMap[s.id]   = "mock";
+      updDot(s.id, "err");
+    } else {
+      fetchedData[s.id] = MOCK[s.id];
+      sourceMap[s.id]   = "mock";
+      updDot(s.id, "connected");
+    }
+
+    done++;
+    document.getElementById("s-conn").textContent = done + " / " + SYSTEMS.length;
+    document.getElementById("prog").style.width = Math.round((done / SYSTEMS.length) * 60) + "%";
+  }
+
+  document.getElementById("s-time").textContent = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+  document.getElementById("s-status").textContent = "Generating";
+  btn.textContent = "Generating report...";
+
+  showTab("report", document.querySelectorAll(".tab")[1]);
+  document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Synthesizing data from all 11 systems...</span></div>`;
+
+  await generateReport();
+
+  document.getElementById("prog").style.width = "100%";
+  document.getElementById("s-status").textContent = "Complete";
+  btn.disabled = false;
+  btn.textContent = "Fetch data + generate daily report";
+  renderFlags();
+}
+
+async function generateReport() {
+  const liveSources = Object.entries(sourceMap).filter(([,v]) => v === "live").map(([k]) => k);
+  const mockSources = Object.entries(sourceMap).filter(([,v]) => v === "mock").map(([k]) => k);
+
+  const prompt = `Location: Hill Country BBQ — New York
+Date: ${new Date().toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"})}
+Live data sources: ${liveSources.join(", ") || "none"}
+Mock/demo data sources: ${mockSources.join(", ") || "none"}
+
+Data:
+${JSON.stringify(fetchedData, null, 2)}
+
+Produce the Daily Intelligence Report:
+
+## Daily Intelligence Report
+**Hill Country BBQ — New York | ${new Date().toLocaleDateString()}**
+
+### Revenue snapshot
+### Labor
+### Food cost
+### Covers & dining
+### Delivery
+### Events & private dining
+### Digital & marketing
+### Reputation
+### Ops & comms
+### GM narrative
+### Anomaly flags
+
+Be specific with $ and %. Write for a GM at 7am. Note which sections use live vs demo data.`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1500,
+        system: SYS_PROMPT,
+        stream: true,
+        messages: [{role:"user", content:prompt}]
+      })
+    });
+    const reader = res.body.getReader();
+    const dec    = new TextDecoder();
+    let full = "";
+    document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Streaming report...</span></div><div class="report-wrap"><div class="report-text" id="rt"></div></div>`;
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      const lines = dec.decode(value).split("\n").filter(l => l.startsWith("data: "));
+      for (const line of lines) {
+        try {
+          const j = JSON.parse(line.slice(6));
+          if (j.type === "content_block_delta" && j.delta?.text) {
+            full += j.delta.text;
+            const rt = document.getElementById("rt");
+            if (rt) rt.textContent = full;
+          }
+        } catch {}
+      }
+    }
+    lastReport = full;
+    const liveCount  = liveSources.length;
+    const totalCount = SYSTEMS.length;
+    document.getElementById("report-out").innerHTML = `
+      <div class="status"><div class="sdot done"></div><span>Report complete — ${new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} &nbsp;·&nbsp; ${liveCount}/${totalCount} live sources</span></div>
+      <div class="report-wrap">
+        <div class="report-text">${esc(full)}</div>
+        <div class="report-actions">
+          <button class="btn-sec" onclick="copyReport()">Copy</button>
+          <button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[2]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button>
+          <button class="btn-sec" onclick="showTab('teams',document.querySelectorAll('.tab')[3])">Send to Teams</button>
+        </div>
+        <div class="disclaimer">AI-generated analysis. ${liveCount} of ${totalCount} sources are live. Verify all figures against source systems before operational decisions.</div>
+      </div>`;
+  } catch(e) {
+    document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot err"></div><span>Error: ${e.message}</span></div>`;
+  }
+}
+
+function renderFlags() {
+  const d = fetchedData;
+  const flags = [];
+  const liveSources = Object.entries(sourceMap).filter(([,v]) => v === "live").map(([k]) => k);
+  if (liveSources.length > 0) flags.push({t:"info", l:`${liveSources.length} live: ${liveSources.join(", ")}`});
+  if (d["7shifts"]  && d["7shifts"].labor_pct    > 28)  flags.push({t:"warn", l:`Labor ${d["7shifts"].labor_pct}% — above 28% threshold`});
+  if (d.marginedge  && d.marginedge.food_cost_pct > 34)  flags.push({t:"crit", l:`Food cost ${d.marginedge.food_cost_pct}% — critical`});
+  if (d.opentable   && d.opentable.no_shows       > 5)   flags.push({t:"warn", l:`${d.opentable.no_shows} no-shows`});
+  if (d.marqii      && d.marqii.avg_rating        < 4.5) flags.push({t:"crit", l:`Rating ${d.marqii.avg_rating} — below threshold`});
+  if (d.doordash    && d.doordash.cancelled       > 1)   flags.push({t:"warn", l:`${d.doordash.cancelled} DoorDash cancellations`});
+  if (d.gotab       && d.gotab.comps > 0 && d.gotab.net_sales > 0 && (d.gotab.comps / d.gotab.net_sales) > 0.15)
+    flags.push({t:"warn", l:`Comps ${((d.gotab.comps/d.gotab.net_sales)*100).toFixed(1)}% of net sales — review`});
+  if (flags.filter(f => f.t !== "info").length === 0) flags.push({t:"ok", l:"All metrics within threshold"});
+  document.getElementById("live-flags").innerHTML = flags.map(f => `<span class="flag ${f.t}">${f.l}</span>`).join("");
+}
+
+async function askQ() {
+  const q = document.getElementById("qa-inp").value.trim();
+  if (!q) return;
+  const btn = document.getElementById("qa-btn");
+  btn.disabled = true; btn.textContent = "Thinking...";
+  const out = document.getElementById("qa-out");
+  out.innerHTML = `<div class="status"><div class="sdot thinking"></div><span>RIC is thinking...</span></div>`;
+  const ctx = lastReport ? `Context — today's report:\n${lastReport}\n\n` : "";
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 800,
+        system: SYS_PROMPT,
+        messages: [{role:"user", content: ctx + "Question from GM: " + q}]
+      })
+    });
+    const data = await res.json();
+    const txt  = data.content?.filter(b => b.type === "text").map(b => b.text).join("") || "No response.";
+    out.innerHTML = `<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-text">${esc(txt)}</div></div>`;
+  } catch(e) {
+    out.innerHTML = `<div class="status"><div class="sdot err"></div><span>Error: ${e.message}</span></div>`;
+  }
+  btn.disabled = false; btn.textContent = "Ask RIC";
+}
+
+function sendTeamsPreview() {
+  const url = document.getElementById("teams-url").value.trim();
+  const out = document.getElementById("teams-out");
+  out.innerHTML = url
+    ? `<div class="status" style="margin-top:10px"><div class="sdot done"></div><span>Payload ready. POST from your backend scheduler — browser CORS blocks direct webhook calls.</span></div>`
+    : `<div class="status" style="margin-top:10px"><div class="sdot err"></div><span>Enter a webhook URL first.</span></div>`;
+}
+
+function setQ(q)     { document.getElementById("qa-inp").value = q; document.getElementById("qa-inp").focus(); }
+function copyReport(){ navigator.clipboard.writeText(lastReport).catch(() => {}); }
+function esc(s)      { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function sleep(ms)   { return new Promise(r => setTimeout(r, ms)); }
+function showTab(id, el) {
+  document.querySelectorAll(".tab").forEach(t  => t.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  if (el) el.classList.add("active");
+  document.getElementById("tab-" + id).classList.add("active");
+}
+</script>
+</body>
+</html>
