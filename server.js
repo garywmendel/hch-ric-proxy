@@ -251,7 +251,7 @@ app.get("/api/ric", async (req, res) => {
   res.json({ ok: true, ...result });
 });
 
-// Proxy Anthropic API calls (avoids browser CORS block)
+// Proxy Anthropic API calls
 app.post("/api/claude", async (req, res) => {
   try {
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
@@ -263,13 +263,15 @@ app.post("/api/claude", async (req, res) => {
       },
       body: JSON.stringify(req.body),
     });
-    // Stream the response straight through
-    res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json");
     res.setHeader("Access-Control-Allow-Origin", "*");
-    upstream.body.pipeTo(new WritableStream({
-      write(chunk) { res.write(chunk); },
-      close()      { res.end(); },
-    }));
+    res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json");
+    res.status(upstream.status);
+    const reader = upstream.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) { res.end(); break; }
+      res.write(value);
+    }
   } catch(err) {
     console.error("Claude proxy error:", err.message);
     res.status(500).json({ ok: false, error: err.message });
@@ -278,9 +280,6 @@ app.post("/api/claude", async (req, res) => {
 
 // Health
 app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.0" }));
-
-// Serve RIC app
-app.get("/", (_req, res) => res.sendFile("index.html", { root: "." }));
 
 // Serve RIC app
 import { fileURLToPath } from "url";
