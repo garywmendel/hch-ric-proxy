@@ -62,39 +62,60 @@ function normalizeGoTab(tabs) {
   let net_sales = 0, tax_total = 0, bar_sales = 0, voids = 0, comps = 0, tip_total = 0, tab_count = 0;
   let deferred_revenue = 0;
 
+  const BAR_STREAMS = ["Sales, Liquor:", "Sales, Beer:", "Sales, Non-Alcoholic Beverage:", "Sales, Wine:"];
+  const EXCLUDE_GROUPS = ["DEFERRED_REVENUE", "PROCESSORS", "EXPENSE"];
+
   for (const tab of tabs) {
-    const tabSubtotal = tab.subtotal || 0;
-    const tabTax      = tab.tax      || 0;
-    const tabTotal    = tab.total    || 0;
-    const tabAutograt = tab.autogratDue || 0;
+    const tabTax   = tab.tax   || 0;
+    const tabTotal = tab.total || 0;
+    const tabSub   = tab.subtotal || 0;
+    const tabAuto  = tab.autogratDue || 0;
+
+    tax_total += tabTax;
+    const tabTip = tabTotal - tabSub - tabTax - tabAuto;
+    if (tabTip > 0) tip_total += tabTip;
+    tab_count += 1;
 
     for (const item of tab.items || []) {
       const g = item.accountingStream?.reportingGroup || "";
-      const itemSubtotal = item.subtotal || 0;
+      const n = item.accountingStream?.name || "";
+      const amt = item.subtotal || 0;
 
-      if (g === "DEFERRED_REVENUE") {
-        // Event deposits — exclude from net sales
-        deferred_revenue += itemSubtotal;
-      } else if (g === "COMP" || item.comped) {
-        comps += itemSubtotal;
-      } else if (item.voided || g === "VOID") {
-        voids += itemSubtotal;
-      } else if (
-        g.includes("BAR") || g.includes("BEV") || g.includes("DRINK") ||
-        g.includes("LIQUOR") || g.includes("WINE") || g.includes("BEER") ||
-        (item.accountingStream?.name || "").toLowerCase().includes("bar") ||
-        (item.accountingStream?.name || "").toLowerCase().includes("beverage") ||
-        (item.accountingStream?.name || "").toLowerCase().includes("beer") ||
-        (item.accountingStream?.name || "").toLowerCase().includes("wine") ||
-        (item.accountingStream?.name || "").toLowerCase().includes("spirit") ||
-        (item.accountingStream?.name || "").toLowerCase().includes("cocktail")
-      ) {
-        bar_sales += itemSubtotal;
-        net_sales += itemSubtotal;
-      } else {
-        net_sales += itemSubtotal;
+      if (EXCLUDE_GROUPS.includes(g)) {
+        if (g === "DEFERRED_REVENUE") deferred_revenue += amt;
+        continue;
+      }
+
+      if (n.startsWith("Discounts and Comps")) {
+        comps += Math.abs(amt);
+        continue;
+      }
+
+      if (item.voided || g === "VOID") {
+        voids += Math.abs(amt);
+        continue;
+      }
+
+      net_sales += amt;
+
+      if (BAR_STREAMS.some(b => n.startsWith(b))) {
+        bar_sales += amt;
       }
     }
+  }
+
+  return {
+    net_sales:        +(net_sales        / 100).toFixed(2),
+    tab_count,
+    bar_sales:        +(bar_sales        / 100).toFixed(2),
+    voids:            +(voids            / 100).toFixed(2),
+    comps:            +(comps            / 100).toFixed(2),
+    tax_total:        +(tax_total        / 100).toFixed(2),
+    tip_total:        +(tip_total        / 100).toFixed(2),
+    deferred_revenue: +(deferred_revenue / 100).toFixed(2),
+    data_as_of: nowET(),
+  };
+}
 
     tax_total += tabTax;
     // Tips = total paid minus subtotal minus tax minus autograt (only positive)
