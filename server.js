@@ -1,6 +1,7 @@
 // Hill Country Hospitality — RIC Proxy Server v2
 // Sources: GoTab (live), 7Shifts (live), all others mocked
 // Deploy on Railway. Set env vars below.
+// RIC Proxy v2.1 — GoTab + Claude
 
 import express from "express";
 import cors from "cors";
