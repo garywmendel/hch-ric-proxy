@@ -1,4 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v2.3
+// Hill Country Hospitality — RIC Proxy Server v2.6
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -62,14 +62,14 @@ function normalizeGoTab(tabs) {
   let net_sales = 0, tax_total = 0, bar_sales = 0, voids = 0, comps = 0, tip_total = 0, tab_count = 0;
   let deferred_revenue = 0;
 
-  const BAR_STREAMS = ["Sales, Liquor:", "Sales, Beer:", "Sales, Non-Alcoholic Beverage:", "Sales, Wine:"];
+  const BAR_STREAMS    = ["Sales, Liquor:", "Sales, Beer:", "Sales, Non-Alcoholic Beverage:", "Sales, Wine:"];
   const EXCLUDE_GROUPS = ["DEFERRED_REVENUE", "PROCESSORS", "EXPENSE"];
 
   for (const tab of tabs) {
-    const tabTax   = tab.tax   || 0;
-    const tabTotal = tab.total || 0;
-    const tabSub   = tab.subtotal || 0;
-    const tabAuto  = tab.autogratDue || 0;
+    const tabTax   = tab.tax          || 0;
+    const tabTotal = tab.total        || 0;
+    const tabSub   = tab.subtotal     || 0;
+    const tabAuto  = tab.autogratDue  || 0;
 
     tax_total += tabTax;
     const tabTip = tabTotal - tabSub - tabTax - tabAuto;
@@ -77,8 +77,8 @@ function normalizeGoTab(tabs) {
     tab_count += 1;
 
     for (const item of tab.items || []) {
-      const g = item.accountingStream?.reportingGroup || "";
-      const n = item.accountingStream?.name || "";
+      const g   = item.accountingStream?.reportingGroup || "";
+      const n   = item.accountingStream?.name           || "";
       const amt = item.subtotal || 0;
 
       if (EXCLUDE_GROUPS.includes(g)) {
@@ -113,7 +113,7 @@ function normalizeGoTab(tabs) {
     tax_total:        +(tax_total        / 100).toFixed(2),
     tip_total:        +(tip_total        / 100).toFixed(2),
     deferred_revenue: +(deferred_revenue / 100).toFixed(2),
-    data_as_of: nowET(),
+    data_as_of:       nowET(),
   };
 }
 
@@ -147,15 +147,17 @@ async function fetch7Shifts(date) {
     labor_cost:      +labor_cost.toFixed(2),
     labor_pct:       null,
     overtime_hours:  +overtime_hours.toFixed(1),
-    no_shows, shift_count: shifts.length, punch_count: punches.length,
-    data_as_of: nowET(),
+    no_shows,
+    shift_count:     shifts.length,
+    punch_count:     punches.length,
+    data_as_of:      nowET(),
   };
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-// Diagnostic: raw GoTab sample (first 2 tabs)
-app.get("/api/gotab/raw", async (req, res) => {
+// Diagnostic: all accounting streams sorted by revenue
+app.get("/api/gotab/streams", async (req, res) => {
   try {
     const date  = req.query.date || today();
     const token = await getGoTabToken();
@@ -166,7 +168,18 @@ app.get("/api/gotab/raw", async (req, res) => {
     });
     const gqlData = await gqlRes.json();
     const tabs = gqlData?.data?.locations?.[0]?.tabs || [];
-    res.json({ total_tabs: tabs.length, sample: tabs.slice(0, 2) });
+    const streams = {};
+    for (const tab of tabs) {
+      for (const item of tab.items || []) {
+        const g = item.accountingStream?.reportingGroup || "NONE";
+        const n = item.accountingStream?.name || "NONE";
+        const key = `${g} | ${n}`;
+        if (!streams[key]) streams[key] = { reportingGroup: g, name: n, count: 0, subtotal_cents: 0 };
+        streams[key].count++;
+        streams[key].subtotal_cents += item.subtotal || 0;
+      }
+    }
+    res.json({ total_tabs: tabs.length, streams: Object.values(streams).sort((a,b) => b.subtotal_cents - a.subtotal_cents) });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -269,4 +282,4 @@ app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy",
 // Serve RIC app
 app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
 
-app.listen(PORT, () => console.log(`RIC proxy v2.3 running on port ${PORT}`));
+app.listen(PORT, () => console.log(`RIC proxy v2.6 running on port ${PORT}`));
