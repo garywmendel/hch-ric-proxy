@@ -60,28 +60,58 @@ function goTabQuery(locationUuid, fiscalDay) {
 // ── GoTab normalize ───────────────────────────────────────────────────────────
 function normalizeGoTab(tabs) {
   let net_sales = 0, tax_total = 0, bar_sales = 0, voids = 0, comps = 0, tip_total = 0, tab_count = 0;
+  let deferred_revenue = 0;
+
   for (const tab of tabs) {
-    net_sales += tab.subtotal   || 0;
-    tax_total += tab.tax        || 0;
-    tip_total += Math.max(0, (tab.total || 0) - (tab.subtotal || 0) - (tab.tax || 0) - (tab.autogratDue || 0));
-    tab_count += 1;
+    const tabSubtotal = tab.subtotal || 0;
+    const tabTax      = tab.tax      || 0;
+    const tabTotal    = tab.total    || 0;
+    const tabAutograt = tab.autogratDue || 0;
+
     for (const item of tab.items || []) {
-      if (item.comped) comps += item.subtotalInitial || 0;
-      if (item.voided) voids += item.subtotalInitial || 0;
-      const group = item.accountingStream?.reportingGroup?.toLowerCase() || "";
-      if (group.includes("bar") || group.includes("bev") || group.includes("drink") || group.includes("liquor") || group.includes("wine") || group.includes("beer"))
-        bar_sales += item.subtotal || 0;
+      const g = item.accountingStream?.reportingGroup || "";
+      const itemSubtotal = item.subtotal || 0;
+
+      if (g === "DEFERRED_REVENUE") {
+        // Event deposits — exclude from net sales
+        deferred_revenue += itemSubtotal;
+      } else if (g === "COMP" || item.comped) {
+        comps += itemSubtotal;
+      } else if (item.voided || g === "VOID") {
+        voids += itemSubtotal;
+      } else if (
+        g.includes("BAR") || g.includes("BEV") || g.includes("DRINK") ||
+        g.includes("LIQUOR") || g.includes("WINE") || g.includes("BEER") ||
+        (item.accountingStream?.name || "").toLowerCase().includes("bar") ||
+        (item.accountingStream?.name || "").toLowerCase().includes("beverage") ||
+        (item.accountingStream?.name || "").toLowerCase().includes("beer") ||
+        (item.accountingStream?.name || "").toLowerCase().includes("wine") ||
+        (item.accountingStream?.name || "").toLowerCase().includes("spirit") ||
+        (item.accountingStream?.name || "").toLowerCase().includes("cocktail")
+      ) {
+        bar_sales += itemSubtotal;
+        net_sales += itemSubtotal;
+      } else {
+        net_sales += itemSubtotal;
+      }
     }
+
+    tax_total += tabTax;
+    // Tips = total paid minus subtotal minus tax minus autograt (only positive)
+    const tabTip = tabTotal - tabSubtotal - tabTax - tabAutograt;
+    if (tabTip > 0) tip_total += tabTip;
+    tab_count += 1;
   }
-  // GoTab returns cents
+
   return {
-    net_sales: +(net_sales / 100).toFixed(2),
+    net_sales:        +(net_sales        / 100).toFixed(2),
     tab_count,
-    bar_sales: +(bar_sales / 100).toFixed(2),
-    voids:     +(voids     / 100).toFixed(2),
-    comps:     +(comps     / 100).toFixed(2),
-    tax_total: +(tax_total / 100).toFixed(2),
-    tip_total: +(tip_total / 100).toFixed(2),
+    bar_sales:        +(bar_sales        / 100).toFixed(2),
+    voids:            +(voids            / 100).toFixed(2),
+    comps:            +(comps            / 100).toFixed(2),
+    tax_total:        +(tax_total        / 100).toFixed(2),
+    tip_total:        +(tip_total        / 100).toFixed(2),
+    deferred_revenue: +(deferred_revenue / 100).toFixed(2),
     data_as_of: nowET(),
   };
 }
@@ -135,18 +165,7 @@ app.get("/api/gotab/raw", async (req, res) => {
     });
     const gqlData = await gqlRes.json();
     const tabs = gqlData?.data?.locations?.[0]?.tabs || [];
-    const streams = {};
-    for (const tab of tabs) {
-      for (const item of tab.items || []) {
-        const g = item.accountingStream?.reportingGroup || "NONE";
-        const n = item.accountingStream?.name || "NONE";
-        const key = `${g} | ${n}`;
-        if (!streams[key]) streams[key] = { reportingGroup: g, name: n, count: 0, subtotal_cents: 0 };
-        streams[key].count++;
-        streams[key].subtotal_cents += item.subtotal || 0;
-      }
-    }
-    res.json({ total_tabs: tabs.length, streams: Object.values(streams).sort((a,b) => b.subtotal_cents - a.subtotal_cents) });
+    res.json({ total_tabs: tabs.length, sample: tabs.slice(0, 2) });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
@@ -244,7 +263,7 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.3" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.4" }));
 
 // Serve RIC app
 app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
