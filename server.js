@@ -117,26 +117,6 @@ function normalizeGoTab(tabs) {
   };
 }
 
-    tax_total += tabTax;
-    // Tips = total paid minus subtotal minus tax minus autograt (only positive)
-    const tabTip = tabTotal - tabSubtotal - tabTax - tabAutograt;
-    if (tabTip > 0) tip_total += tabTip;
-    tab_count += 1;
-  }
-
-  return {
-    net_sales:        +(net_sales        / 100).toFixed(2),
-    tab_count,
-    bar_sales:        +(bar_sales        / 100).toFixed(2),
-    voids:            +(voids            / 100).toFixed(2),
-    comps:            +(comps            / 100).toFixed(2),
-    tax_total:        +(tax_total        / 100).toFixed(2),
-    tip_total:        +(tip_total        / 100).toFixed(2),
-    deferred_revenue: +(deferred_revenue / 100).toFixed(2),
-    data_as_of: nowET(),
-  };
-}
-
 // ── 7Shifts ───────────────────────────────────────────────────────────────────
 async function fetch7Shifts(date) {
   const headers = { "Authorization": `Bearer ${SHIFTS_TOKEN}`, "x-company-guid": SHIFTS_COMPANY_GUID, "Content-Type": "application/json" };
@@ -284,7 +264,7 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.4" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.6" }));
 
 // Serve RIC app
 app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
