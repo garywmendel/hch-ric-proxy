@@ -289,7 +289,7 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.4" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.5" }));
 
 // Serve RIC app
 app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
