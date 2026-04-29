@@ -251,6 +251,31 @@ app.get("/api/ric", async (req, res) => {
   res.json({ ok: true, ...result });
 });
 
+// Proxy Anthropic API calls (avoids browser CORS block)
+app.post("/api/claude", async (req, res) => {
+  try {
+    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type":      "application/json",
+        "x-api-key":         process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(req.body),
+    });
+    // Stream the response straight through
+    res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    upstream.body.pipeTo(new WritableStream({
+      write(chunk) { res.write(chunk); },
+      close()      { res.end(); },
+    }));
+  } catch(err) {
+    console.error("Claude proxy error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Health
 app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.0" }));
 
