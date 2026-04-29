@@ -151,8 +151,24 @@ async function fetch7Shifts(date) {
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 
-// GoTab only
-app.get("/api/gotab", async (req, res) => {
+// Diagnostic: raw GoTab tab sample
+app.get("/api/gotab/raw", async (req, res) => {
+  try {
+    const date  = req.query.date || today();
+    const token = await getGoTabToken();
+    const gqlRes = await fetch("https://gotab.io/api/v2/graph", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID, date)),
+    });
+    const gqlData = await gqlRes.json();
+    const tabs = gqlData?.data?.locations?.[0]?.tabs || [];
+    // Return first 2 tabs in full so we can see exact field names and values
+    res.json({ total_tabs: tabs.length, sample: tabs.slice(0, 2) });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
   try {
     const date  = req.query.date || today();
     const token = await getGoTabToken();
