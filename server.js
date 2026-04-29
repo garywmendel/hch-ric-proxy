@@ -44,7 +44,7 @@ function goTabQuery(locationUuid, fiscalDay) {
         locations: locationsList(condition: { locationUuid: $locationUuid }) {
           name locationUuid
           tabs: tabsList(filter: { created: { greaterThan: $tabCreationDate } ordersPlaced: { greaterThan: 0 } }) {
-            name tabMode tax total subtotal tippedSubtotal balanceDue autogratDue href tipTotal
+            name tabMode tax total subtotal tippedSubtotal balanceDue autogratDue href
             items: itemsList(filter: { ordered: { equalTo: true } }) {
               name subtotal subtotalInitial quantity quantityInitial comped voided fee discount
               accountingStream { name reportingGroup }
@@ -63,7 +63,7 @@ function normalizeGoTab(tabs) {
   for (const tab of tabs) {
     net_sales += tab.subtotal   || 0;
     tax_total += tab.tax        || 0;
-    tip_total += tab.tipTotal   || 0;
+    tip_total += Math.max(0, (tab.total || 0) - (tab.subtotal || 0) - (tab.tax || 0) - (tab.autogratDue || 0));
     tab_count += 1;
     for (const item of tab.items || []) {
       if (item.comped) comps += item.subtotalInitial || 0;
