@@ -1,7 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v2.2
-// Sources: GoTab (live), 7Shifts (live), all others mocked
-// Deploy on Railway. Set env vars below.
-
+// Hill Country Hospitality — RIC Proxy Server v2.3
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -11,70 +8,46 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Env vars (set in Railway → Variables) ────────────────────────────────────
 const GOTAB_ID            = process.env.GOTAB_ID;
 const GOTAB_SECRET        = process.env.GOTAB_SECRET;
 const GOTAB_LOCATION_UUID = process.env.GOTAB_LOCATION_UUID;
-
 const SHIFTS_TOKEN        = process.env.SHIFTS_TOKEN;
 const SHIFTS_COMPANY_GUID = process.env.SHIFTS_COMPANY_GUID;
 const SHIFTS_COMPANY_ID   = process.env.SHIFTS_COMPANY_ID;
 const SHIFTS_LOCATION_ID  = process.env.SHIFTS_LOCATION_ID;
 
-app.use(cors({
-  origin: "*",
-  methods: ["GET","POST","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"],
-}));
+app.use(cors({ origin: "*", methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type","Authorization"] }));
 app.options("*", cors());
 app.use(express.json());
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-const toET = (d = new Date()) => new Date(d.toLocaleString("en-US", { timeZone: "America/New_York" }));
-const today = () => {
-  const et = toET();
-  return `${et.getFullYear()}-${String(et.getMonth()+1).padStart(2,"0")}-${String(et.getDate()).padStart(2,"0")}`;
-};
+// ── Time helpers (Eastern) ────────────────────────────────────────────────────
+const toET  = (d = new Date()) => new Date(d.toLocaleString("en-US", { timeZone: "America/New_York" }));
+const today = () => { const e = toET(); return `${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,"0")}-${String(e.getDate()).padStart(2,"0")}`; };
 const nowET = () => toET().toISOString().replace("T"," ").slice(0,19) + " ET";
 
-// ── GoTab: auth ──────────────────────────────────────────────────────────────
+// ── GoTab auth ────────────────────────────────────────────────────────────────
 async function getGoTabToken() {
   const res = await fetch("https://gotab.io/api/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      api_access_id:     GOTAB_ID,
-      api_access_secret: GOTAB_SECRET,
-    }),
+    body: JSON.stringify({ api_access_id: GOTAB_ID, api_access_secret: GOTAB_SECRET }),
   });
   if (!res.ok) throw new Error(`GoTab auth failed: ${res.status}`);
-  const d = await res.json();
-  return d.token;
+  return (await res.json()).token;
 }
 
-// ── GoTab: GraphQL query ─────────────────────────────────────────────────────
+// ── GoTab GraphQL query ───────────────────────────────────────────────────────
 function goTabQuery(locationUuid, fiscalDay) {
   return {
     query: `
       query($locationUuid: String, $tabCreationDate: Datetime) {
         locations: locationsList(condition: { locationUuid: $locationUuid }) {
-          name
-          locationUuid
-          tabs: tabsList(
-            filter: {
-              created: { greaterThan: $tabCreationDate }
-              ordersPlaced: { greaterThan: 0 }
-            }
-          ) {
-            name tabMode tax total subtotal tippedSubtotal
-            balanceDue autogratDue href
+          name locationUuid
+          tabs: tabsList(filter: { created: { greaterThan: $tabCreationDate } ordersPlaced: { greaterThan: 0 } }) {
+            name tabMode tax total subtotal tippedSubtotal balanceDue autogratDue href
             items: itemsList(filter: { ordered: { equalTo: true } }) {
-              name subtotal subtotalInitial quantity quantityInitial
-              comped voided fee discount
-              adjustments: adjustments {
-                adjustmentReason adjustmentType quantity unitPrice
-                deltaTax deltaAutograt deltaAutogratTax
-              }
+              name subtotal subtotalInitial quantity quantityInitial comped voided fee discount
+              adjustments: adjustments { adjustmentReason adjustmentType quantity unitPrice deltaTax deltaAutograt deltaAutogratTax }
             }
           }
         }
@@ -83,61 +56,56 @@ function goTabQuery(locationUuid, fiscalDay) {
   };
 }
 
-// ── GoTab: normalize ─────────────────────────────────────────────────────────
+// ── GoTab normalize ───────────────────────────────────────────────────────────
 function normalizeGoTab(tabs) {
-  let net_sales = 0, tax_total = 0, bar_sales = 0;
-  let voids = 0, comps = 0, tip_total = 0, tab_count = 0;
-
+  let net_sales = 0, tax_total = 0, bar_sales = 0, voids = 0, comps = 0, tip_total = 0, tab_count = 0;
   for (const tab of tabs) {
-    net_sales += tab.subtotal || 0;
-    tax_total += tab.tax     || 0;
-    tip_total += tab.tippedSubtotal || 0;
+    net_sales += tab.subtotal        || 0;
+    tax_total += tab.tax             || 0;
+    tip_total += tab.tippedSubtotal  || 0;
     tab_count += 1;
     for (const item of tab.items || []) {
       if (item.comped) comps += item.subtotalInitial || 0;
       if (item.voided) voids += item.subtotalInitial || 0;
     }
   }
-
-  // GoTab returns all monetary values in cents — always divide by 100
-  net_sales = +(net_sales / 100).toFixed(2);
-  bar_sales = +(bar_sales / 100).toFixed(2);
-  voids     = +(voids     / 100).toFixed(2);
-  comps     = +(comps     / 100).toFixed(2);
-  tax_total = +(tax_total / 100).toFixed(2);
-  tip_total = +(tip_total / 100).toFixed(2);
-
-  return { net_sales, tab_count, bar_sales, voids, comps, tax_total, tip_total, data_as_of: nowET() };
+  // GoTab returns cents
+  return {
+    net_sales: +(net_sales / 100).toFixed(2),
+    tab_count,
+    bar_sales: +(bar_sales / 100).toFixed(2),
+    voids:     +(voids     / 100).toFixed(2),
+    comps:     +(comps     / 100).toFixed(2),
+    tax_total: +(tax_total / 100).toFixed(2),
+    tip_total: +(tip_total / 100).toFixed(2),
+    data_as_of: nowET(),
+  };
 }
 
-// ── 7Shifts: fetch & normalize ───────────────────────────────────────────────
+// ── 7Shifts ───────────────────────────────────────────────────────────────────
 async function fetch7Shifts(date) {
-  const headers = {
-    "Authorization":  `Bearer ${SHIFTS_TOKEN}`,
-    "x-company-guid": SHIFTS_COMPANY_GUID,
-    "Content-Type":   "application/json",
-  };
+  const headers = { "Authorization": `Bearer ${SHIFTS_TOKEN}`, "x-company-guid": SHIFTS_COMPANY_GUID, "Content-Type": "application/json" };
   const base = `https://api.7shifts.com/v2/company/${SHIFTS_COMPANY_ID}`;
-  const [shiftsRes, punchesRes] = await Promise.all([
+  const [sRes, pRes] = await Promise.all([
     fetch(`${base}/shifts?location_id=${SHIFTS_LOCATION_ID}&start=${date}T00:00:00&end=${date}T23:59:59&limit=200`, { headers }),
     fetch(`${base}/time_punches?location_id=${SHIFTS_LOCATION_ID}&clocked_in_gte=${date}T00:00:00&clocked_in_lte=${date}T23:59:59&limit=200`, { headers }),
   ]);
-  if (!shiftsRes.ok)  throw new Error(`7Shifts shifts failed: ${shiftsRes.status}`);
-  if (!punchesRes.ok) throw new Error(`7Shifts punches failed: ${punchesRes.status}`);
-  const shifts  = (await shiftsRes.json()).data  || [];
-  const punches = (await punchesRes.json()).data || [];
+  if (!sRes.ok) throw new Error(`7Shifts shifts failed: ${sRes.status}`);
+  if (!pRes.ok) throw new Error(`7Shifts punches failed: ${pRes.status}`);
+  const shifts  = (await sRes.json()).data || [];
+  const punches = (await pRes.json()).data || [];
   let scheduled_hours = 0, actual_hours = 0, labor_cost = 0, overtime_hours = 0, no_shows = 0;
   for (const s of shifts) scheduled_hours += (new Date(s.end) - new Date(s.start)) / 3600000;
   for (const p of punches) {
     if (p.clocked_in && p.clocked_out) {
       const hrs = (new Date(p.clocked_out) - new Date(p.clocked_in)) / 3600000;
-      actual_hours  += hrs;
+      actual_hours += hrs;
       if (p.wage_cents) labor_cost += (hrs * p.wage_cents) / 100;
       if (hrs > 8) overtime_hours += hrs - 8;
     }
   }
-  const punchedUserIds = new Set(punches.map(p => p.user_id));
-  for (const s of shifts) if (s.user_id && !punchedUserIds.has(s.user_id)) no_shows++;
+  const punchedIds = new Set(punches.map(p => p.user_id));
+  for (const s of shifts) if (s.user_id && !punchedIds.has(s.user_id)) no_shows++;
   return {
     scheduled_hours: +scheduled_hours.toFixed(1),
     actual_hours:    +actual_hours.toFixed(1),
@@ -149,9 +117,9 @@ async function fetch7Shifts(date) {
   };
 }
 
-// ── Routes ───────────────────────────────────────────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────────
 
-// Diagnostic: raw GoTab tab sample
+// Diagnostic: raw GoTab sample (first 2 tabs)
 app.get("/api/gotab/raw", async (req, res) => {
   try {
     const date  = req.query.date || today();
@@ -163,12 +131,14 @@ app.get("/api/gotab/raw", async (req, res) => {
     });
     const gqlData = await gqlRes.json();
     const tabs = gqlData?.data?.locations?.[0]?.tabs || [];
-    // Return first 2 tabs in full so we can see exact field names and values
     res.json({ total_tabs: tabs.length, sample: tabs.slice(0, 2) });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
+
+// GoTab only
+app.get("/api/gotab", async (req, res) => {
   try {
     const date  = req.query.date || today();
     const token = await getGoTabToken();
@@ -200,7 +170,7 @@ app.get("/api/7shifts", async (req, res) => {
   }
 });
 
-// Combined: all live sources in one call
+// Combined
 app.get("/api/ric", async (req, res) => {
   const date = req.query.date || today();
   const result = { date, sources: {} };
@@ -234,7 +204,7 @@ app.get("/api/ric", async (req, res) => {
   res.json({ ok: true, ...result });
 });
 
-// Proxy Anthropic API calls (non-streaming)
+// Claude proxy (non-streaming)
 app.post("/api/claude", async (req, res) => {
   try {
     const body = { ...req.body, stream: false };
@@ -259,9 +229,9 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.2" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.3" }));
 
 // Serve RIC app
 app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
 
-app.listen(PORT, () => console.log(`RIC proxy v2.2 running on port ${PORT}`));
+app.listen(PORT, () => console.log(`RIC proxy v2.3 running on port ${PORT}`));
