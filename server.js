@@ -251,9 +251,11 @@ app.get("/api/ric", async (req, res) => {
   res.json({ ok: true, ...result });
 });
 
-// Proxy Anthropic API calls
+// Proxy Anthropic API calls (non-streaming)
 app.post("/api/claude", async (req, res) => {
   try {
+    // Force streaming off
+    const body = { ...req.body, stream: false };
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -261,17 +263,10 @@ app.post("/api/claude", async (req, res) => {
         "x-api-key":         process.env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(body),
     });
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Content-Type", upstream.headers.get("content-type") || "application/json");
-    res.status(upstream.status);
-    const reader = upstream.body.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) { res.end(); break; }
-      res.write(value);
-    }
+    const data = await upstream.json();
+    res.json(data);
   } catch(err) {
     console.error("Claude proxy error:", err.message);
     res.status(500).json({ ok: false, error: err.message });
