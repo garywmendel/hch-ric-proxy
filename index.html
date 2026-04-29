@@ -409,7 +409,7 @@ Be specific with $ and %. Write for a GM at 7am. Note which sections use live vs
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 1500,
         system: SYS_PROMPT,
         messages: [{role:"user", content:prompt}]
@@ -465,7 +465,7 @@ async function askQ() {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 800,
         system: SYS_PROMPT,
         messages: [{role:"user", content: ctx + "Question from GM: " + q}]
