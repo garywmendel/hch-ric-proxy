@@ -43,8 +43,10 @@ async function getGoTabToken() {
 function goTabQuery(locationUuid, fiscalDay) {
   return {
     query: `
-      query($locationUuid: String, $tabCreationDate: Datetime) {
-        locations: locationsList(condition: { locationUuid: $locationUuid }) {
+      query($tabCreationDate: Datetime) {
+        locations: locationsList {
+          name
+          locationUuid
           tabs: tabsList(
             filter: {
               created: { greaterThan: $tabCreationDate }
@@ -64,7 +66,7 @@ function goTabQuery(locationUuid, fiscalDay) {
           }
         }
       }`,
-    variables: { locationUuid, tabCreationDate: fiscalDay + "T00:00:00Z" },
+    variables: { tabCreationDate: fiscalDay + "T00:00:00Z" },
   };
 }
 
@@ -183,8 +185,15 @@ app.get("/api/gotab", async (req, res) => {
     if (!gqlRes.ok) throw new Error(`GoTab GraphQL error: ${gqlRes.status}`);
     const gqlData = await gqlRes.json();
     if (gqlData.errors) throw new Error(gqlData.errors[0]?.message || "GraphQL error");
-    const tabs = gqlData?.data?.locations?.[0]?.tabs || [];
-    res.json({ ok: true, source: "gotab_live", date, ...normalizeGoTab(tabs) });
+    // Diagnostic: return raw locations so we can see names + UUIDs
+    const locations = gqlData?.data?.locations || [];
+    const summary = locations.map(l => ({
+      name: l.name,
+      locationUuid: l.locationUuid,
+      tab_count: (l.tabs || []).length,
+    }));
+    const tabs = locations.flatMap(l => l.tabs || []);
+    res.json({ ok: true, source: "gotab_live", date, locations: summary, ...normalizeGoTab(tabs) });
   } catch (err) {
     console.error("GoTab error:", err.message);
     res.status(500).json({ ok: false, error: err.message });
