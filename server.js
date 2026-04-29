@@ -170,33 +170,7 @@ app.get("/api/gotab/raw", async (req, res) => {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
-app.get("/api/gotab/streams", async (req, res) => {
-  try {
-    const date  = req.query.date || today();
-    const token = await getGoTabToken();
-    const gqlRes = await fetch("https://gotab.io/api/v2/graph", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID, date)),
-    });
-    const gqlData = await gqlRes.json();
-    const tabs = gqlData?.data?.locations?.[0]?.tabs || [];
-    const streams = {};
-    for (const tab of tabs) {
-      for (const item of tab.items || []) {
-        const g = item.accountingStream?.reportingGroup || "NONE";
-        const n = item.accountingStream?.name || "NONE";
-        const key = `${g} | ${n}`;
-        if (!streams[key]) streams[key] = { reportingGroup: g, name: n, count: 0, subtotal_cents: 0 };
-        streams[key].count++;
-        streams[key].subtotal_cents += item.subtotal || 0;
-      }
-    }
-    res.json({ total_tabs: tabs.length, streams: Object.values(streams).sort((a,b) => b.subtotal_cents - a.subtotal_cents) });
-  } catch (err) {
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
+
 // GoTab only
 app.get("/api/gotab", async (req, res) => {
   try {
@@ -289,7 +263,7 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.5" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.4" }));
 
 // Serve RIC app
 app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
