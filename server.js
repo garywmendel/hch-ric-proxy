@@ -280,6 +280,9 @@ app.post("/api/claude", async (req, res) => {
 app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.0" }));
 
 // Serve RIC app
+app.get("/", (_req, res) => res.sendFile("index.html", { root: "." }));
+
+// Serve RIC app
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
