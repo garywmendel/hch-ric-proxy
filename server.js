@@ -18,7 +18,12 @@ const SHIFTS_COMPANY_GUID = process.env.SHIFTS_COMPANY_GUID; // 7Shifts Company 
 const SHIFTS_COMPANY_ID   = process.env.SHIFTS_COMPANY_ID;  // 7Shifts numeric Company ID
 const SHIFTS_LOCATION_ID  = process.env.SHIFTS_LOCATION_ID; // 7Shifts numeric Location ID
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET","POST","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"],
+}));
+app.options("*", cors());
 app.use(express.json());
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
