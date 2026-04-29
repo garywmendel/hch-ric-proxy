@@ -44,9 +44,10 @@ function goTabQuery(locationUuid, fiscalDay) {
         locations: locationsList(condition: { locationUuid: $locationUuid }) {
           name locationUuid
           tabs: tabsList(filter: { created: { greaterThan: $tabCreationDate } ordersPlaced: { greaterThan: 0 } }) {
-            name tabMode tax total subtotal tippedSubtotal balanceDue autogratDue href
+            name tabMode tax total subtotal tippedSubtotal balanceDue autogratDue href tipTotal
             items: itemsList(filter: { ordered: { equalTo: true } }) {
               name subtotal subtotalInitial quantity quantityInitial comped voided fee discount
+              accountingStream { name reportingGroup }
               adjustments: adjustments { adjustmentReason adjustmentType quantity unitPrice deltaTax deltaAutograt deltaAutogratTax }
             }
           }
@@ -60,13 +61,16 @@ function goTabQuery(locationUuid, fiscalDay) {
 function normalizeGoTab(tabs) {
   let net_sales = 0, tax_total = 0, bar_sales = 0, voids = 0, comps = 0, tip_total = 0, tab_count = 0;
   for (const tab of tabs) {
-    net_sales += tab.subtotal        || 0;
-    tax_total += tab.tax             || 0;
-    tip_total += tab.tippedSubtotal  || 0;
+    net_sales += tab.subtotal   || 0;
+    tax_total += tab.tax        || 0;
+    tip_total += tab.tipTotal   || 0;
     tab_count += 1;
     for (const item of tab.items || []) {
       if (item.comped) comps += item.subtotalInitial || 0;
       if (item.voided) voids += item.subtotalInitial || 0;
+      const group = item.accountingStream?.reportingGroup?.toLowerCase() || "";
+      if (group.includes("bar") || group.includes("bev") || group.includes("drink") || group.includes("liquor") || group.includes("wine") || group.includes("beer"))
+        bar_sales += item.subtotal || 0;
     }
   }
   // GoTab returns cents
