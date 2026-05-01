@@ -60,9 +60,13 @@ function goTabQuery(locationUuid, fiscalDay) {
 // ── GoTab normalize ───────────────────────────────────────────────────────────
 function normalizeGoTab(tabs) {
   let net_sales = 0, tax_total = 0, bar_sales = 0, voids = 0, comps = 0, tip_total = 0, tab_count = 0;
-  let deferred_revenue = 0;
+  let deferred_revenue = 0, catering_sales = 0;
 
-  const BAR_STREAMS    = ["Sales, Liquor:", "Sales, Beer:", "Sales, Non-Alcoholic Beverage:", "Sales, Wine:"];
+  const BAR_STREAMS = [
+    "Sales, Liquor:", "Sales, Beer:", "Sales, Non-Alcoholic Beverage:", "Sales, Wine:",
+    "Sales, Banquet Liquor:", "Sales, Banquet Beer:", "Sales, Banquet Wine:", "Sales, Banquet N/A Beverage:",
+  ];
+  const CATERING_STREAMS = ["Sales, Catering Food:", "Sales, Banquet Food:", "Sales, Banquet Admin Fee:", "Sales, Transport Fee:"];
   const EXCLUDE_GROUPS = ["DEFERRED_REVENUE", "PROCESSORS", "EXPENSE"];
 
   for (const tab of tabs) {
@@ -100,6 +104,8 @@ function normalizeGoTab(tabs) {
 
       if (BAR_STREAMS.some(b => n.startsWith(b))) {
         bar_sales += amt;
+      } else if (CATERING_STREAMS.some(b => n.startsWith(b))) {
+        catering_sales += amt;
       }
     }
   }
@@ -108,6 +114,7 @@ function normalizeGoTab(tabs) {
     net_sales:        +(net_sales        / 100).toFixed(2),
     tab_count,
     bar_sales:        +(bar_sales        / 100).toFixed(2),
+    catering_sales:   +(catering_sales   / 100).toFixed(2),
     voids:            +(voids            / 100).toFixed(2),
     comps:            +(comps            / 100).toFixed(2),
     tax_total:        +(tax_total        / 100).toFixed(2),
@@ -277,7 +284,7 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.6" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.7" }));", version: "2.6" }));
 
 // Serve RIC app
 app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
