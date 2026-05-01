@@ -1,4 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v2.6
+// Hill Country Hospitality — RIC Proxy Server v2.7
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -22,7 +22,10 @@ app.use(express.json());
 
 // ── Time helpers (Eastern) ────────────────────────────────────────────────────
 const toET  = (d = new Date()) => new Date(d.toLocaleString("en-US", { timeZone: "America/New_York" }));
-const today = () => { const e = toET(); return `${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,"0")}-${String(e.getDate()).padStart(2,"0")}`; };
+const today = () => {
+  const e = toET();
+  return `${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,"0")}-${String(e.getDate()).padStart(2,"0")}`;
+};
 const nowET = () => toET().toISOString().replace("T"," ").slice(0,19) + " ET";
 
 // ── GoTab auth ────────────────────────────────────────────────────────────────
@@ -59,21 +62,32 @@ function goTabQuery(locationUuid, fiscalDay) {
 
 // ── GoTab normalize ───────────────────────────────────────────────────────────
 function normalizeGoTab(tabs) {
-  let net_sales = 0, tax_total = 0, bar_sales = 0, voids = 0, comps = 0, tip_total = 0, tab_count = 0;
-  let deferred_revenue = 0, catering_sales = 0;
+  let net_sales = 0, tax_total = 0, bar_sales = 0, catering_sales = 0;
+  let voids = 0, comps = 0, tip_total = 0, tab_count = 0, deferred_revenue = 0;
 
   const BAR_STREAMS = [
-    "Sales, Liquor:", "Sales, Beer:", "Sales, Non-Alcoholic Beverage:", "Sales, Wine:",
-    "Sales, Banquet Liquor:", "Sales, Banquet Beer:", "Sales, Banquet Wine:", "Sales, Banquet N/A Beverage:",
+    "Sales, Liquor:",
+    "Sales, Beer:",
+    "Sales, Non-Alcoholic Beverage:",
+    "Sales, Wine:",
+    "Sales, Banquet Liquor:",
+    "Sales, Banquet Beer:",
+    "Sales, Banquet Wine:",
+    "Sales, Banquet N/A Beverage:",
   ];
-  const CATERING_STREAMS = ["Sales, Catering Food:", "Sales, Banquet Food:", "Sales, Banquet Admin Fee:", "Sales, Transport Fee:"];
+  const CATERING_STREAMS = [
+    "Sales, Catering Food:",
+    "Sales, Banquet Food:",
+    "Sales, Banquet Admin Fee:",
+    "Sales, Transport Fee:",
+  ];
   const EXCLUDE_GROUPS = ["DEFERRED_REVENUE", "PROCESSORS", "EXPENSE"];
 
   for (const tab of tabs) {
-    const tabTax   = tab.tax          || 0;
-    const tabTotal = tab.total        || 0;
-    const tabSub   = tab.subtotal     || 0;
-    const tabAuto  = tab.autogratDue  || 0;
+    const tabTax   = tab.tax         || 0;
+    const tabTotal = tab.total       || 0;
+    const tabSub   = tab.subtotal    || 0;
+    const tabAuto  = tab.autogratDue || 0;
 
     tax_total += tabTax;
     const tabTip = tabTotal - tabSub - tabTax - tabAuto;
@@ -126,7 +140,11 @@ function normalizeGoTab(tabs) {
 
 // ── 7Shifts ───────────────────────────────────────────────────────────────────
 async function fetch7Shifts(date) {
-  const headers = { "Authorization": `Bearer ${SHIFTS_TOKEN}`, "x-company-guid": SHIFTS_COMPANY_GUID, "Content-Type": "application/json" };
+  const headers = {
+    "Authorization":  `Bearer ${SHIFTS_TOKEN}`,
+    "x-company-guid": SHIFTS_COMPANY_GUID,
+    "Content-Type":   "application/json",
+  };
   const base = `https://api.7shifts.com/v2/company/${SHIFTS_COMPANY_ID}`;
   const [sRes, pRes] = await Promise.all([
     fetch(`${base}/shifts?location_id=${SHIFTS_LOCATION_ID}&start=${date}T00:00:00&end=${date}T23:59:59&limit=200`, { headers }),
@@ -284,9 +302,9 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.7" }));", version: "2.6" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.7" }));
 
 // Serve RIC app
 app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
 
-app.listen(PORT, () => console.log(`RIC proxy v2.6 running on port ${PORT}`));
+app.listen(PORT, () => console.log(`RIC proxy v2.7 running on port ${PORT}`));
