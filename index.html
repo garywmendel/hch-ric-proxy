@@ -353,6 +353,7 @@ async function runSync() {
     }
     done++;
     document.getElementById("s-conn").textContent = done + " / " + SYSTEMS.length;
+    done++;
     document.getElementById("prog").style.width = Math.round((done / SYSTEMS.length) * 60) + "%";
   }
 
@@ -375,13 +376,30 @@ async function generateReport() {
   const liveSources = Object.entries(sourceMap).filter(([,v]) => v==="live").map(([k]) => k);
   const mockSources = Object.entries(sourceMap).filter(([,v]) => v==="mock").map(([k]) => k);
 
+  const now = new Date();
+  const etHour = parseInt(now.toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }));
+  const isOpen = etHour >= 12;
+  const serviceContext = isOpen
+    ? `The restaurant is currently OPEN (opened at 12:00 PM ET).`
+    : `The restaurant has NOT opened yet today (opens at 12:00 PM ET). Any revenue before noon is from catering, private events, banquet billing, or deferred revenue — NOT dine-in service.`;
+
   const prompt = `Location: Hill Country BBQ — New York
 Date: ${new Date().toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"})}
+Current time: ${new Date().toLocaleTimeString("en-US", {timeZone:"America/New_York", hour:"2-digit", minute:"2-digit"})} ET
+Service status: ${serviceContext}
 Live data sources: ${liveSources.join(", ") || "none"}
 Mock/demo data sources: ${mockSources.join(", ") || "none"}
 
 Data:
 ${JSON.stringify(fetchedData, null, 2)}
+
+GoTab data notes:
+- net_sales = all revenue excluding deferred_revenue, PROCESSORS, and EXPENSE entries
+- bar_sales = subset of net_sales from bar/beverage accounting streams
+- catering_sales = subset of net_sales from catering/banquet accounting streams
+- deferred_revenue = event deposits paid in advance, NOT earned revenue today
+- tip_total = not available from GoTab API
+- If before 12:00 PM ET: any net_sales are from catering/banquet/events only — do NOT imply the dining room is open or active
 
 Produce the Daily Intelligence Report:
 
@@ -400,7 +418,7 @@ Produce the Daily Intelligence Report:
 ### GM narrative
 ### Anomaly flags
 
-Be specific with $ and %. Write for a GM at 7am. Note which sections use live vs demo data.`;
+Format rules: Always insert a blank line between every section. Be specific with $ and %. Write for a GM at 7am. Note which sections use live vs demo data.`;
 
   document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Generating report — this takes about 15 seconds...</span></div>`;
 
