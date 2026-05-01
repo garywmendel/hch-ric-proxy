@@ -305,6 +305,9 @@ app.post("/api/claude", async (req, res) => {
 app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.7" }));
 
 // Serve RIC app
-app.get("/", (_req, res) => res.sendFile(join(__dirname, "index.html")));
+app.get("/", (_req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.sendFile(join(__dirname, "index.html"));
+});
 
 app.listen(PORT, () => console.log(`RIC proxy v2.7 running on port ${PORT}`));
