@@ -502,7 +502,7 @@ async function runSync() {
   btn.textContent = "Generating report...";
   showTab("report", document.querySelectorAll(".tab")[1]);
   let elapsed = 0;
-  const timer = setInterval(() => {
+  timer = setInterval(() => {
     elapsed++;
     const el = document.getElementById("report-timer");
     if (el) el.textContent = `${elapsed}s`;
@@ -522,6 +522,9 @@ async function runSync() {
 async function generateReport() {
   const liveSources = Object.entries(sourceMap).filter(([,v]) => v==="live").map(([k]) => k);
   const mockSources = Object.entries(sourceMap).filter(([,v]) => v==="mock").map(([k]) => k);
+
+  let elapsed = 0;
+  let timer = null;
 
   const now = new Date();
   const etHour = parseInt(now.toLocaleString("en-US", {timeZone:"America/New_York", hour:"numeric", hour12:false}));
