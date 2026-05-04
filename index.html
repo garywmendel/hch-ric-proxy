@@ -83,10 +83,31 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 .sdot.done{background:var(--green)}
 .sdot.err{background:#E24B4A}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* Report rendering */
 .report-wrap{background:var(--bg0);border:0.5px solid var(--b2);border-radius:var(--r-lg);padding:1rem 1.1rem}
-.report-text{font-size:13px;line-height:1.8;color:var(--t0);white-space:pre-wrap;word-break:break-word}
+.report-body{font-size:13px;line-height:1.8;color:var(--t0)}
+.report-body p{margin-bottom:0.75em}
+.report-body ul{margin:0.5em 0 0.75em 1.2em}
+.report-body li{margin-bottom:0.2em}
+.report-body h2{font-size:15px;font-weight:600;color:#185FA5;margin:1em 0 0.5em}
+.report-body h3{font-size:13px;font-weight:600;margin:1.2em 0 0.4em;padding-bottom:3px;border-bottom:1.5px solid currentColor}
+.report-body h3.s-revenue{color:#1D9E75}
+.report-body h3.s-labor{color:#1a1a18}
+.report-body h3.s-food{color:#D85A30}
+.report-body h3.s-covers{color:#534AB7}
+.report-body h3.s-delivery{color:#993C1D}
+.report-body h3.s-events{color:#854F0B}
+.report-body h3.s-digital{color:#185FA5}
+.report-body h3.s-reputation{color:#A32D2D}
+.report-body h3.s-ops{color:#3B6D11}
+.report-body h3.s-gm{color:#1D9E75}
+.report-body h3.s-anomaly{color:#cc0000}
+.report-body strong{font-weight:600}
 .report-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--b2);flex-wrap:wrap}
 .disclaimer{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
+
+/* Chips */
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .chip{padding:6px 11px;border-radius:100px;font-size:12px;border:0.5px solid var(--b1);color:var(--t1);background:none;cursor:pointer;font-family:var(--font);min-height:34px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
 .chip:active{background:var(--bg1);color:var(--t0)}
@@ -95,12 +116,28 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 .inp{width:100%;padding:10px 11px;font-size:14px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;appearance:none;min-height:44px}
 .inp:focus{outline:none;border-color:var(--b0)}
 textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:400px){.row2{grid-template-columns:1fr}}
-.teams-card{background:var(--blue-bg);border:0.5px solid var(--b2);border-radius:var(--r-lg);padding:1rem 1.1rem;margin-top:12px}
-.teams-title{font-size:13px;font-weight:500;color:var(--blue-t);margin-bottom:6px}
-.teams-body{font-size:12px;color:var(--blue-t);line-height:1.7}
-.teams-code{background:var(--bg0);border:0.5px solid var(--b1);border-radius:var(--r-md);padding:10px;font-family:var(--mono);font-size:11px;color:var(--t0);margin-top:8px;white-space:pre-wrap;word-break:break-all;line-height:1.6;overflow-x:auto}
+
+/* P&L tab */
+.pl-section{margin-bottom:20px}
+.pl-title{font-size:13px;font-weight:600;color:var(--t0);margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid var(--b2)}
+.pl-table{width:100%;border-collapse:collapse;font-size:11px}
+.pl-table th{text-align:left;padding:5px 8px;background:var(--bg1);color:var(--t1);font-weight:500;border-bottom:0.5px solid var(--b2)}
+.pl-table td{padding:5px 8px;border-bottom:0.5px solid var(--b2);color:var(--t0);vertical-align:top}
+.pl-table tr:last-child td{border-bottom:none}
+.pl-table .total-row td{font-weight:600;background:var(--bg1)}
+.badge{display:inline-block;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:500}
+.badge.live{background:var(--green-bg);color:var(--green-t)}
+.badge.pending{background:var(--amber-bg);color:var(--amber-t)}
+.badge.partial{background:var(--blue-bg);color:var(--blue-t)}
+.pl-metric{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg1);border-radius:var(--r-md);margin-bottom:6px;font-size:12px}
+.pl-metric-label{color:var(--t1)}
+.pl-metric-val{font-weight:500;color:var(--t0)}
+.pl-metric-val.warn{color:var(--amber)}
+.pl-metric-val.crit{color:#E24B4A}
+.pl-metric-val.ok{color:var(--green)}
+.pl-obs{background:var(--amber-bg);border-radius:var(--r-md);padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--amber-t);line-height:1.6}
+.pl-obs strong{font-weight:600}
+
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
@@ -135,11 +172,15 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
   <div class="tabs">
     <button class="tab active" onclick="showTab('live',this)">Live systems</button>
     <button class="tab" onclick="showTab('report',this)">Daily report</button>
+    <button class="tab" onclick="showTab('pl',this)">P&amp;L</button>
     <button class="tab" onclick="showTab('qa',this)">Ask RIC</button>
+    <!-- Teams tab commented out for future use
     <button class="tab" onclick="showTab('teams',this)">Teams</button>
+    -->
   </div>
 </div>
 
+<!-- Live Systems -->
 <div id="tab-live" class="panel active">
   <h2 class="sr-only">Live system connections</h2>
   <div class="sys-grid" id="sys-grid"></div>
@@ -153,6 +194,7 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
   <button class="btn-primary" id="sync-btn" onclick="runSync()">Fetch data + generate daily report</button>
 </div>
 
+<!-- Daily Report -->
 <div id="tab-report" class="panel">
   <h2 class="sr-only">Daily intelligence report</h2>
   <div id="report-out">
@@ -160,6 +202,115 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
   </div>
 </div>
 
+<!-- P&L -->
+<div id="tab-pl" class="panel">
+  <h2 class="sr-only">P&L data source mapping</h2>
+
+  <div class="pl-section">
+    <div class="pl-title">Key Metrics — Week of Apr 20–26, 2026</div>
+    <div class="pl-metric"><span class="pl-metric-label">Total Net Sales</span><span class="pl-metric-val">$76,517 <span class="badge live">GoTab Live</span></span></div>
+    <div class="pl-metric"><span class="pl-metric-label">vs Same Week 2025</span><span class="pl-metric-val crit">-$21,121 (-21.6%)</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Total COGS</span><span class="pl-metric-val">$23,692 <span class="badge pending">MarginEdge Pending</span></span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Gross Profit</span><span class="pl-metric-val">$52,825</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Overall Food Cost %</span><span class="pl-metric-val ok">30.96%</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Total Labor</span><span class="pl-metric-val">$32,465 <span class="badge pending">7Shifts + QB Pending</span></span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Total Labor %</span><span class="pl-metric-val warn">42.43%</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Prime Cost %</span><span class="pl-metric-val crit">~73%</span></div>
+  </div>
+
+  <div class="pl-obs">⚠️ <strong>Wine cost at 47.51%</strong> — target is 25–30%. Flagged for daily monitoring once MarginEdge is live.</div>
+  <div class="pl-obs">⚠️ <strong>N/A Beverage cost at 59.14%</strong> — extremely high, likely a pricing or portioning issue.</div>
+  <div class="pl-obs">⚠️ <strong>Revenue down 21.6% YoY.</strong> Same week 2025 was $97,639. This trend requires weekly tracking.</div>
+
+  <div class="pl-section">
+    <div class="pl-title">Income — Data Source Mapping</div>
+    <table class="pl-table">
+      <thead><tr><th>Account</th><th>Description</th><th>Week Total</th><th>RIC Source</th></tr></thead>
+      <tbody>
+        <tr><td>4105</td><td>Sales, Food</td><td>$49,922</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4110</td><td>Sales, Liquor</td><td>$7,833</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4115</td><td>Sales, Beer</td><td>$5,573</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4120</td><td>Sales, Wine</td><td>$880</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4125</td><td>Sales, Non-Alcoholic Beverage</td><td>$1,406</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4130</td><td>Sales, Retail</td><td>$20</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4140</td><td>Sales, Miscellaneous</td><td>$14</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4145</td><td>Sales, Banquet Admin Fee</td><td>$671</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4150</td><td>Sales, Ticket</td><td>$1,520</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4155</td><td>Sales, Catering Food</td><td>$4,930</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4156</td><td>Sales, Catering N/A Beverage</td><td>$48</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4193</td><td>Sales, Banquet N/A Beverage</td><td>$450</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4194</td><td>Sales, Banquet Food</td><td>$3,600</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4200</td><td>Sales, Transport Fee</td><td>$150</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>4500</td><td>Discounts and Comps</td><td>-$498</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr class="total-row"><td colspan="2">Total Sales</td><td>$76,517</td><td><span class="badge live">GoTab Live</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pl-section">
+    <div class="pl-title">Cost of Goods Sold — Data Source Mapping</div>
+    <table class="pl-table">
+      <thead><tr><th>Account</th><th>Description</th><th>Week Total</th><th>RIC Source</th></tr></thead>
+      <tbody>
+        <tr><td>5101</td><td>COGS, Meat &amp; Poultry</td><td>$12,507</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr><td>5103</td><td>COGS, Produce</td><td>$2,041</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr><td>5104</td><td>COGS, Grocery</td><td>$1,724</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr><td>5105</td><td>COGS, Bakery</td><td>$140</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr><td>5106</td><td>COGS, Dairy</td><td>$1,742</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr><td>5110</td><td>COGS, Liquor</td><td>$887</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr><td>5115</td><td>COGS, Beer</td><td>$1,566</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr><td>5120</td><td>COGS, Wine</td><td>$418</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr><td>5125</td><td>COGS, Non-Alcoholic</td><td>$1,126</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr><td>5135</td><td>COGS, Packaging</td><td>$1,540</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr class="total-row"><td colspan="2">Total COGS</td><td>$23,692</td><td><span class="badge pending">MarginEdge Pending</span></td></tr>
+        <tr class="total-row"><td colspan="2">Gross Profit</td><td>$52,825</td><td><span class="badge partial">Partial</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pl-section">
+    <div class="pl-title">Labor — Data Source Mapping</div>
+    <table class="pl-table">
+      <thead><tr><th>Account</th><th>Description</th><th>Week Total</th><th>RIC Source</th></tr></thead>
+      <tbody>
+        <tr><td>5205-1</td><td>Labor, Bartender</td><td>$1,584</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5205-2</td><td>Labor, Bar Back</td><td>$309</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5205-3</td><td>Labor, Busser</td><td>$1,221</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5205-7</td><td>Labor, Host</td><td>$1,964</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5205-8</td><td>Labor, Server</td><td>$2,796</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr class="total-row"><td colspan="2">Total FOH Labor (10.29%)</td><td>$7,874</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5210-1</td><td>Labor, Prep</td><td>$1,962</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5210-2</td><td>Labor, Dishwasher/Porter</td><td>$4,207</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5210-3</td><td>Labor, Line Cook</td><td>$5,776</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5210-5</td><td>Labor, Chef</td><td>$3,365</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5210-6</td><td>Labor, Sous Chef</td><td>$1,346</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr class="total-row"><td colspan="2">Total BOH Labor (17.37%)</td><td>$13,291</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5220-2</td><td>Labor, Management</td><td>$8,350</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr class="total-row"><td colspan="2">Total Direct Labor</td><td>$29,742</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
+        <tr><td>5315-1</td><td>Payroll Taxes, FICA</td><td>$3,032</td><td><span class="badge pending">QuickBooks Pending</span></td></tr>
+        <tr><td>5315-2</td><td>Payroll Taxes, SUI</td><td>$663</td><td><span class="badge pending">QuickBooks Pending</span></td></tr>
+        <tr><td>5320</td><td>Health/Dental Insurance</td><td>-$1,004</td><td><span class="badge pending">QuickBooks Pending</span></td></tr>
+        <tr><td>5325</td><td>Workers Comp Insurance</td><td>$3,044</td><td><span class="badge pending">QuickBooks Pending</span></td></tr>
+        <tr class="total-row"><td colspan="2">Total Labor (42.43%)</td><td>$32,465</td><td><span class="badge pending">7Shifts + QB Pending</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pl-section">
+    <div class="pl-title">Cost % Targets vs Actuals</div>
+    <div class="pl-metric"><span class="pl-metric-label">Food Cost % (target &lt;32%)</span><span class="pl-metric-val ok">30.96% ✓</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Liquor Cost % (target &lt;18%)</span><span class="pl-metric-val ok">11.32% ✓</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Beer Cost % (target &lt;30%)</span><span class="pl-metric-val ok">28.10% ✓</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Wine Cost % (target &lt;30%)</span><span class="pl-metric-val crit">47.51% ✗</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">N/A Bev Cost % (target &lt;40%)</span><span class="pl-metric-val crit">59.14% ✗</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">FOH Labor % (target &lt;12%)</span><span class="pl-metric-val ok">10.29% ✓</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">BOH Labor % (target &lt;18%)</span><span class="pl-metric-val ok">17.37% ✓</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Total Labor % (target &lt;35%)</span><span class="pl-metric-val crit">42.43% ✗</span></div>
+    <div class="pl-metric"><span class="pl-metric-label">Prime Cost % (target &lt;65%)</span><span class="pl-metric-val crit">~73% ✗</span></div>
+  </div>
+</div>
+
+<!-- Ask RIC -->
 <div id="tab-qa" class="panel">
   <h2 class="sr-only">Ask the RIC a question</h2>
   <div class="chips">
@@ -177,78 +328,12 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
   <div id="qa-out"></div>
 </div>
 
+<!-- Teams tab commented out for future use
 <div id="tab-teams" class="panel">
   <h2 class="sr-only">Microsoft Teams integration</h2>
-  <div class="field-group">
-    <label class="field-label">Teams delivery mode</label>
-    <select class="inp" id="teams-mode">
-      <option>Incoming webhook (daily report card)</option>
-      <option>Teams bot (interactive Q&A)</option>
-      <option>Teams tab (embedded app)</option>
-    </select>
-  </div>
-  <div class="field-group">
-    <label class="field-label">Webhook URL</label>
-    <input class="inp" type="url" id="teams-url" placeholder="https://outlook.office.com/webhook/..." autocomplete="off" autocorrect="off" autocapitalize="none"/>
-  </div>
-  <div class="field-group">
-    <label class="field-label">Channel &amp; schedule</label>
-    <div class="row2">
-      <input class="inp" type="text" id="teams-chan" placeholder="#daily-intel-nyc" autocorrect="off" autocapitalize="none"/>
-      <select class="inp" id="teams-time">
-        <option>7:00 AM daily</option>
-        <option>6:30 AM daily</option>
-        <option>8:00 AM daily</option>
-        <option>On demand only</option>
-      </select>
-    </div>
-  </div>
-  <button class="btn-primary" onclick="sendTeamsPreview()">Send test card to Teams</button>
-  <div id="teams-out"></div>
-  <div class="teams-card" style="margin-top:16px">
-    <div class="teams-title">Teams tab embed</div>
-    <div class="teams-body">Add this app as a tab in any Teams channel via the "Website" tab configurator. No installation required — runs in the Teams browser surface, fully mobile-compatible.</div>
-    <div class="teams-code">Tab URL: https://hch-ric-proxy-production.up.railway.app
-Manifest ID: com.hch.ric.v1
-Scopes: team, groupchat, personal
-SSO: Microsoft Entra ID (M365 tenant)</div>
-  </div>
-  <div class="teams-card" style="margin-top:12px">
-    <div class="teams-title">Adaptive card payload (daily report)</div>
-    <div class="teams-body">The daily report is delivered as a Teams Adaptive Card with anomaly badges and a link to the full report.</div>
-    <div class="teams-code">{
-  "type": "message",
-  "attachments": [{
-    "contentType":
-      "application/vnd.microsoft.card.adaptive",
-    "content": {
-      "type": "AdaptiveCard",
-      "version": "1.5",
-      "body": [
-        { "type": "TextBlock",
-          "text": "Hill Country BBQ — Daily Intel",
-          "weight": "Bolder", "size": "Medium" },
-        { "type": "TextBlock",
-          "text": "April 29, 2026 | 7:00 AM",
-          "isSubtle": true, "spacing": "None" },
-        { "type": "FactSet", "facts": [
-          { "title": "Net revenue", "value": "$21,340" },
-          { "title": "Labor %", "value": "26.8% ✓" },
-          { "title": "Food cost %", "value": "33.2% ✓" },
-          { "title": "Covers", "value": "312" },
-          { "title": "Flags", "value": "2 warnings" }
-        ]},
-        { "type": "ActionSet", "actions": [
-          { "type": "Action.OpenUrl",
-            "title": "View full report",
-            "url": "https://hch-ric-proxy-production.up.railway.app" }
-        ]}
-      ]
-    }
-  }]
-}</div>
-  </div>
+  ... Teams content ...
 </div>
+-->
 
 </div>
 
@@ -268,7 +353,7 @@ const SYSTEMS = [
 ];
 
 const MOCK = {
-  gotab:       {net_sales:18420,tab_count:312,voids:340,comps:210,bar_sales:4820,tax_total:1420,tip_total:3100},
+  gotab:       {net_sales:18420,tab_count:312,voids:340,comps:210,bar_sales:4820,tax_total:1420,tip_total:3100,catering_sales:2100,deferred_revenue:4200},
   quickbooks:  {total_revenue:21340,cogs:6830,gross_profit:14510,operating_expenses:9210,net_income:5300},
   "7shifts":   {scheduled_hours:184,actual_hours:191,labor_cost:5730,labor_pct:26.8,overtime_hours:14,no_shows:1},
   marginedge:  {food_cost:6830,food_cost_pct:33.2,top_variance:"Beef Brisket",variance_pct:4.1,pending_invoices:3},
@@ -282,6 +367,66 @@ const MOCK = {
 };
 
 const SYS_PROMPT = `You are the Restaurant Intelligence Controller (RIC) for Hill Country BBQ, New York. Analyze live operational data from 11 integrated systems and produce clear, actionable daily intelligence reports for GM and store leadership. Be direct, specific, and write for someone reading at 7am before service. Use dollar amounts and percentages. Flag anomalies clearly. When data is marked as mock/demo, note it briefly but still provide useful analysis.`;
+
+// Section color mapping for report rendering
+const SECTION_COLORS = {
+  "revenue": "s-revenue",
+  "labor": "s-labor",
+  "food cost": "s-food",
+  "covers": "s-covers",
+  "delivery": "s-delivery",
+  "events": "s-events",
+  "digital": "s-digital",
+  "reputation": "s-reputation",
+  "ops": "s-ops",
+  "gm narrative": "s-gm",
+  "anomaly": "s-anomaly",
+};
+
+function getSectionClass(heading) {
+  const h = heading.toLowerCase();
+  for (const [key, cls] of Object.entries(SECTION_COLORS)) {
+    if (h.includes(key)) return cls;
+  }
+  return "";
+}
+
+function renderReport(markdown) {
+  const lines = markdown.split("\n");
+  let html = "";
+  let inList = false;
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) {
+      if (inList) { html += "</ul>"; inList = false; }
+      html += "<br>";
+      continue;
+    }
+    if (t.startsWith("## ")) {
+      if (inList) { html += "</ul>"; inList = false; }
+      html += `<h2>${esc(t.slice(3))}</h2>`;
+    } else if (t.startsWith("### ")) {
+      if (inList) { html += "</ul>"; inList = false; }
+      const text = t.slice(4);
+      const cls = getSectionClass(text);
+      html += `<h3 class="${cls}">${esc(text)}</h3>`;
+    } else if (t.startsWith("* ") || t.startsWith("- ")) {
+      if (!inList) { html += "<ul>"; inList = true; }
+      html += `<li>${renderInline(t.slice(2))}</li>`;
+    } else {
+      if (inList) { html += "</ul>"; inList = false; }
+      html += `<p>${renderInline(t)}</p>`;
+    }
+  }
+  if (inList) html += "</ul>";
+  return html;
+}
+
+function renderInline(text) {
+  return esc(text)
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
 
 let sysSt = {};
 let lastReport = "";
@@ -338,22 +483,21 @@ async function runSync() {
   for (const s of SYSTEMS) {
     if (sysSt[s.id] !== "sync") updDot(s.id, "sync");
     await sleep(120 + Math.random() * 180);
-    if (ricLive[s.id]) {
+
+    const isLive = ricLive[s.id] && ricLive.sources?.[s.id] === "live";
+    if (isLive) {
       fetchedData[s.id] = ricLive[s.id];
       sourceMap[s.id]   = "live";
       updDot(s.id, "connected");
-    } else if (ricLive.sources?.[s.id]?.startsWith("error")) {
-      fetchedData[s.id] = MOCK[s.id];
-      sourceMap[s.id]   = "mock";
-      updDot(s.id, "err");
     } else {
       fetchedData[s.id] = MOCK[s.id];
       sourceMap[s.id]   = "mock";
-      updDot(s.id, "connected");
+      updDot(s.id, "err");
     }
+
     done++;
-    document.getElementById("s-conn").textContent = done + " / " + SYSTEMS.length;
-    done++;
+    const liveCount = Object.values(sourceMap).filter(v => v === "live").length;
+    document.getElementById("s-conn").textContent = liveCount + " / " + SYSTEMS.length;
     document.getElementById("prog").style.width = Math.round((done / SYSTEMS.length) * 60) + "%";
   }
 
@@ -361,7 +505,7 @@ async function runSync() {
   document.getElementById("s-status").textContent = "Generating";
   btn.textContent = "Generating report...";
   showTab("report", document.querySelectorAll(".tab")[1]);
-  document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Synthesizing data from all 11 systems...</span></div>`;
+  document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Generating report — this takes about 15 seconds...</span></div>`;
 
   await generateReport();
 
@@ -377,15 +521,15 @@ async function generateReport() {
   const mockSources = Object.entries(sourceMap).filter(([,v]) => v==="mock").map(([k]) => k);
 
   const now = new Date();
-  const etHour = parseInt(now.toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }));
+  const etHour = parseInt(now.toLocaleString("en-US", {timeZone:"America/New_York", hour:"numeric", hour12:false}));
   const isOpen = etHour >= 12;
   const serviceContext = isOpen
     ? `The restaurant is currently OPEN (opened at 12:00 PM ET).`
     : `The restaurant has NOT opened yet today (opens at 12:00 PM ET). Any revenue before noon is from catering, private events, banquet billing, or deferred revenue — NOT dine-in service.`;
 
   const prompt = `Location: Hill Country BBQ — New York
-Date: ${new Date().toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"})}
-Current time: ${new Date().toLocaleTimeString("en-US", {timeZone:"America/New_York", hour:"2-digit", minute:"2-digit"})} ET
+Date: ${now.toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"})}
+Current time: ${now.toLocaleTimeString("en-US", {timeZone:"America/New_York", hour:"2-digit", minute:"2-digit"})} ET
 Service status: ${serviceContext}
 Live data sources: ${liveSources.join(", ") || "none"}
 Mock/demo data sources: ${mockSources.join(", ") || "none"}
@@ -404,7 +548,7 @@ GoTab data notes:
 Produce the Daily Intelligence Report:
 
 ## Daily Intelligence Report
-**Hill Country BBQ — New York | ${new Date().toLocaleDateString()}**
+**Hill Country BBQ — New York | ${now.toLocaleDateString()}**
 
 ### Revenue snapshot
 ### Labor
@@ -439,13 +583,12 @@ Format rules: Always insert a blank line between every section. Be specific with
     const liveCount  = liveSources.length;
     const totalCount = SYSTEMS.length;
     document.getElementById("report-out").innerHTML = `
-      <div class="status"><div class="sdot done"></div><span>Report complete — ${new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} &nbsp;·&nbsp; ${liveCount}/${totalCount} live sources</span></div>
+      <div class="status"><div class="sdot done"></div><span>Report complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} &nbsp;·&nbsp; ${liveCount}/${totalCount} live sources</span></div>
       <div class="report-wrap">
-        <div class="report-text">${esc(full)}</div>
+        <div class="report-body">${renderReport(full)}</div>
         <div class="report-actions">
           <button class="btn-sec" onclick="copyReport()">Copy</button>
-          <button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[2]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button>
-          <button class="btn-sec" onclick="showTab('teams',document.querySelectorAll('.tab')[3])">Send to Teams</button>
+          <button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[3]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button>
         </div>
         <div class="disclaimer">AI-generated analysis. ${liveCount} of ${totalCount} sources are live. Verify all figures against source systems before operational decisions.</div>
       </div>`;
@@ -491,19 +634,11 @@ async function askQ() {
     });
     const data = await res.json();
     const txt  = data.content?.filter(b => b.type==="text").map(b => b.text).join("") || "No response.";
-    out.innerHTML = `<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-text">${esc(txt)}</div></div>`;
+    out.innerHTML = `<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-body">${renderReport(txt)}</div></div>`;
   } catch(e) {
     out.innerHTML = `<div class="status"><div class="sdot err"></div><span>Error: ${e.message}</span></div>`;
   }
   btn.disabled = false; btn.textContent = "Ask RIC";
-}
-
-function sendTeamsPreview() {
-  const url = document.getElementById("teams-url").value.trim();
-  const out = document.getElementById("teams-out");
-  out.innerHTML = url
-    ? `<div class="status" style="margin-top:10px"><div class="sdot done"></div><span>Payload ready. POST from your backend scheduler — browser CORS blocks direct webhook calls.</span></div>`
-    : `<div class="status" style="margin-top:10px"><div class="sdot err"></div><span>Enter a webhook URL first.</span></div>`;
 }
 
 function setQ(q)      { document.getElementById("qa-inp").value = q; document.getElementById("qa-inp").focus(); }
