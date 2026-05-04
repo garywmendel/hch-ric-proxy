@@ -471,6 +471,7 @@ async function runSync() {
     if (!res.ok) throw new Error(`Proxy ${res.status}`);
     ricLive = await res.json();
   } catch(e) {
+    clearInterval(timer);
     console.warn("Proxy unreachable, using full mock:", e.message);
   }
 
@@ -500,7 +501,14 @@ async function runSync() {
   document.getElementById("s-status").textContent = "Generating";
   btn.textContent = "Generating report...";
   showTab("report", document.querySelectorAll(".tab")[1]);
-  document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Generating report — this takes about 15 seconds...</span></div>`;
+  let elapsed = 0;
+  const timer = setInterval(() => {
+    elapsed++;
+    const el = document.getElementById("report-timer");
+    if (el) el.textContent = `${elapsed}s`;
+  }, 1000);
+
+  document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Generating report — <span id="report-timer">0s</span></span></div>`;
 
   await generateReport();
 
@@ -575,6 +583,7 @@ Format rules: Always insert a blank line between every section. Be specific with
     const data = await res.json();
     const full = data.content?.filter(b => b.type==="text").map(b => b.text).join("") || "No response.";
     lastReport = full;
+    clearInterval(timer);
     const liveCount  = liveSources.length;
     const totalCount = SYSTEMS.length;
     document.getElementById("report-out").innerHTML = `
