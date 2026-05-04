@@ -1,4 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v2.7
+// Hill Country Hospitality — RIC Proxy Server v2.8
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -140,22 +140,32 @@ function normalizeGoTab(tabs) {
 
 // ── 7Shifts ───────────────────────────────────────────────────────────────────
 async function fetch7Shifts(date) {
+  // Only send x-company-guid if the var is actually set
   const headers = {
-    "Authorization":  `Bearer ${SHIFTS_TOKEN}`,
-    "x-company-guid": SHIFTS_COMPANY_GUID,
-    "Content-Type":   "application/json",
+    "Authorization": `Bearer ${SHIFTS_TOKEN}`,
+    "Content-Type":  "application/json",
+    ...(SHIFTS_COMPANY_GUID ? { "x-company-guid": SHIFTS_COMPANY_GUID } : {}),
   };
+
   const base = `https://api.7shifts.com/v2/company/${SHIFTS_COMPANY_ID}`;
+
   const [sRes, pRes] = await Promise.all([
     fetch(`${base}/shifts?location_id=${SHIFTS_LOCATION_ID}&start=${date}T00:00:00&end=${date}T23:59:59&limit=200`, { headers }),
     fetch(`${base}/time_punches?location_id=${SHIFTS_LOCATION_ID}&clocked_in_gte=${date}T00:00:00&clocked_in_lte=${date}T23:59:59&limit=200`, { headers }),
   ]);
+
   if (!sRes.ok) throw new Error(`7Shifts shifts failed: ${sRes.status}`);
   if (!pRes.ok) throw new Error(`7Shifts punches failed: ${pRes.status}`);
+
   const shifts  = (await sRes.json()).data || [];
   const punches = (await pRes.json()).data || [];
+
   let scheduled_hours = 0, actual_hours = 0, labor_cost = 0, overtime_hours = 0, no_shows = 0;
-  for (const s of shifts) scheduled_hours += (new Date(s.end) - new Date(s.start)) / 3600000;
+
+  for (const s of shifts) {
+    scheduled_hours += (new Date(s.end) - new Date(s.start)) / 3600000;
+  }
+
   for (const p of punches) {
     if (p.clocked_in && p.clocked_out) {
       const hrs = (new Date(p.clocked_out) - new Date(p.clocked_in)) / 3600000;
@@ -164,8 +174,10 @@ async function fetch7Shifts(date) {
       if (hrs > 8) overtime_hours += hrs - 8;
     }
   }
+
   const punchedIds = new Set(punches.map(p => p.user_id));
   for (const s of shifts) if (s.user_id && !punchedIds.has(s.user_id)) no_shows++;
+
   return {
     scheduled_hours: +scheduled_hours.toFixed(1),
     actual_hours:    +actual_hours.toFixed(1),
@@ -247,6 +259,7 @@ app.get("/api/7shifts", async (req, res) => {
 app.get("/api/ric", async (req, res) => {
   const date = req.query.date || today();
   const result = { date, sources: {} };
+
   try {
     const token  = await getGoTabToken();
     const gqlRes = await fetch("https://gotab.io/api/v2/graph", {
@@ -263,6 +276,7 @@ app.get("/api/ric", async (req, res) => {
     result.gotab = null;
     result.sources.gotab = `error: ${e.message}`;
   }
+
   try {
     const shifts = await fetch7Shifts(date);
     if (result.gotab?.net_sales && shifts.labor_cost)
@@ -274,6 +288,7 @@ app.get("/api/ric", async (req, res) => {
     result["7shifts"] = null;
     result.sources["7shifts"] = `error: ${e.message}`;
   }
+
   res.json({ ok: true, ...result });
 });
 
@@ -302,7 +317,7 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.7" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.8" }));
 
 // Serve RIC app
 app.get("/", (_req, res) => {
@@ -310,4 +325,4 @@ app.get("/", (_req, res) => {
   res.sendFile(join(__dirname, "index.html"));
 });
 
-app.listen(PORT, () => console.log(`RIC proxy v2.7 running on port ${PORT}`));
+app.listen(PORT, () => console.log(`RIC proxy v2.8 running on port ${PORT}`));
