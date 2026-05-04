@@ -83,8 +83,6 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 .sdot.done{background:var(--green)}
 .sdot.err{background:#E24B4A}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-
-/* Report rendering */
 .report-wrap{background:var(--bg0);border:0.5px solid var(--b2);border-radius:var(--r-lg);padding:1rem 1.1rem}
 .report-body{font-size:13px;line-height:1.8;color:var(--t0)}
 .report-body p{margin-bottom:0.75em}
@@ -106,8 +104,6 @@ h3.s-anomaly{color:#cc0000 !important}
 .report-body strong{font-weight:600}
 .report-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--b2);flex-wrap:wrap}
 .disclaimer{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
-
-/* Chips */
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .chip{padding:6px 11px;border-radius:100px;font-size:12px;border:0.5px solid var(--b1);color:var(--t1);background:none;cursor:pointer;font-family:var(--font);min-height:34px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
 .chip:active{background:var(--bg1);color:var(--t0)}
@@ -116,8 +112,6 @@ h3.s-anomaly{color:#cc0000 !important}
 .inp{width:100%;padding:10px 11px;font-size:14px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;appearance:none;min-height:44px}
 .inp:focus{outline:none;border-color:var(--b0)}
 textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
-
-/* P&L tab */
 .pl-section{margin-bottom:20px}
 .pl-title{font-size:13px;font-weight:600;color:var(--t0);margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid var(--b2)}
 .pl-table{width:100%;border-collapse:collapse;font-size:11px}
@@ -137,7 +131,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 .pl-metric-val.ok{color:var(--green)}
 .pl-obs{background:var(--amber-bg);border-radius:var(--r-md);padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--amber-t);line-height:1.6}
 .pl-obs strong{font-weight:600}
-
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
@@ -174,9 +167,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <button class="tab" onclick="showTab('report',this)">Daily report</button>
     <button class="tab" onclick="showTab('pl',this)">P&amp;L</button>
     <button class="tab" onclick="showTab('qa',this)">Ask RIC</button>
-    <!-- Teams tab commented out for future use
-    <button class="tab" onclick="showTab('teams',this)">Teams</button>
-    -->
   </div>
 </div>
 
@@ -205,7 +195,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 <!-- P&L -->
 <div id="tab-pl" class="panel">
   <h2 class="sr-only">P&L data source mapping</h2>
-
   <div class="pl-section">
     <div class="pl-title">Key Metrics — Week of Apr 20–26, 2026</div>
     <div class="pl-metric"><span class="pl-metric-label">Total Net Sales</span><span class="pl-metric-val">$76,517 <span class="badge live">GoTab Live</span></span></div>
@@ -217,11 +206,9 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <div class="pl-metric"><span class="pl-metric-label">Total Labor %</span><span class="pl-metric-val warn">42.43%</span></div>
     <div class="pl-metric"><span class="pl-metric-label">Prime Cost %</span><span class="pl-metric-val crit">~73%</span></div>
   </div>
-
   <div class="pl-obs">⚠️ <strong>Wine cost at 47.51%</strong> — target is 25–30%. Flagged for daily monitoring once MarginEdge is live.</div>
   <div class="pl-obs">⚠️ <strong>N/A Beverage cost at 59.14%</strong> — extremely high, likely a pricing or portioning issue.</div>
   <div class="pl-obs">⚠️ <strong>Revenue down 21.6% YoY.</strong> Same week 2025 was $97,639. This trend requires weekly tracking.</div>
-
   <div class="pl-section">
     <div class="pl-title">Income — Data Source Mapping</div>
     <table class="pl-table">
@@ -246,7 +233,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
       </tbody>
     </table>
   </div>
-
   <div class="pl-section">
     <div class="pl-title">Cost of Goods Sold — Data Source Mapping</div>
     <table class="pl-table">
@@ -267,7 +253,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
       </tbody>
     </table>
   </div>
-
   <div class="pl-section">
     <div class="pl-title">Labor — Data Source Mapping</div>
     <table class="pl-table">
@@ -295,7 +280,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
       </tbody>
     </table>
   </div>
-
   <div class="pl-section">
     <div class="pl-title">Cost % Targets vs Actuals</div>
     <div class="pl-metric"><span class="pl-metric-label">Food Cost % (target &lt;32%)</span><span class="pl-metric-val ok">30.96% ✓</span></div>
@@ -328,15 +312,7 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
   <div id="qa-out"></div>
 </div>
 
-<!-- Teams tab commented out for future use
-<div id="tab-teams" class="panel">
-  <h2 class="sr-only">Microsoft Teams integration</h2>
-  ... Teams content ...
 </div>
--->
-
-</div>
-
 <script>
 const SYSTEMS = [
   {id:"gotab",     name:"GoTab",         domain:"POS & Revenue", color:"#185FA5", icon:"GT"},
@@ -368,8 +344,6 @@ const MOCK = {
 
 const SYS_PROMPT = `You are the Restaurant Intelligence Controller (RIC) for Hill Country BBQ, New York. Analyze live operational data from 11 integrated systems and produce clear, actionable daily intelligence reports for GM and store leadership. Be direct, specific, and write for someone reading at 7am before service. Use dollar amounts and percentages. Flag anomalies clearly. When data is marked as mock/demo, note it briefly but still provide useful analysis.`;
 
-// Section color mapping for report rendering
-
 function getSectionClass(heading) {
   const h = heading.toLowerCase();
   if (h.includes("revenue") || h.includes("sales") || h.includes("snapshot")) return "s-revenue";
@@ -380,7 +354,7 @@ function getSectionClass(heading) {
   if (h.includes("event") || h.includes("banquet") || h.includes("private") || h.includes("catering")) return "s-events";
   if (h.includes("digital") || h.includes("market") || h.includes("online")) return "s-digital";
   if (h.includes("reput") || h.includes("review") || h.includes("rating")) return "s-reputation";
-  if (h.includes("ops") || h.includes("comm") || h.includes("m365") || h.includes("operation")) return "s-ops";
+  if (h.includes("ops") || h.includes("comm") || h.includes("operation")) return "s-ops";
   if (h.includes("gm") || h.includes("narrative") || h.includes("summary") || h.includes("manager")) return "s-gm";
   if (h.includes("anomal") || h.includes("flag") || h.includes("alert") || h.includes("action")) return "s-anomaly";
   return "s-digital";
@@ -471,7 +445,6 @@ async function runSync() {
     if (!res.ok) throw new Error(`Proxy ${res.status}`);
     ricLive = await res.json();
   } catch(e) {
-    clearInterval(timer);
     console.warn("Proxy unreachable, using full mock:", e.message);
   }
 
@@ -479,7 +452,6 @@ async function runSync() {
   for (const s of SYSTEMS) {
     if (sysSt[s.id] !== "sync") updDot(s.id, "sync");
     await sleep(120 + Math.random() * 180);
-
     const isLive = ricLive[s.id] && ricLive.sources?.[s.id] === "live";
     if (isLive) {
       fetchedData[s.id] = ricLive[s.id];
@@ -490,7 +462,6 @@ async function runSync() {
       sourceMap[s.id]   = "mock";
       updDot(s.id, "err");
     }
-
     done++;
     const liveCount = Object.values(sourceMap).filter(v => v === "live").length;
     document.getElementById("s-conn").textContent = liveCount + " / " + SYSTEMS.length;
@@ -501,14 +472,6 @@ async function runSync() {
   document.getElementById("s-status").textContent = "Generating";
   btn.textContent = "Generating report...";
   showTab("report", document.querySelectorAll(".tab")[1]);
-  let elapsed = 0;
-  timer = setInterval(() => {
-    elapsed++;
-    const el = document.getElementById("report-timer");
-    if (el) el.textContent = `${elapsed}s`;
-  }, 1000);
-
-  document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Generating report — <span id="report-timer">0s</span></span></div>`;
 
   await generateReport();
 
@@ -570,7 +533,13 @@ Produce the Daily Intelligence Report:
 
 Format rules: Always insert a blank line between every section. Be specific with $ and %. Write for a GM at 7am. Note which sections use live vs demo data.`;
 
-  document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Generating report — this takes about 15 seconds...</span></div>`;
+  timer = setInterval(() => {
+    elapsed++;
+    const el = document.getElementById("report-timer");
+    if (el) el.textContent = `${elapsed}s`;
+  }, 1000);
+
+  document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Generating report — <span id="report-timer">0s</span></span></div>`;
 
   try {
     const res = await fetch("/api/claude", {
@@ -600,6 +569,7 @@ Format rules: Always insert a blank line between every section. Be specific with
         <div class="disclaimer">AI-generated analysis. ${liveCount} of ${totalCount} sources are live. Verify all figures against source systems before operational decisions.</div>
       </div>`;
   } catch(e) {
+    clearInterval(timer);
     document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot err"></div><span>Error: ${e.message}</span></div>`;
   }
 }
