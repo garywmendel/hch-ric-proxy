@@ -16,7 +16,7 @@ const SHIFTS_COMPANY_GUID   = process.env.SHIFTS_COMPANY_GUID;
 const SHIFTS_COMPANY_ID     = process.env.SHIFTS_COMPANY_ID;
 const SHIFTS_LOCATION_ID    = process.env.SHIFTS_LOCATION_ID;
 const MARGINEDGE_API_KEY    = process.env.MARGINEDGE_API_KEY;
-const MARGINEDGE_TENANT_ID  = process.env.MARGINEDGE_TENANT_ID;
+const MARGINEDGE_TENANT_ID  = process.env.MARGINEDGE_TENANT_ID; // numeric: 683280536
 
 app.use(cors({ origin: "*", methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type","Authorization"] }));
 app.options("*", cors());
@@ -68,20 +68,11 @@ function normalizeGoTab(tabs) {
   let voids = 0, comps = 0, tip_total = 0, tab_count = 0, deferred_revenue = 0;
 
   const BAR_STREAMS = [
-    "Sales, Liquor:",
-    "Sales, Beer:",
-    "Sales, Non-Alcoholic Beverage:",
-    "Sales, Wine:",
-    "Sales, Banquet Liquor:",
-    "Sales, Banquet Beer:",
-    "Sales, Banquet Wine:",
-    "Sales, Banquet N/A Beverage:",
+    "Sales, Liquor:", "Sales, Beer:", "Sales, Non-Alcoholic Beverage:", "Sales, Wine:",
+    "Sales, Banquet Liquor:", "Sales, Banquet Beer:", "Sales, Banquet Wine:", "Sales, Banquet N/A Beverage:",
   ];
   const CATERING_STREAMS = [
-    "Sales, Catering Food:",
-    "Sales, Banquet Food:",
-    "Sales, Banquet Admin Fee:",
-    "Sales, Transport Fee:",
+    "Sales, Catering Food:", "Sales, Banquet Food:", "Sales, Banquet Admin Fee:", "Sales, Transport Fee:",
   ];
   const EXCLUDE_GROUPS = ["DEFERRED_REVENUE", "PROCESSORS", "EXPENSE"];
 
@@ -90,7 +81,6 @@ function normalizeGoTab(tabs) {
     const tabTotal = tab.total       || 0;
     const tabSub   = tab.subtotal    || 0;
     const tabAuto  = tab.autogratDue || 0;
-
     tax_total += tabTax;
     const tabTip = tabTotal - tabSub - tabTax - tabAuto;
     if (tabTip > 0) tip_total += tabTip;
@@ -100,14 +90,9 @@ function normalizeGoTab(tabs) {
       const g   = item.accountingStream?.reportingGroup || "";
       const n   = item.accountingStream?.name           || "";
       const amt = item.subtotal || 0;
-
-      if (EXCLUDE_GROUPS.includes(g)) {
-        if (g === "DEFERRED_REVENUE") deferred_revenue += amt;
-        continue;
-      }
+      if (EXCLUDE_GROUPS.includes(g)) { if (g === "DEFERRED_REVENUE") deferred_revenue += amt; continue; }
       if (n.startsWith("Discounts and Comps")) { comps += Math.abs(amt); continue; }
       if (item.voided || g === "VOID")          { voids += Math.abs(amt); continue; }
-
       net_sales += amt;
       if (BAR_STREAMS.some(b => n.startsWith(b)))           bar_sales      += amt;
       else if (CATERING_STREAMS.some(b => n.startsWith(b))) catering_sales += amt;
@@ -175,62 +160,82 @@ async function fetch7Shifts(date) {
 // ── MarginEdge ────────────────────────────────────────────────────────────────
 async function fetchMarginEdge(date) {
   const headers = {
-    "x-api-key":    MARGINEDGE_API_KEY,
-    "Content-Type": "application/json",
-    "Accept":       "application/json",
+    "X-Api-Key": MARGINEDGE_API_KEY,
+    "Accept":    "application/json",
   };
-  const base   = `https://api.marginedge.com/public/v1`;
-  const tenant = MARGINEDGE_TENANT_ID;
+  const base = "https://api.marginedge.com/public";
+  const rid  = MARGINEDGE_TENANT_ID; // numeric restaurant unit ID: 683280536
 
-  const [invoiceRes, plRes] = await Promise.allSettled([
-    fetch(`${base}/restaurants/${tenant}/invoices?startDate=${date}&endDate=${date}&limit=200`, { headers }),
-    fetch(`${base}/restaurants/${tenant}/pnl?startDate=${date}&endDate=${date}`, { headers }),
-  ]);
+  // Fetch orders (invoices/COGS) for the date range
+  // orderStatus=CLOSED ensures only processed invoices are included
+  const ordersRes = await fetch(
+    `${base}/orders?restaurantUnitId=${rid}&startDate=${date}&endDate=${date}&orderStatus=CLOSED`,
+    { headers }
+  );
 
-  if (invoiceRes.status === "rejected" || !invoiceRes.value.ok) {
-    const status = invoiceRes.value?.status || "network error";
-    throw new Error(`MarginEdge invoices failed: ${status}`);
-  }
+  if (!ordersRes.ok) throw new Error(`MarginEdge orders failed: ${ordersRes.status}`);
 
-  const invoiceJson = await invoiceRes.value.json();
-  const invoices    = invoiceJson.data || invoiceJson.invoices || (Array.isArray(invoiceJson) ? invoiceJson : []);
+  const ordersJson = await ordersRes.json();
+  const orders     = ordersJson.orders || ordersJson.data || (Array.isArray(ordersJson) ? ordersJson : []);
 
+  // Fetch categories for mapping
+  let categories = {};
+  try {
+    const catRes  = await fetch(`${base}/categories?restaurantUnitId=${rid}`, { headers });
+    const catJson = await catRes.json();
+    const catList = catJson.categories || catJson.data || [];
+    for (const c of catList) categories[c.id] = c.name || c.categoryName || "";
+  } catch (_) {}
+
+  // Aggregate COGS by category
   const cogs = { food: 0, meat: 0, produce: 0, dairy: 0, grocery: 0,
                  liquor: 0, beer: 0, wine: 0, na_bev: 0,
                  paper: 0, supplies: 0, other: 0, total: 0 };
 
   let pending_invoices = 0, invoice_count = 0;
 
-  for (const inv of invoices) {
+  for (const order of orders) {
     invoice_count++;
-    if ((inv.status || "").toLowerCase().includes("pending")) pending_invoices++;
-    for (const line of inv.lineItems || inv.line_items || inv.lines || []) {
-      const cat = (line.category || line.categoryName || line.category_name || "").toLowerCase();
-      const amt = parseFloat(line.amount || line.total || line.cost || line.extended_cost || 0);
-      if (!amt) continue;
-      cogs.total += amt;
-      if      (cat.includes("meat") || cat.includes("protein") || cat.includes("bbq") || cat.includes("poultry") || cat.includes("seafood")) { cogs.meat    += amt; cogs.food += amt; }
-      else if (cat.includes("produce") || cat.includes("vegetable") || cat.includes("fruit"))                                                  { cogs.produce += amt; cogs.food += amt; }
-      else if (cat.includes("dairy") || cat.includes("egg"))                                                                                   { cogs.dairy   += amt; cogs.food += amt; }
-      else if (cat.includes("grocery") || cat.includes("dry") || cat.includes("pantry") || cat.includes("baked") || cat.includes("bread"))     { cogs.grocery += amt; cogs.food += amt; }
-      else if (cat.includes("liquor") || cat.includes("spirit") || cat.includes("cocktail"))                                                   { cogs.liquor  += amt; }
-      else if (cat.includes("beer"))                                                                                                            { cogs.beer    += amt; }
-      else if (cat.includes("wine"))                                                                                                            { cogs.wine    += amt; }
-      else if (cat.includes("non-alc") || cat.includes("na bev") || cat.includes("beverage") || cat.includes("soda") || cat.includes("juice")) { cogs.na_bev  += amt; }
-      else if (cat.includes("paper") || cat.includes("packaging") || cat.includes("to-go") || cat.includes("disposable"))                      { cogs.paper   += amt; }
-      else if (cat.includes("supply") || cat.includes("supplies") || cat.includes("cleaning") || cat.includes("chemical"))                     { cogs.supplies += amt; }
-      else                                                                                                                                       { cogs.other   += amt; }
+    if ((order.status || order.orderStatus || "").toLowerCase().includes("pending")) pending_invoices++;
+
+    // Order-level total if no line items
+    const orderTotal = parseFloat(order.total || order.invoiceTotal || order.amount || 0);
+    const cat = (
+      categories[order.categoryId] ||
+      order.category || order.categoryName || ""
+    ).toLowerCase();
+
+    if (orderTotal) {
+      cogs.total += orderTotal;
+      bucketCogs(cogs, cat, orderTotal);
     }
   }
 
   for (const key of Object.keys(cogs)) cogs[key] = +cogs[key].toFixed(2);
 
-  let pnl = null;
-  if (plRes.status === "fulfilled" && plRes.value.ok) {
-    try { pnl = await plRes.value.json(); } catch (_) {}
-  }
+  return {
+    invoice_count,
+    pending_invoices,
+    cogs,
+    food_cost_pct:  null,
+    total_cogs_pct: null,
+    raw_sample:     orders.slice(0, 2), // first 2 orders for field inspection
+    data_as_of:     nowET(),
+  };
+}
 
-  return { invoice_count, pending_invoices, cogs, food_cost_pct: null, total_cogs_pct: null, pnl, data_as_of: nowET() };
+function bucketCogs(cogs, cat, amt) {
+  if      (cat.includes("meat") || cat.includes("protein") || cat.includes("bbq") || cat.includes("poultry") || cat.includes("seafood")) { cogs.meat    += amt; cogs.food += amt; }
+  else if (cat.includes("produce") || cat.includes("vegetable") || cat.includes("fruit"))                                                  { cogs.produce += amt; cogs.food += amt; }
+  else if (cat.includes("dairy") || cat.includes("egg"))                                                                                   { cogs.dairy   += amt; cogs.food += amt; }
+  else if (cat.includes("grocery") || cat.includes("dry") || cat.includes("pantry") || cat.includes("baked") || cat.includes("bread"))     { cogs.grocery += amt; cogs.food += amt; }
+  else if (cat.includes("liquor") || cat.includes("spirit") || cat.includes("cocktail"))                                                   { cogs.liquor  += amt; }
+  else if (cat.includes("beer"))                                                                                                            { cogs.beer    += amt; }
+  else if (cat.includes("wine"))                                                                                                            { cogs.wine    += amt; }
+  else if (cat.includes("non-alc") || cat.includes("na bev") || cat.includes("beverage") || cat.includes("soda") || cat.includes("juice")) { cogs.na_bev  += amt; }
+  else if (cat.includes("paper") || cat.includes("packaging") || cat.includes("to-go") || cat.includes("disposable"))                      { cogs.paper   += amt; }
+  else if (cat.includes("supply") || cat.includes("supplies") || cat.includes("cleaning") || cat.includes("chemical"))                     { cogs.supplies += amt; }
+  else                                                                                                                                       { cogs.other   += amt; }
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
@@ -297,35 +302,6 @@ app.get("/api/7shifts", async (req, res) => {
   }
 });
 
-// MarginEdge auth header diagnostic
-app.get("/api/marginedge/auth", async (req, res) => {
-  const key    = MARGINEDGE_API_KEY;
-  const tenant = MARGINEDGE_TENANT_ID;
-  const url    = `https://api.marginedge.com/public/v1/restaurants/${tenant}/invoices`;
-  const results = {};
-
-  const attempts = [
-    { label: "x-api-key",           headers: { "x-api-key": key } },
-    { label: "Authorization Bearer", headers: { "Authorization": `Bearer ${key}` } },
-    { label: "Authorization Basic",  headers: { "Authorization": `Basic ${Buffer.from(key).toString("base64")}` } },
-    { label: "api-key",              headers: { "api-key": key } },
-    { label: "X-Auth-Token",         headers: { "X-Auth-Token": key } },
-    { label: "token",                headers: { "token": key } },
-  ];
-
-  for (const { label, headers } of attempts) {
-    try {
-      const r    = await fetch(url, { headers: { ...headers, "Accept": "application/json" } });
-      const body = await r.text();
-      results[label] = { status: r.status, body: body.slice(0, 200) };
-    } catch (e) {
-      results[label] = { error: e.message };
-    }
-  }
-
-  res.json(results);
-});
-
 // MarginEdge only
 app.get("/api/marginedge", async (req, res) => {
   try {
@@ -378,6 +354,7 @@ app.get("/api/ric", async (req, res) => {
       if (me.cogs?.food)  me.food_cost_pct  = +((me.cogs.food  / result.gotab.net_sales) * 100).toFixed(1);
       if (me.cogs?.total) me.total_cogs_pct = +((me.cogs.total / result.gotab.net_sales) * 100).toFixed(1);
     }
+    delete me.raw_sample; // strip diagnostic field from combined response
     result.marginedge = me;
     result.sources.marginedge = "live";
   } catch (e) {
