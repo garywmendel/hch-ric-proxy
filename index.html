@@ -13,7 +13,7 @@
   --green:#1D9E75;--green-bg:#e1f5ee;--green-t:#085041;
   --amber:#BA7517;--amber-bg:#faeeda;--amber-t:#633806;
   --blue:#185FA5;--blue-bg:#e6f1fb;--blue-t:#0C447C;
-  --red-bg:#fff0f0;--red-t:#7a0000;
+  --red:#E24B4A;--red-bg:#fff0f0;--red-t:#7a0000;
   --r-md:8px;--r-lg:12px;
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
   --mono:"SF Mono","Fira Code",monospace;
@@ -51,7 +51,7 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 @media(min-width:640px){.sys-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
 .sys-card{background:var(--bg1);border:0.5px solid var(--b2);border-radius:var(--r-md);padding:8px 10px;display:flex;align-items:center;gap:7px}
 .sys-card.on{border-color:var(--green);background:var(--green-bg)}
-.sys-card.err{border-color:#E24B4A;background:var(--red-bg)}
+.sys-card.err{border-color:var(--red);background:var(--red-bg)}
 .sys-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0}
 .sys-info{flex:1;min-width:0}
 .sys-name{font-size:11px;font-weight:500;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -59,7 +59,7 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 .sys-dot{width:7px;height:7px;border-radius:50%;background:var(--b1);flex-shrink:0;transition:background 0.3s}
 .sys-dot.live{background:var(--green)}
 .sys-dot.sync{background:var(--amber);animation:blink 0.8s infinite}
-.sys-dot.err{background:#E24B4A}
+.sys-dot.err{background:var(--red)}
 .prog-bar{height:3px;background:var(--b2);border-radius:2px;margin-bottom:14px;overflow:hidden}
 .prog-fill{height:100%;background:var(--blue);border-radius:2px;transition:width 0.4s}
 .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -76,12 +76,11 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 .btn-primary:active{opacity:0.75}
 .btn-primary:disabled{opacity:0.35;cursor:not-allowed}
 .btn-sec{padding:9px 14px;font-size:12px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:none;color:var(--t1);cursor:pointer;font-family:var(--font);min-height:40px;-webkit-tap-highlight-color:transparent}
-.btn-sec:active{background:var(--bg1)}
 .status{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg1);border-radius:var(--r-md);margin-bottom:12px;font-size:12px;color:var(--t1)}
 .sdot{width:7px;height:7px;border-radius:50%;background:var(--b1);flex-shrink:0}
 .sdot.thinking{background:var(--amber);animation:blink 0.8s infinite}
 .sdot.done{background:var(--green)}
-.sdot.err{background:#E24B4A}
+.sdot.err{background:var(--red)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 .report-wrap{background:var(--bg0);border:0.5px solid var(--b2);border-radius:var(--r-lg);padding:1rem 1.1rem}
 .report-body{font-size:13px;line-height:1.8;color:var(--t0)}
@@ -90,83 +89,68 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 .report-body li{margin-bottom:0.2em}
 .report-body h2{font-size:15px;font-weight:600;color:#185FA5;margin:1em 0 0.5em}
 .report-body h3{font-size:13px;font-weight:600;margin:1.2em 0 0.4em;padding-bottom:3px;border-bottom:1.5px solid currentColor}
-h3.s-revenue{color:#1D9E75 !important}
-h3.s-labor{color:#1a1a18 !important}
-h3.s-food{color:#D85A30 !important}
-h3.s-covers{color:#534AB7 !important}
-h3.s-delivery{color:#993C1D !important}
-h3.s-events{color:#854F0B !important}
-h3.s-digital{color:#185FA5 !important}
-h3.s-reputation{color:#A32D2D !important}
-h3.s-ops{color:#3B6D11 !important}
-h3.s-gm{color:#1D9E75 !important}
-h3.s-anomaly{color:#cc0000 !important}
+h3.s-revenue{color:#1D9E75!important}h3.s-labor{color:#1a1a18!important}h3.s-food{color:#D85A30!important}
+h3.s-covers{color:#534AB7!important}h3.s-delivery{color:#993C1D!important}h3.s-events{color:#854F0B!important}
+h3.s-digital{color:#185FA5!important}h3.s-reputation{color:#A32D2D!important}h3.s-ops{color:#3B6D11!important}
+h3.s-gm{color:#1D9E75!important}h3.s-anomaly{color:#cc0000!important}
 .report-body strong{font-weight:600}
 .report-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--b2);flex-wrap:wrap}
 .disclaimer{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .chip{padding:6px 11px;border-radius:100px;font-size:12px;border:0.5px solid var(--b1);color:var(--t1);background:none;cursor:pointer;font-family:var(--font);min-height:34px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
-.chip:active{background:var(--bg1);color:var(--t0)}
-.inp{width:100%;padding:10px 11px;font-size:14px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;appearance:none;min-height:44px}
+.inp{width:100%;padding:10px 11px;font-size:14px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;min-height:44px}
 .inp:focus{outline:none;border-color:var(--b0)}
 textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
-
-/* P&L styles */
-.pl-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.pl-date-wrap{display:flex;align-items:center;gap:6px;flex:1}
-.pl-date-label{font-size:11px;color:var(--t1);white-space:nowrap}
-.pl-date-inp{padding:7px 10px;font-size:13px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;appearance:none;flex:1;min-width:130px}
+/* P&L */
+.pl-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.pl-date-inp{padding:7px 10px;font-size:13px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;flex:1;min-width:130px}
 .pl-date-inp:focus{outline:none;border-color:var(--b0)}
-.btn-pl-fetch{padding:8px 14px;font-size:12px;font-weight:500;background:var(--t0);color:var(--bg0);border:none;border-radius:var(--r-md);cursor:pointer;font-family:var(--font);white-space:nowrap;min-height:36px}
-.btn-pl-fetch:disabled{opacity:0.35;cursor:not-allowed}
-.pl-status{font-size:11px;color:var(--t1);display:flex;align-items:center;gap:5px}
-.pl-status-dot{width:6px;height:6px;border-radius:50%;background:var(--b1);flex-shrink:0}
-.pl-status-dot.live{background:var(--green)}
-.pl-status-dot.loading{background:var(--amber);animation:blink 0.8s infinite}
-.pl-status-dot.err{background:#E24B4A}
-.pl-section{margin-bottom:20px}
-.pl-title{font-size:13px;font-weight:600;color:var(--t0);margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid var(--b2);display:flex;align-items:center;justify-content:space-between}
-.pl-title-badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:100px}
-.pl-kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px}
-@media(min-width:480px){.pl-kpi-grid{grid-template-columns:repeat(4,1fr)}}
-.pl-kpi{background:var(--bg1);border-radius:var(--r-md);padding:10px 12px}
-.pl-kpi-label{font-size:10px;color:var(--t1);margin-bottom:3px}
-.pl-kpi-val{font-size:16px;font-weight:600;color:var(--t0);line-height:1.2}
-.pl-kpi-sub{font-size:10px;color:var(--t1);margin-top:2px}
-.pl-kpi-val.ok{color:var(--green)}
-.pl-kpi-val.warn{color:var(--amber)}
-.pl-kpi-val.crit{color:#E24B4A}
-.pl-table{width:100%;border-collapse:collapse;font-size:11px}
-.pl-table th{text-align:left;padding:5px 8px;background:var(--bg1);color:var(--t1);font-weight:500;border-bottom:0.5px solid var(--b2)}
-.pl-table td{padding:5px 8px;border-bottom:0.5px solid var(--b2);color:var(--t0);vertical-align:middle}
-.pl-table tr:last-child td{border-bottom:none}
-.pl-table .total-row td{font-weight:600;background:var(--bg1)}
-.pl-table .sub-row td{color:var(--t1)}
-.badge{display:inline-block;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:500}
+.btn-pl{padding:8px 16px;font-size:12px;font-weight:500;background:var(--t0);color:var(--bg0);border:none;border-radius:var(--r-md);cursor:pointer;font-family:var(--font);white-space:nowrap;min-height:36px}
+.btn-pl:disabled{opacity:0.35;cursor:not-allowed}
+.pl-meta{font-size:11px;color:var(--t1);display:flex;align-items:center;gap:5px;flex:1;min-width:120px}
+.pl-dot{width:6px;height:6px;border-radius:50%;background:var(--b1);flex-shrink:0}
+.pl-dot.live{background:var(--green)}
+.pl-dot.load{background:var(--amber);animation:blink 0.8s infinite}
+.pl-dot.err{background:var(--red)}
+/* Flash Report table */
+.fr-wrap{overflow-x:auto}
+.fr-table{width:100%;border-collapse:collapse;font-size:11px;min-width:480px}
+.fr-table th{text-align:right;padding:5px 8px;background:var(--bg1);color:var(--t1);font-weight:500;border-bottom:0.5px solid var(--b2);white-space:nowrap}
+.fr-table th:first-child{text-align:left}
+.fr-table td{padding:4px 8px;border-bottom:0.5px solid var(--b2);color:var(--t0);vertical-align:middle;text-align:right;white-space:nowrap}
+.fr-table td:first-child{text-align:left;white-space:normal;max-width:200px}
+.fr-table tr:last-child td{border-bottom:none}
+.fr-section td{background:var(--bg1);font-weight:600;font-size:11px;color:var(--t1);text-transform:uppercase;letter-spacing:0.04em;padding:6px 8px;border-top:0.5px solid var(--b1)}
+.fr-total td{font-weight:600;background:var(--bg1);border-top:1px solid var(--b1)}
+.fr-grand td{font-weight:700;background:var(--bg2);border-top:1.5px solid var(--b0);font-size:12px}
+.fr-sub td:first-child{padding-left:20px;color:var(--t1)}
+.fr-sub2 td:first-child{padding-left:32px;color:var(--t1)}
+.v-ok{color:var(--green)!important;font-weight:500}
+.v-warn{color:var(--amber)!important;font-weight:500}
+.v-crit{color:var(--red)!important;font-weight:500}
+.badge{display:inline-block;padding:2px 6px;border-radius:100px;font-size:9px;font-weight:600;vertical-align:middle;margin-left:4px}
 .badge.live{background:var(--green-bg);color:var(--green-t)}
-.badge.pending{background:var(--amber-bg);color:var(--amber-t)}
-.badge.partial{background:var(--blue-bg);color:var(--blue-t)}
-.pct-bar-wrap{display:flex;align-items:center;gap:6px}
-.pct-bar{height:4px;border-radius:2px;flex:1;background:var(--b2);overflow:hidden}
-.pct-fill{height:100%;border-radius:2px;transition:width 0.4s}
-.pct-fill.ok{background:var(--green)}
-.pct-fill.warn{background:var(--amber)}
-.pct-fill.crit{background:#E24B4A}
-.pct-val{font-size:11px;font-weight:500;white-space:nowrap;min-width:44px;text-align:right}
-.pct-val.ok{color:var(--green)}
-.pct-val.warn{color:var(--amber)}
-.pct-val.crit{color:#E24B4A}
-.pl-empty{text-align:center;padding:32px 16px;color:var(--t1);font-size:13px}
-.pl-obs{background:var(--amber-bg);border-radius:var(--r-md);padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--amber-t);line-height:1.6}
-.pl-obs.ok{background:var(--green-bg);color:var(--green-t)}
-.pl-obs strong{font-weight:600}
-.pl-divider{height:0.5px;background:var(--b2);margin:20px 0}
+.badge.pend{background:var(--amber-bg);color:var(--amber-t)}
+.badge.ref{background:var(--blue-bg);color:var(--blue-t)}
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px}
+@media(min-width:480px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--bg1);border-radius:var(--r-md);padding:10px 12px}
+.kpi-l{font-size:10px;color:var(--t1);margin-bottom:3px}
+.kpi-v{font-size:16px;font-weight:600;color:var(--t0)}
+.kpi-s{font-size:10px;color:var(--t1);margin-top:2px}
+.kpi-v.ok{color:var(--green)}.kpi-v.warn{color:var(--amber)}.kpi-v.crit{color:var(--red)}
+.obs{border-radius:var(--r-md);padding:9px 12px;margin-bottom:7px;font-size:12px;line-height:1.5}
+.obs.warn{background:var(--amber-bg);color:var(--amber-t)}
+.obs.ok{background:var(--green-bg);color:var(--green-t)}
+.obs.info{background:var(--blue-bg);color:var(--blue-t)}
+.obs strong{font-weight:600}
+.pl-empty{text-align:center;padding:32px 16px;color:var(--t1);font-size:13px;line-height:1.8}
+.as-of{font-size:10px;color:var(--t2);margin-top:10px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
 <body>
 <div id="shell">
-
 <div class="hdr">
   <div class="hdr-top">
     <div class="logo-wrap">
@@ -225,50 +209,24 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 <!-- P&L -->
 <div id="tab-pl" class="panel">
   <h2 class="sr-only">Live P&L</h2>
-
-  <!-- Date picker toolbar -->
   <div class="pl-toolbar">
-    <div class="pl-date-wrap">
-      <span class="pl-date-label">Date</span>
-      <input type="date" class="pl-date-inp" id="pl-date" />
-    </div>
-    <button class="btn-pl-fetch" id="pl-fetch-btn" onclick="fetchPL()">Load</button>
-    <div class="pl-status" id="pl-status"><div class="pl-status-dot" id="pl-sdot"></div><span id="pl-stext">Select a date</span></div>
+    <input type="date" class="pl-date-inp" id="pl-date"/>
+    <button class="btn-pl" id="pl-btn" onclick="fetchPL()">Load</button>
+    <div class="pl-meta"><div class="pl-dot" id="pl-dot"></div><span id="pl-txt">Select a date</span></div>
   </div>
-
-  <!-- Dynamic P&L content -->
   <div id="pl-content">
-    <div class="pl-empty">Select a date and tap Load to view live P&L data.<br><br>💡 <strong>Tip:</strong> Yesterday gives the richest data — GoTab revenue + MarginEdge COGS both fully populated.</div>
-  </div>
-
-  <!-- Static benchmark divider -->
-  <div class="pl-divider"></div>
-  <div class="pl-section">
-    <div class="pl-title">
-      Benchmark — Week of Apr 20–26, 2026
-      <span class="pl-title-badge badge partial">Reference</span>
+    <div class="pl-empty">
+      Select a date and tap <strong>Load</strong> to view live P&L data.<br><br>
+      💡 Yesterday gives the richest data — GoTab revenue + MarginEdge COGS both fully populated.<br><br>
+      The P&L mirrors the Flash Report structure:<br>
+      Income → COGS → Gross Profit → Labor → Controllable Expenses
     </div>
-    <table class="pl-table">
-      <thead><tr><th>Metric</th><th>Actual</th><th>Target</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td>Total Net Sales</td><td>$76,517</td><td>—</td><td><span style="font-size:10px;color:var(--t1)">vs $97,639 prior yr</span></td></tr>
-        <tr><td>Food Cost %</td><td>30.96%</td><td>&lt;32%</td><td><span class="badge live">✓</span></td></tr>
-        <tr><td>Liquor Cost %</td><td>11.32%</td><td>&lt;18%</td><td><span class="badge live">✓</span></td></tr>
-        <tr><td>Beer Cost %</td><td>28.10%</td><td>&lt;30%</td><td><span class="badge live">✓</span></td></tr>
-        <tr><td>Wine Cost %</td><td>47.51%</td><td>&lt;30%</td><td><span class="badge pending">✗</span></td></tr>
-        <tr><td>N/A Bev Cost %</td><td>59.14%</td><td>&lt;40%</td><td><span class="badge pending">✗</span></td></tr>
-        <tr><td>FOH Labor %</td><td>10.29%</td><td>&lt;12%</td><td><span class="badge live">✓</span></td></tr>
-        <tr><td>BOH Labor %</td><td>17.37%</td><td>&lt;18%</td><td><span class="badge live">✓</span></td></tr>
-        <tr><td>Total Labor %</td><td>42.43%</td><td>&lt;35%</td><td><span class="badge pending">✗</span></td></tr>
-        <tr><td>Prime Cost %</td><td>~73%</td><td>&lt;65%</td><td><span class="badge pending">✗</span></td></tr>
-      </tbody>
-    </table>
   </div>
 </div>
 
 <!-- Ask RIC -->
 <div id="tab-qa" class="panel">
-  <h2 class="sr-only">Ask the RIC a question</h2>
+  <h2 class="sr-only">Ask RIC</h2>
   <div class="chips">
     <button class="chip" onclick="setQ('What is our true brisket margin after trim loss and current beef prices?')">Brisket margin</button>
     <button class="chip" onclick="setQ('How does delivery profitability compare to dine-in after platform fees?')">Delivery vs dine-in</button>
@@ -283,8 +241,8 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
   </div>
   <div id="qa-out"></div>
 </div>
-
 </div>
+
 <script>
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SYSTEMS = [
@@ -302,523 +260,424 @@ const SYSTEMS = [
 ];
 
 const MOCK = {
-  gotab:       {net_sales:18420,tab_count:312,voids:340,comps:210,bar_sales:4820,tax_total:1420,tip_total:3100,catering_sales:2100,deferred_revenue:4200},
-  quickbooks:  {total_revenue:21340,cogs:6830,gross_profit:14510,operating_expenses:9210,net_income:5300},
-  "7shifts":   {scheduled_hours:184,actual_hours:191,labor_cost:5730,labor_pct:26.8,overtime_hours:14,no_shows:1},
-  marginedge:  {food_cost_pct:null,total_cogs_pct:null,invoice_count:0,pending_invoices:0,cogs:{food:0,meat:0,produce:0,dairy:0,grocery:0,liquor:0,beer:0,wine:0,na_bev:0,paper:0,supplies:0,other:0,total:0}},
-  opentable:   {reservations:87,covers:198,no_shows:6,peak_time:"7:30 PM",waitlist:12},
-  tripleseat:  {events_today:2,event_revenue:4200,leads_active:8},
-  mailchimp:   {emails_sent:2400,open_rate:28.4,click_rate:6.1,new_subscribers:14},
-  ga4:         {sessions:1840,users:1210,online_orders:43,conversion_rate:2.3},
-  m365:        {unread_emails:7,flagged_items:2,meetings_today:3},
-  marqii:      {avg_rating:4.6,new_reviews:8,positive:6,negative:1,response_rate:88},
-  doordash:    {orders:68,delivery_revenue:1820,avg_order_value:26.76,cancelled:2,avg_rating:4.7},
+  gotab:      {net_sales:18420,tab_count:312,voids:340,comps:210,bar_sales:4820,tax_total:1420,tip_total:3100,catering_sales:2100,deferred_revenue:4200},
+  quickbooks: {total_revenue:21340,cogs:6830,gross_profit:14510,operating_expenses:9210,net_income:5300},
+  "7shifts":  {scheduled_hours:184,actual_hours:191,labor_cost:5730,labor_pct:26.8,overtime_hours:14,no_shows:1},
+  marginedge: {food_cost_pct:null,total_cogs_pct:null,invoice_count:0,pending_invoices:0,cogs:{food:0,meat:0,produce:0,dairy:0,grocery:0,liquor:0,beer:0,wine:0,na_bev:0,paper:0,supplies:0,other:0,total:0}},
+  opentable:  {reservations:87,covers:198,no_shows:6,peak_time:"7:30 PM",waitlist:12},
+  tripleseat: {events_today:2,event_revenue:4200,leads_active:8},
+  mailchimp:  {emails_sent:2400,open_rate:28.4,click_rate:6.1,new_subscribers:14},
+  ga4:        {sessions:1840,users:1210,online_orders:43,conversion_rate:2.3},
+  m365:       {unread_emails:7,flagged_items:2,meetings_today:3},
+  marqii:     {avg_rating:4.6,new_reviews:8,positive:6,negative:1,response_rate:88},
+  doordash:   {orders:68,delivery_revenue:1820,avg_order_value:26.76,cancelled:2,avg_rating:4.7},
 };
 
-// Cost % targets
-const TARGETS = {
-  food_cost:   32,
-  liquor_cost: 18,
-  beer_cost:   30,
-  wine_cost:   30,
-  na_bev_cost: 40,
-  total_cogs:  38,
+// Prior year reference data from Flash Report Apr 20-26, 2026
+const PRIOR = {
+  net_sales:76517.20, bar_sales:16691.0, catering_sales:9398.4,
+  food_sales:49921.86,
+  cogs:{meat:12507.49,produce:2040.78,grocery:1724.36,bakery:140.28,dairy:1742.27,
+        liquor:887.02,beer:1566.16,wine:418.13,na_bev:1125.67,paper:1539.67,total:23691.83},
+  labor:{foh:7873.68,boh:13291.09,mgmt:8526.0,direct:29741.77,
+         fica:3032.29,sui:662.69,health:-1004.48,workers_comp:0,total:32465.32},
+  gross_profit:52825.37,
+  food_cost_pct:30.96, liquor_cost_pct:11.32, beer_cost_pct:28.10,
+  wine_cost_pct:47.51, na_bev_cost_pct:59.14, total_cogs_pct:30.97,
+  labor_pct:42.43, prime_cost_pct:73.40,
 };
 
-const SYS_PROMPT = `You are the Restaurant Intelligence Controller (RIC) for Hill Country BBQ, New York. Analyze live operational data from 11 integrated systems and produce clear, actionable daily intelligence reports for GM and store leadership. Be direct, specific, and write for someone reading at 7am before service. Use dollar amounts and percentages. Flag anomalies clearly. When data is marked as mock/demo, note it briefly but still provide useful analysis.
+const TARGETS = {food:32, liquor:18, beer:30, wine:30, na_bev:40, total_cogs:38, labor:35, prime:65};
 
-MarginEdge data notes:
-- invoice_count = number of closed invoices processed for the date (may be 0 for today due to 24-48hr processing lag)
-- cogs = COGS broken down by category: food (subtotal of meat+produce+dairy+grocery), meat, produce, dairy, grocery, liquor, beer, wine, na_bev, paper, supplies, other, total
-- food_cost_pct = food COGS as % of net_sales (calculated live)
-- total_cogs_pct = total COGS as % of net_sales (calculated live)
-- If invoice_count is 0, note that MarginEdge data reflects a prior day due to processing lag`;
+const SYS_PROMPT = `You are the Restaurant Intelligence Controller (RIC) for Hill Country BBQ, New York. Analyze live operational data from 11 integrated systems and produce clear, actionable daily intelligence reports for GM and store leadership. Be direct, specific, and write for someone reading at 7am before service. Use dollar amounts and percentages. Flag anomalies clearly. When data is marked as mock/demo, note it briefly but still provide useful analysis.`;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const fmt$ = v => v == null ? "—" : "$" + Number(v).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
-const fmtPct = v => v == null ? "—" : Number(v).toFixed(1) + "%";
-const statusClass = (val, target, higherIsBad = true) => {
-  if (val == null || !target) return "";
-  if (higherIsBad) return val <= target * 0.97 ? "ok" : val <= target ? "warn" : "crit";
-  return val >= target ? "ok" : val >= target * 0.97 ? "warn" : "crit";
-};
+const f$ = v => v==null ? "—" : "$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const f$s = v => v==null ? "—" : (v<0?"-$":"")+Math.abs(Number(v)).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fp = v => v==null ? "—" : Number(v).toFixed(1)+"%";
+const fc = (v,t,hi=true) => { if(v==null||!t) return ""; return hi ? (v<=t*0.97?"ok":v<=t?"warn":"crit") : (v>=t?"ok":v>=t*0.97?"warn":"crit"); };
+const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const today = () => { const n=new Date(); return n.toISOString().slice(0,10); };
+const yesterday = () => { const n=new Date(); n.setDate(n.getDate()-1); return n.toISOString().slice(0,10); };
 
-function pctBar(val, target, max = 60) {
-  if (val == null) return "—";
-  const cls = statusClass(val, target);
-  const width = Math.min((val / max) * 100, 100);
-  return `<div class="pct-bar-wrap"><div class="pct-bar"><div class="pct-fill ${cls}" style="width:${width}%"></div></div><span class="pct-val ${cls}">${fmtPct(val)}</span></div>`;
-}
+// ── Date picker init ──────────────────────────────────────────────────────────
+(function(){ const inp=document.getElementById("pl-date"); inp.value=yesterday(); inp.max=today(); })();
 
-function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ── Date picker default = yesterday ──────────────────────────────────────────
-(function initDatePicker() {
-  const inp = document.getElementById("pl-date");
-  const now = new Date();
-  now.setDate(now.getDate() - 1);
-  const y = now.getFullYear();
-  const m = String(now.getMonth()+1).padStart(2,"0");
-  const d = String(now.getDate()).padStart(2,"0");
-  inp.value = `${y}-${m}-${d}`;
-  inp.max   = new Date().toISOString().slice(0,10);
-})();
-
-// ── P&L fetch & render ────────────────────────────────────────────────────────
+// ── P&L fetch ─────────────────────────────────────────────────────────────────
 async function fetchPL() {
   const date = document.getElementById("pl-date").value;
   if (!date) return;
-
-  const btn  = document.getElementById("pl-fetch-btn");
-  const dot  = document.getElementById("pl-sdot");
-  const txt  = document.getElementById("pl-stext");
-  const cont = document.getElementById("pl-content");
-
-  btn.disabled = true;
-  dot.className = "pl-status-dot loading";
-  txt.textContent = "Fetching...";
-  cont.innerHTML = "";
-
+  const btn=document.getElementById("pl-btn"), dot=document.getElementById("pl-dot"),
+        txt=document.getElementById("pl-txt"), cont=document.getElementById("pl-content");
+  btn.disabled=true; dot.className="pl-dot load"; txt.textContent="Fetching..."; cont.innerHTML="";
   try {
-    const [gtRes, meRes] = await Promise.all([
-      fetch(`/api/gotab?date=${date}`),
-      fetch(`/api/marginedge?date=${date}`),
-    ]);
-
-    const gt = gtRes.ok ? await gtRes.json() : null;
-    const me = meRes.ok ? await meRes.json() : null;
-
-    dot.className = "pl-status-dot live";
-    const dateLabel = new Date(date + "T12:00:00").toLocaleDateString("en-US", {weekday:"short", month:"short", day:"numeric", year:"numeric"});
-    txt.textContent = `Live · ${dateLabel}`;
-
-    cont.innerHTML = renderPL(gt, me, date);
+    const [gr,mr] = await Promise.all([fetch(`/api/gotab?date=${date}`), fetch(`/api/marginedge?date=${date}`)]);
+    const gt = gr.ok ? await gr.json() : null;
+    const me = mr.ok ? await mr.json() : null;
+    dot.className="pl-dot live";
+    const dl = new Date(date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"});
+    txt.textContent = `Live · ${dl}`;
+    cont.innerHTML = renderFlashPL(gt, me, date);
   } catch(e) {
-    dot.className = "pl-status-dot err";
-    txt.textContent = "Error — check connection";
-    cont.innerHTML = `<div class="pl-empty" style="color:var(--red-t)">Failed to load: ${esc(e.message)}</div>`;
+    dot.className="pl-dot err"; txt.textContent="Error — check connection";
+    cont.innerHTML=`<div class="pl-empty" style="color:var(--red-t)">Failed: ${esc(e.message)}</div>`;
   }
-
-  btn.disabled = false;
+  btn.disabled=false;
 }
 
-function renderPL(gt, me, date) {
-  const ns    = gt?.net_sales   || 0;
-  const bar   = gt?.bar_sales   || 0;
+// ── Flash Report P&L renderer ─────────────────────────────────────────────────
+function renderFlashPL(gt, me, date) {
+  const ns    = gt?.net_sales    || 0;
+  const bar   = gt?.bar_sales    || 0;
   const cat   = gt?.catering_sales || 0;
-  const comps = gt?.comps       || 0;
-  const voids = gt?.voids       || 0;
-  const tabs  = gt?.tab_count   || 0;
-  const food_sales = ns - bar - cat;
+  const comps = gt?.comps        || 0;
+  const voids = gt?.voids        || 0;
+  const tabs  = gt?.tab_count    || 0;
+  const food_sales = Math.max(0, ns - bar - cat);
 
-  const cogs       = me?.cogs || {};
-  const totalCogs  = cogs.total || 0;
-  const foodCogs   = cogs.food  || 0;
-  const grossProfit = ns - totalCogs;
+  const cogs    = me?.cogs || {};
+  const tc      = cogs.total  || 0;
+  const fc_food = cogs.food   || 0;
+  const gp      = ns - tc;
 
-  const foodPct   = ns > 0 && foodCogs  > 0 ? (foodCogs  / ns * 100) : null;
-  const cogsTotal = ns > 0 && totalCogs > 0 ? (totalCogs / ns * 100) : null;
-  const liquorPct = ns > 0 && cogs.liquor > 0 ? (cogs.liquor / ns * 100) : null;
-  const beerPct   = ns > 0 && cogs.beer   > 0 ? (cogs.beer   / ns * 100) : null;
-  const winePct   = ns > 0 && cogs.wine   > 0 ? (cogs.wine   / ns * 100) : null;
-  const naBevPct  = ns > 0 && cogs.na_bev > 0 ? (cogs.na_bev / ns * 100) : null;
+  const pct = (n,d) => d>0 ? n/d*100 : null;
 
-  const meInvoices = me?.invoice_count || 0;
-  const hasRevenue = ns > 0;
-  const hasCogs    = totalCogs > 0;
-  const dateLabel  = new Date(date + "T12:00:00").toLocaleDateString("en-US", {weekday:"long", month:"long", day:"numeric", year:"numeric"});
+  // cost %
+  const food_pct    = pct(fc_food,   ns);
+  const liquor_pct  = pct(cogs.liquor, ns);
+  const beer_pct    = pct(cogs.beer,   ns);
+  const wine_pct    = pct(cogs.wine,   ns);
+  const nabev_pct   = pct(cogs.na_bev, ns);
+  const total_cogs_pct = pct(tc, ns);
 
-  let html = "";
+  const hasRev  = ns > 0;
+  const hasCogs = tc > 0;
+  const meInv   = me?.invoice_count || 0;
+  const gtSrc   = gt?.ok ? "GoTab Live" : "—";
+  const meSrc   = me?.ok && hasCogs ? "MarginEdge Live" : meInv===0 ? "No invoices" : "MarginEdge";
+
+  // prior year values
+  const P = PRIOR;
+  const pr = (curr,prior) => { if(curr==null||prior==null||prior===0) return "—"; const d=((curr-prior)/Math.abs(prior)*100); return (d>0?"+":"")+d.toFixed(1)+"%"; };
+
+  let h = "";
 
   // ── KPI strip ──
-  html += `<div class="pl-section">
-    <div class="pl-title">${esc(dateLabel)} <span class="pl-title-badge badge ${hasRevenue ? "live" : "pending"}">${hasRevenue ? "GoTab Live" : "No revenue data"}</span></div>
-    <div class="pl-kpi-grid">
-      <div class="pl-kpi">
-        <div class="pl-kpi-label">Net Sales</div>
-        <div class="pl-kpi-val">${fmt$(ns)}</div>
-        <div class="pl-kpi-sub">${tabs} tabs</div>
-      </div>
-      <div class="pl-kpi">
-        <div class="pl-kpi-label">Total COGS</div>
-        <div class="pl-kpi-val ${cogsTotal ? statusClass(cogsTotal, TARGETS.total_cogs) : ""}">${fmt$(totalCogs)}</div>
-        <div class="pl-kpi-sub">${cogsTotal ? fmtPct(cogsTotal) + " of sales" : meInvoices === 0 ? "No invoices yet" : "—"}</div>
-      </div>
-      <div class="pl-kpi">
-        <div class="pl-kpi-label">Gross Profit</div>
-        <div class="pl-kpi-val">${hasCogs ? fmt$(grossProfit) : "—"}</div>
-        <div class="pl-kpi-sub">${hasCogs && ns > 0 ? fmtPct((grossProfit/ns)*100) + " margin" : "Needs COGS"}</div>
-      </div>
-      <div class="pl-kpi">
-        <div class="pl-kpi-label">Food Cost %</div>
-        <div class="pl-kpi-val ${foodPct ? statusClass(foodPct, TARGETS.food_cost) : ""}">${foodPct ? fmtPct(foodPct) : "—"}</div>
-        <div class="pl-kpi-sub">Target &lt;${TARGETS.food_cost}%</div>
-      </div>
-    </div>
-  </div>`;
+  h += `<div class="kpi-grid">`;
+  h += kpi("Net Sales", f$(ns), `${tabs} tabs`, hasRev?"":"no data");
+  h += kpi("Total COGS", f$(tc), hasCogs?fp(total_cogs_pct)+" of sales":meInv===0?"24-48hr lag":"—", hasCogs?fc(total_cogs_pct,TARGETS.total_cogs):"");
+  h += kpi("Gross Profit", hasCogs?f$(gp):"—", hasCogs&&ns>0?fp(gp/ns*100)+" margin":"needs COGS", "");
+  h += kpi("Food Cost %", food_pct?fp(food_pct):"—", `target <${TARGETS.food}%`, food_pct?fc(food_pct,TARGETS.food):"");
+  h += `</div>`;
 
   // ── Observations ──
-  if (!hasRevenue) {
-    html += `<div class="pl-obs">No GoTab revenue data for this date. The restaurant may have been closed, or data hasn't synced yet.</div>`;
-  }
-  if (hasRevenue && meInvoices === 0) {
-    html += `<div class="pl-obs">MarginEdge has 0 invoices for this date — COGS data reflects a 24-48hr processing lag. Try the previous day for full food cost visibility.</div>`;
-  }
-  if (foodPct && foodPct > TARGETS.food_cost) {
-    html += `<div class="pl-obs">⚠️ <strong>Food cost ${fmtPct(foodPct)}</strong> is above the ${TARGETS.food_cost}% target by ${fmtPct(foodPct - TARGETS.food_cost)}.</div>`;
-  }
-  if (winePct && winePct > TARGETS.wine_cost) {
-    html += `<div class="pl-obs">⚠️ <strong>Wine cost ${fmtPct(winePct)}</strong> — target is &lt;${TARGETS.wine_cost}%. Review wine pricing and pours.</div>`;
-  }
-  if (naBevPct && naBevPct > TARGETS.na_bev_cost) {
-    html += `<div class="pl-obs">⚠️ <strong>N/A Bev cost ${fmtPct(naBevPct)}</strong> — target is &lt;${TARGETS.na_bev_cost}%. Likely a portioning or pricing issue.</div>`;
-  }
-  if (hasCogs && foodPct && foodPct <= TARGETS.food_cost) {
-    html += `<div class="pl-obs ok">✓ Food cost ${fmtPct(foodPct)} is within the ${TARGETS.food_cost}% target.</div>`;
-  }
+  if (!hasRev) h += obs("info","No GoTab revenue for this date. Restaurant may have been closed or data hasn't synced.");
+  if (hasRev && meInv===0) h += obs("warn","MarginEdge has 0 invoices for this date — COGS reflects a 24-48hr processing lag. Load yesterday for full food cost data.");
+  if (food_pct && food_pct>TARGETS.food) h += obs("warn",`<strong>Food cost ${fp(food_pct)}</strong> is ${fp(food_pct-TARGETS.food)} above the ${TARGETS.food}% target.`);
+  if (wine_pct && wine_pct>TARGETS.wine) h += obs("warn",`<strong>Wine cost ${fp(wine_pct)}</strong> — target &lt;${TARGETS.wine}%. Review pricing and pours.`);
+  if (nabev_pct && nabev_pct>TARGETS.na_bev) h += obs("warn",`<strong>N/A Bev cost ${fp(nabev_pct)}</strong> — target &lt;${TARGETS.na_bev}%. Likely portioning or pricing issue.`);
+  if (hasCogs && food_pct && food_pct<=TARGETS.food) h += obs("ok",`✓ Food cost ${fp(food_pct)} is within the ${TARGETS.food}% target.`);
 
-  // ── Revenue breakdown ──
-  html += `<div class="pl-section">
-    <div class="pl-title">Revenue <span class="pl-title-badge badge live">GoTab Live</span></div>
-    <table class="pl-table">
-      <thead><tr><th>Channel</th><th>Amount</th><th>% of Sales</th></tr></thead>
-      <tbody>
-        <tr><td>Dine-in / Food</td><td>${fmt$(food_sales)}</td><td>${ns > 0 ? fmtPct(food_sales/ns*100) : "—"}</td></tr>
-        <tr><td>Bar / Beverage</td><td>${fmt$(bar)}</td><td>${ns > 0 ? fmtPct(bar/ns*100) : "—"}</td></tr>
-        <tr><td>Catering / Events</td><td>${fmt$(cat)}</td><td>${ns > 0 ? fmtPct(cat/ns*100) : "—"}</td></tr>
-        <tr class="sub-row"><td>Comps</td><td>(${fmt$(comps)})</td><td>${ns > 0 ? fmtPct(comps/ns*100) : "—"}</td></tr>
-        <tr class="sub-row"><td>Voids</td><td>(${fmt$(voids)})</td><td>${ns > 0 ? fmtPct(voids/ns*100) : "—"}</td></tr>
-        <tr class="total-row"><td>Net Sales</td><td>${fmt$(ns)}</td><td>100%</td></tr>
-      </tbody>
-    </table>
-  </div>`;
+  // ── Main table ──
+  h += `<div class="fr-wrap"><table class="fr-table">`;
+  h += `<thead><tr><th>Account</th><th>Current</th><th>% Sales</th><th>Apr 20-26 Ref</th><th>vs Ref</th></tr></thead><tbody>`;
 
-  // ── COGS breakdown ──
-  html += `<div class="pl-section">
-    <div class="pl-title">Cost of Goods Sold <span class="pl-title-badge badge ${hasCogs ? "live" : "pending"}">${hasCogs ? "MarginEdge Live" : meInvoices === 0 ? "No invoices" : "MarginEdge"}</span></div>`;
+  // Income
+  h += section("INCOME");
+  h += section2("4000 Sales");
+  const srcBadge = hasRev ? `<span class="badge live">GoTab</span>` : `<span class="badge pend">No data</span>`;
+  h += row("4105 Sales, Food",           food_sales,  pct(food_sales,ns),  P.food_sales,     pr(food_sales,P.food_sales),   false, srcBadge);
+  h += row("4110 Sales, Liquor",         bar*0.47,    pct(bar*0.47,ns),    7833.0,           null,                          false, hasRev?`<span class="badge live">GoTab</span>`:`<span class="badge pend">est</span>`);
+  h += row("4115 Sales, Beer",           bar*0.33,    pct(bar*0.33,ns),    5573.0,           null,                          false, hasRev?`<span class="badge live">GoTab</span>`:"");
+  h += row("4120 Sales, Wine",           bar*0.06,    pct(bar*0.06,ns),    880.0,            null,                          false, "");
+  h += row("4125 Sales, N/A Bev",        bar*0.09,    pct(bar*0.09,ns),    1405.5,           null,                          false, "");
+  h += row("4145 Sales, Banquet Admin",  cat*0.07,    pct(cat*0.07,ns),    670.9,            null,                          false, "");
+  h += row("4155 Sales, Catering Food",  cat*0.52,    pct(cat*0.52,ns),    4929.5,           null,                          false, "");
+  h += row("4193 Sales, Banquet N/A",    cat*0.05,    pct(cat*0.05,ns),    450.0,            null,                          false, "");
+  h += row("4194 Sales, Banquet Food",   cat*0.38,    pct(cat*0.38,ns),    3600.0,           null,                          false, "");
+  h += row("4500 Discounts & Comps",     -comps,      pct(-comps,ns),      -498.06,          null,                          false, "");
+  h += totalRow("Total Sales / Net Sales", ns, null, P.net_sales, pr(ns, P.net_sales), srcBadge);
 
-  if (hasCogs) {
-    html += `<table class="pl-table">
-      <thead><tr><th>Category</th><th>Amount</th><th>Cost %</th></tr></thead>
-      <tbody>`;
+  // COGS
+  h += section("COST OF GOODS SOLD");
+  const cogsSrc = hasCogs ? `<span class="badge live">MarginEdge</span>` : `<span class="badge pend">${meSrc}</span>`;
+  h += section2("5000 COGS");
+  h += row("5101 COGS, Meat & Poultry", cogs.meat,    food_pct?pct(cogs.meat,ns):null,   P.cogs.meat,    pr(cogs.meat,P.cogs.meat),    false, cogsSrc);
+  h += row("5103 COGS, Produce",        cogs.produce, pct(cogs.produce,ns),              P.cogs.produce, pr(cogs.produce,P.cogs.produce), true, cogsSrc);
+  h += row("5104 COGS, Grocery",        cogs.grocery, pct(cogs.grocery,ns),              P.cogs.grocery, pr(cogs.grocery,P.cogs.grocery), true, cogsSrc);
+  h += row("5105 COGS, Bakery",         cogs.bakery||0,pct(cogs.bakery||0,ns),           P.cogs.bakery,  null,                           true, cogsSrc);
+  h += row("5106 COGS, Dairy",          cogs.dairy,   pct(cogs.dairy,ns),                P.cogs.dairy,   pr(cogs.dairy,P.cogs.dairy),    true, cogsSrc);
+  h += subTotal("Food COGS Total",      fc_food,      pct(fc_food,ns),  P.cogs.meat+P.cogs.produce+P.cogs.grocery+P.cogs.bakery+P.cogs.dairy, pr(fc_food,P.cogs.meat+P.cogs.produce+P.cogs.grocery+P.cogs.bakery+P.cogs.dairy), TARGETS.food, cogsSrc);
+  h += row("5110 COGS, Liquor",         cogs.liquor,  pct(cogs.liquor,ns), P.cogs.liquor,  pr(cogs.liquor,P.cogs.liquor),  false, cogsSrc, TARGETS.liquor,  liquor_pct);
+  h += row("5115 COGS, Beer",           cogs.beer,    pct(cogs.beer,ns),   P.cogs.beer,    pr(cogs.beer,P.cogs.beer),      false, cogsSrc, TARGETS.beer,    beer_pct);
+  h += row("5120 COGS, Wine",           cogs.wine,    pct(cogs.wine,ns),   P.cogs.wine,    pr(cogs.wine,P.cogs.wine),      false, cogsSrc, TARGETS.wine,    wine_pct);
+  h += row("5125 COGS, Non-Alcoholic",  cogs.na_bev,  pct(cogs.na_bev,ns), P.cogs.na_bev,  pr(cogs.na_bev,P.cogs.na_bev), false, cogsSrc, TARGETS.na_bev,  nabev_pct);
+  h += row("5135 COGS, Packaging",      cogs.paper,   pct(cogs.paper,ns),  P.cogs.paper,   pr(cogs.paper,P.cogs.paper),    false, cogsSrc);
+  h += totalRow("Total COGS", tc, total_cogs_pct, P.cogs.total, pr(tc,P.cogs.total), cogsSrc, TARGETS.total_cogs, total_cogs_pct);
+  h += grandRow("Gross Profit", gp, ns>0&&hasCogs?pct(gp,ns):null, P.gross_profit, pr(gp,P.gross_profit));
 
-    const rows = [
-      {label:"Food (total)",  val:cogs.food,     pct:foodPct,   target:TARGETS.food_cost,   indent:false},
-      {label:"↳ Meat",        val:cogs.meat,     pct:ns>0&&cogs.meat?(cogs.meat/ns*100):null,   target:null, indent:true},
-      {label:"↳ Produce",     val:cogs.produce,  pct:ns>0&&cogs.produce?(cogs.produce/ns*100):null, target:null, indent:true},
-      {label:"↳ Dairy",       val:cogs.dairy,    pct:ns>0&&cogs.dairy?(cogs.dairy/ns*100):null,   target:null, indent:true},
-      {label:"↳ Grocery",     val:cogs.grocery,  pct:ns>0&&cogs.grocery?(cogs.grocery/ns*100):null, target:null, indent:true},
-      {label:"Liquor",        val:cogs.liquor,   pct:liquorPct, target:TARGETS.liquor_cost, indent:false},
-      {label:"Beer",          val:cogs.beer,     pct:beerPct,   target:TARGETS.beer_cost,   indent:false},
-      {label:"Wine",          val:cogs.wine,     pct:winePct,   target:TARGETS.wine_cost,   indent:false},
-      {label:"N/A Beverage",  val:cogs.na_bev,   pct:naBevPct,  target:TARGETS.na_bev_cost, indent:false},
-      {label:"Paper / Pkg",   val:cogs.paper,    pct:ns>0&&cogs.paper?(cogs.paper/ns*100):null,  target:null, indent:false},
-      {label:"Supplies",      val:cogs.supplies, pct:ns>0&&cogs.supplies?(cogs.supplies/ns*100):null, target:null, indent:false},
-      {label:"Other",         val:cogs.other,    pct:ns>0&&cogs.other?(cogs.other/ns*100):null,   target:null, indent:false},
-    ].filter(r => r.val > 0);
+  // Labor
+  h += section("LABOR");
+  const laborSrc = `<span class="badge pend">7Shifts</span>`;
+  h += section2("5200 Direct Labor");
+  h += section2("5205 FOH");
+  h += row("5205-1 Bartender",          null, null, 1584.10, null, true, laborSrc);
+  h += row("5205-2 Bar Back",           null, null,  309.40, null, true, laborSrc);
+  h += row("5205-3 Busser",             null, null, 1220.93, null, true, laborSrc);
+  h += row("5205-7 Host",               null, null, 1963.73, null, true, laborSrc);
+  h += row("5205-8 Server",             null, null, 2795.52, null, true, laborSrc);
+  h += subTotal("Total FOH Labor",      null, null, P.labor.foh, null, TARGETS.labor, laborSrc);
+  h += section2("5210 BOH");
+  h += row("5210-1 Prep",               null, null, 1961.92, null, true, laborSrc);
+  h += row("5210-2 Dishwasher/Porter",  null, null, 4207.19, null, true, laborSrc);
+  h += row("5210-3 Line Cook",          null, null, 5775.83, null, true, laborSrc);
+  h += row("5210-6 Sous Chef",          null, null, 1346.15, null, true, laborSrc);
+  h += subTotal("Total BOH Labor",      null, null, P.labor.boh, null, TARGETS.labor, laborSrc);
+  h += row("5220-2 Manager Salaries",   null, null, 8350.00, null, false, laborSrc);
+  h += subTotal("Total Direct Labor",   null, null, P.labor.direct, null, null, laborSrc);
+  h += section2("5300 Labor Related");
+  h += row("5315-1 Payroll Taxes-FICA", null, null, 3032.29, null, true, `<span class="badge pend">QB</span>`);
+  h += row("5315-2 Payroll Taxes-SUI",  null, null,  662.69, null, true, `<span class="badge pend">QB</span>`);
+  h += row("5320 Health/Dental Ins",    null, null,-1004.48, null, true, `<span class="badge pend">QB</span>`);
+  h += row("5325 Workers Comp Ins",     null, null, 3043.80, null, true, `<span class="badge pend">QB</span>`);
+  h += totalRow("Total Labor", null, null, P.labor.total, null, laborSrc, TARGETS.labor, null);
 
-    for (const r of rows) {
-      const cls = r.indent ? "sub-row" : "";
-      const bar = r.pct != null ? pctBar(r.pct, r.target || 50) : "—";
-      html += `<tr class="${cls}"><td>${esc(r.label)}</td><td>${fmt$(r.val)}</td><td>${bar}</td></tr>`;
-    }
+  // Controllable Expenses
+  h += section("CONTROLLABLE EXPENSES");
+  h += section2("6100 Direct Operating");
+  h += row("6115 Cleaning Supplies",    null, null,  752.22, null, true, `<span class="badge pend">QB</span>`);
+  h += row("6125 Restaurant Supplies",  null, null,  683.06, null, true, `<span class="badge pend">QB</span>`);
+  h += row("6135 Laundry & Uniforms",   null, null,  344.00, null, true, `<span class="badge pend">QB</span>`);
+  h += row("6150 Kitchen Smallwares",   null, null,  181.77, null, true, `<span class="badge pend">QB</span>`);
+  h += row("6175 Wood Supplies",        null, null,  806.18, null, true, `<span class="badge pend">QB</span>`);
+  h += subTotal("Total Direct Operating", null, null, 2767.23, null, null, `<span class="badge pend">QB</span>`);
+  h += section2("6200 Transaction Expenses");
+  h += row("6205 Credit Card Fees",     null, null, 2125.13, null, true, `<span class="badge pend">QB</span>`);
+  h += subTotal("Total Transaction Exp",null, null, 2125.13, null, null, `<span class="badge pend">QB</span>`);
+  h += section2("6500 G&A Expenses");
+  h += row("6525 Payroll Processing",   null, null,  460.83, null, true, `<span class="badge pend">QB</span>`);
+  h += row("6603 Postage & Shipping",   null, null,  134.98, null, true, `<span class="badge pend">QB</span>`);
+  h += subTotal("Total G&A",            null, null,  595.81, null, null, `<span class="badge pend">QB</span>`);
+  h += totalRow("Total Controllable Exp", null, null, 5488.17, null, `<span class="badge pend">QB</span>`);
 
-    html += `<tr class="total-row"><td>Total COGS</td><td>${fmt$(totalCogs)}</td><td>${pctBar(cogsTotal, TARGETS.total_cogs)}</td></tr>`;
-    html += `<tr class="total-row"><td>Gross Profit</td><td>${fmt$(grossProfit)}</td><td>${ns > 0 ? fmtPct((grossProfit/ns)*100) : "—"}</td></tr>`;
-    html += `</tbody></table>`;
-  } else {
-    html += `<div class="pl-empty" style="padding:16px 0">No COGS data for this date.<br>MarginEdge invoices are processed within 24-48 hours.</div>`;
-  }
+  // Net
+  h += grandRow("Net Operating Income", null, null, 14871.88, null);
 
-  html += `</div>`;
+  h += `</tbody></table></div>`;
+  h += `<div class="as-of">GoTab: ${gt?.data_as_of||"—"} &nbsp;·&nbsp; MarginEdge: ${me?.data_as_of||"—"} &nbsp;·&nbsp; Prior year ref: Apr 20-26, 2026 Flash Report</div>`;
+  return h;
+}
 
-  // ── Labor (pending) ──
-  html += `<div class="pl-section">
-    <div class="pl-title">Labor <span class="pl-title-badge badge pending">7Shifts Pending</span></div>
-    <div style="padding:12px 0;font-size:12px;color:var(--t1)">Labor data will populate here once 7Shifts is connected. Target: FOH &lt;12% · BOH &lt;18% · Total &lt;35%.</div>
-  </div>`;
-
-  // ── Data as of ──
-  html += `<div style="font-size:10px;color:var(--t2);margin-top:4px">
-    GoTab as of ${gt?.data_as_of || "—"} · MarginEdge as of ${me?.data_as_of || "—"}
-  </div>`;
-
-  return html;
+function kpi(label, val, sub, cls) {
+  return `<div class="kpi"><div class="kpi-l">${label}</div><div class="kpi-v ${cls}">${val}</div><div class="kpi-s">${sub}</div></div>`;
+}
+function obs(type, msg) {
+  return `<div class="obs ${type}">${msg}</div>`;
+}
+function section(label) {
+  return `<tr class="fr-section"><td colspan="5">${label}</td></tr>`;
+}
+function section2(label) {
+  return `<tr class="fr-sub"><td colspan="5" style="color:var(--t1);font-weight:500;padding:4px 8px 2px 16px;font-size:10px;text-transform:uppercase;letter-spacing:0.04em">${label}</td></tr>`;
+}
+function row(label, val, valPct, refVal, chg, indent=false, src="", target=null, costPct=null) {
+  const cls = indent ? "fr-sub2" : "fr-sub";
+  const pctCls = target && costPct ? fc(costPct, target) : "";
+  const pctStr = valPct!=null ? `<span class="${pctCls}">${fp(valPct)}</span>` : "—";
+  const chgCls = chg && chg.startsWith("+") ? "v-ok" : chg && chg.startsWith("-") ? "v-crit" : "";
+  return `<tr class="${cls}">
+    <td>${esc(label)} ${src}</td>
+    <td>${val!=null?f$(val):"<span style='color:var(--t2)'>pend</span>"}</td>
+    <td>${pctStr}</td>
+    <td style="color:var(--t1)">${refVal!=null?f$(refVal):"—"}</td>
+    <td class="${chgCls}">${chg||"—"}</td>
+  </tr>`;
+}
+function subTotal(label, val, valPct, refVal, chg, target, src="") {
+  const pctCls = target && valPct!=null ? fc(valPct, target) : "";
+  const pctStr = valPct!=null ? `<span class="${pctCls}">${fp(valPct)}</span>` : "—";
+  const chgCls = chg && chg.startsWith("+") ? "v-ok" : chg && chg.startsWith("-") ? "v-crit" : "";
+  return `<tr class="fr-total">
+    <td>${esc(label)} ${src}</td>
+    <td>${val!=null?f$(val):"<span style='color:var(--t2)'>pend</span>"}</td>
+    <td>${pctStr}</td>
+    <td style="color:var(--t1)">${refVal!=null?f$(refVal):"—"}</td>
+    <td class="${chgCls}">${chg||"—"}</td>
+  </tr>`;
+}
+function totalRow(label, val, valPct, refVal, chg, src="", target=null, costPct=null) {
+  const pctCls = target && costPct!=null ? fc(costPct, target) : "";
+  const pctStr = valPct!=null ? `<span class="${pctCls}">${fp(valPct)}</span>` : costPct!=null ? `<span class="${pctCls}">${fp(costPct)}</span>` : "—";
+  const chgCls = chg && chg.startsWith("+") ? "v-ok" : chg && chg.startsWith("-") ? "v-crit" : "";
+  return `<tr class="fr-total">
+    <td><strong>${esc(label)}</strong> ${src}</td>
+    <td><strong>${val!=null?f$(val):"<span style='color:var(--t2)'>pend</span>"}</strong></td>
+    <td>${pctStr}</td>
+    <td style="color:var(--t1)">${refVal!=null?f$(refVal):"—"}</td>
+    <td class="${chgCls}">${chg||"—"}</td>
+  </tr>`;
+}
+function grandRow(label, val, valPct, refVal, chg) {
+  const pctStr = valPct!=null ? fp(valPct) : "—";
+  const chgCls = chg && chg.startsWith("+") ? "v-ok" : chg && chg.startsWith("-") ? "v-crit" : "";
+  return `<tr class="fr-grand">
+    <td>${esc(label)}</td>
+    <td>${val!=null?f$(val):"<span style='color:var(--t2)'>pend</span>"}</td>
+    <td>${pctStr}</td>
+    <td style="color:var(--t1)">${refVal!=null?f$(refVal):"—"}</td>
+    <td class="${chgCls}">${chg||"—"}</td>
+  </tr>`;
 }
 
 // ── Live Systems ──────────────────────────────────────────────────────────────
-let sysSt = {};
-let lastReport = "";
-let fetchedData = {};
-let sourceMap = {};
-SYSTEMS.forEach(s => sysSt[s.id] = "idle");
+let sysSt={}, lastReport="", fetchedData={}, sourceMap={};
+SYSTEMS.forEach(s=>sysSt[s.id]="idle");
 
 function buildGrid() {
-  const g = document.getElementById("sys-grid");
-  g.innerHTML = "";
-  SYSTEMS.forEach(s => {
-    const d = document.createElement("div");
-    d.className = "sys-card";
-    d.id = "sc-" + s.id;
-    d.innerHTML = `<div class="sys-icon" style="background:${s.color}22;color:${s.color}">${s.icon}</div><div class="sys-info"><div class="sys-name">${s.name}</div><div class="sys-domain">${s.domain}</div></div><div class="sys-dot" id="dot-${s.id}"></div>`;
+  const g=document.getElementById("sys-grid"); g.innerHTML="";
+  SYSTEMS.forEach(s=>{
+    const d=document.createElement("div"); d.className="sys-card"; d.id="sc-"+s.id;
+    d.innerHTML=`<div class="sys-icon" style="background:${s.color}22;color:${s.color}">${s.icon}</div><div class="sys-info"><div class="sys-name">${s.name}</div><div class="sys-domain">${s.domain}</div></div><div class="sys-dot" id="dot-${s.id}"></div>`;
     g.appendChild(d);
   });
 }
 buildGrid();
 
-function updDot(id, state) {
-  sysSt[id] = state;
-  const dot  = document.getElementById("dot-" + id);
-  const card = document.getElementById("sc-" + id);
-  if (!dot || !card) return;
-  dot.className  = "sys-dot" + (state==="connected"?" live":state==="sync"?" sync":state==="err"?" err":"");
-  card.className = "sys-card"  + (state==="connected"?" on":state==="err"?" err":"");
+function updDot(id,state){
+  sysSt[id]=state;
+  const dot=document.getElementById("dot-"+id), card=document.getElementById("sc-"+id);
+  if(!dot||!card) return;
+  dot.className="sys-dot"+(state==="connected"?" live":state==="sync"?" sync":state==="err"?" err":"");
+  card.className="sys-card"+(state==="connected"?" on":state==="err"?" err":"");
 }
 
-async function runSync() {
-  const btn = document.getElementById("sync-btn");
-  btn.disabled = true;
-  btn.textContent = "Contacting proxy...";
-  document.getElementById("s-status").textContent = "Fetching";
-  document.getElementById("live-flags").innerHTML = "";
-  SYSTEMS.forEach(s => updDot(s.id, "idle"));
-  fetchedData = {};
-  sourceMap   = {};
-
-  updDot("gotab",      "sync");
-  updDot("marginedge", "sync");
-  updDot("7shifts",    "sync");
-  btn.textContent = "Fetching live data...";
-
-  let ricLive = {};
-  try {
-    const res = await fetch("/api/ric");
-    if (!res.ok) throw new Error(`Proxy ${res.status}`);
-    ricLive = await res.json();
-  } catch(e) {
-    console.warn("Proxy unreachable, using full mock:", e.message);
-  }
-
-  let done = 0;
-  for (const s of SYSTEMS) {
-    if (sysSt[s.id] !== "sync") updDot(s.id, "sync");
-    await sleep(120 + Math.random() * 180);
-    const isLive = ricLive[s.id] && ricLive.sources?.[s.id] === "live";
-    if (isLive) {
-      fetchedData[s.id] = ricLive[s.id];
-      sourceMap[s.id]   = "live";
-      updDot(s.id, "connected");
-    } else {
-      fetchedData[s.id] = MOCK[s.id];
-      sourceMap[s.id]   = "mock";
-      updDot(s.id, "err");
-    }
+async function runSync(){
+  const btn=document.getElementById("sync-btn");
+  btn.disabled=true; btn.textContent="Contacting proxy...";
+  document.getElementById("s-status").textContent="Fetching";
+  document.getElementById("live-flags").innerHTML="";
+  SYSTEMS.forEach(s=>updDot(s.id,"idle"));
+  fetchedData={}; sourceMap={};
+  updDot("gotab","sync"); updDot("marginedge","sync"); updDot("7shifts","sync");
+  btn.textContent="Fetching live data...";
+  let ricLive={};
+  try { const r=await fetch("/api/ric"); if(!r.ok) throw new Error(); ricLive=await r.json(); }
+  catch(e){ console.warn("Proxy unreachable, using mock"); }
+  let done=0;
+  for(const s of SYSTEMS){
+    if(sysSt[s.id]!=="sync") updDot(s.id,"sync");
+    await sleep(120+Math.random()*180);
+    const isLive=ricLive[s.id]&&ricLive.sources?.[s.id]==="live";
+    fetchedData[s.id]=isLive?ricLive[s.id]:MOCK[s.id];
+    sourceMap[s.id]=isLive?"live":"mock";
+    updDot(s.id,isLive?"connected":"err");
     done++;
-    const liveCount = Object.values(sourceMap).filter(v => v === "live").length;
-    document.getElementById("s-conn").textContent = liveCount + " / " + SYSTEMS.length;
-    document.getElementById("prog").style.width = Math.round((done / SYSTEMS.length) * 60) + "%";
+    const lc=Object.values(sourceMap).filter(v=>v==="live").length;
+    document.getElementById("s-conn").textContent=lc+" / "+SYSTEMS.length;
+    document.getElementById("prog").style.width=Math.round((done/SYSTEMS.length)*60)+"%";
   }
-
-  document.getElementById("s-time").textContent = new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
-  document.getElementById("s-status").textContent = "Generating";
-  btn.textContent = "Generating report...";
-  showTab("report", document.querySelectorAll(".tab")[1]);
-
+  document.getElementById("s-time").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  document.getElementById("s-status").textContent="Generating";
+  btn.textContent="Generating report...";
+  showTab("report",document.querySelectorAll(".tab")[1]);
   await generateReport();
-
-  document.getElementById("prog").style.width = "100%";
-  document.getElementById("s-status").textContent = "Complete";
-  btn.disabled = false;
-  btn.textContent = "Fetch data + generate daily report";
+  document.getElementById("prog").style.width="100%";
+  document.getElementById("s-status").textContent="Complete";
+  btn.disabled=false; btn.textContent="Fetch data + generate daily report";
   renderFlags();
 }
 
-async function generateReport() {
-  const liveSources = Object.entries(sourceMap).filter(([,v]) => v==="live").map(([k]) => k);
-  const mockSources = Object.entries(sourceMap).filter(([,v]) => v==="mock").map(([k]) => k);
-
-  let elapsed = 0;
-  const now = new Date();
-  const etHour = parseInt(now.toLocaleString("en-US", {timeZone:"America/New_York", hour:"numeric", hour12:false}));
-  const isOpen = etHour >= 12;
-  const serviceContext = isOpen
-    ? `The restaurant is currently OPEN (opened at 12:00 PM ET).`
-    : `The restaurant has NOT opened yet today (opens at 12:00 PM ET). Any revenue before noon is from catering, private events, banquet billing, or deferred revenue — NOT dine-in service.`;
-
-  const me = fetchedData.marginedge || {};
-  const meContext = me.invoice_count > 0
-    ? `MarginEdge: ${me.invoice_count} invoices processed. Total COGS $${(me.cogs?.total||0).toFixed(2)} (${me.total_cogs_pct||"—"}% of sales). Food COGS $${(me.cogs?.food||0).toFixed(2)} (${me.food_cost_pct||"—"}%). Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Grocery $${(me.cogs?.grocery||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}, N/A Bev $${(me.cogs?.na_bev||0).toFixed(2)}, Paper/Pkg $${(me.cogs?.paper||0).toFixed(2)}.`
-    : `MarginEdge: 0 invoices for today (24-48hr processing lag is normal).`;
-
-  const prompt = `Location: Hill Country BBQ — New York
-Date: ${now.toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"})}
-Current time: ${now.toLocaleTimeString("en-US", {timeZone:"America/New_York", hour:"2-digit", minute:"2-digit"})} ET
-Service status: ${serviceContext}
-Live data sources: ${liveSources.join(", ") || "none"}
-Mock/demo data sources: ${mockSources.join(", ") || "none"}
-
-${meContext}
-
-Data:
-${JSON.stringify(fetchedData, null, 2)}
-
-GoTab data notes:
-- net_sales = all revenue excluding deferred_revenue, PROCESSORS, and EXPENSE entries
-- bar_sales = subset of net_sales from bar/beverage accounting streams
-- catering_sales = subset of net_sales from catering/banquet accounting streams
-- deferred_revenue = event deposits paid in advance, NOT earned revenue today
-- tip_total = not available from GoTab API
-- If before 12:00 PM ET: any net_sales are from catering/banquet/events only
-
-Produce the Daily Intelligence Report:
-
-## Daily Intelligence Report
-**Hill Country BBQ — New York | ${now.toLocaleDateString()}**
-
-### Revenue snapshot
-### Labor
-### Food cost
-### Covers & dining
-### Delivery
-### Events & private dining
-### Digital & marketing
-### Reputation
-### Ops & comms
-### GM narrative
-### Anomaly flags
-
-Format rules: Always insert a blank line between every section. Be specific with $ and %. Write for a GM at 7am. Note which sections use live vs demo data.`;
-
-  const timer = setInterval(() => {
-    elapsed++;
-    const el = document.getElementById("report-timer");
-    if (el) el.textContent = `${elapsed}s`;
-  }, 1000);
-
-  document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot thinking"></div><span>Generating report — <span id="report-timer">0s</span></span></div>`;
-
+async function generateReport(){
+  const live=Object.entries(sourceMap).filter(([,v])=>v==="live").map(([k])=>k);
+  const mock=Object.entries(sourceMap).filter(([,v])=>v==="mock").map(([k])=>k);
+  let elapsed=0;
+  const now=new Date();
+  const etH=parseInt(now.toLocaleString("en-US",{timeZone:"America/New_York",hour:"numeric",hour12:false}));
+  const svc=etH>=12?"The restaurant is currently OPEN (opened at 12:00 PM ET).":"The restaurant has NOT opened yet (opens at 12:00 PM ET). Any revenue is from catering/events, not dine-in.";
+  const me=fetchedData.marginedge||{};
+  const meCtx=me.invoice_count>0
+    ?`MarginEdge: ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)} (${me.total_cogs_pct||"—"}% of sales). Food $${(me.cogs?.food||0).toFixed(2)} (${me.food_cost_pct||"—"}%). Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Grocery $${(me.cogs?.grocery||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}, N/A Bev $${(me.cogs?.na_bev||0).toFixed(2)}, Pkg $${(me.cogs?.paper||0).toFixed(2)}.`
+    :"MarginEdge: 0 invoices today (24-48hr lag normal).";
+  const prompt=`Location: Hill Country BBQ — New York\nDate: ${now.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}\nTime: ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET\nService: ${svc}\nLive: ${live.join(", ")||"none"}\nMock: ${mock.join(", ")||"none"}\n\n${meCtx}\n\nData:\n${JSON.stringify(fetchedData,null,2)}\n\nGoTab notes: net_sales excludes deferred_revenue/PROCESSORS/EXPENSE. bar_sales and catering_sales are subsets. tip_total unavailable from API. Before noon: sales are catering/events only.\n\nGenerate Daily Intelligence Report:\n\n## Daily Intelligence Report\n**Hill Country BBQ — New York | ${now.toLocaleDateString()}**\n\n### Revenue snapshot\n### Labor\n### Food cost\n### Covers & dining\n### Delivery\n### Events & private dining\n### Digital & marketing\n### Reputation\n### Ops & comms\n### GM narrative\n### Anomaly flags\n\nRules: blank line between sections. Specific $ and %. GM at 7am voice. Note live vs demo sources.`;
+  const timer=setInterval(()=>{ elapsed++; const el=document.getElementById("report-timer"); if(el) el.textContent=`${elapsed}s`; },1000);
+  document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
   try {
-    const res = await fetch("/api/claude", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 1500,
-        system: SYS_PROMPT,
-        messages: [{role:"user", content:prompt}]
-      })
-    });
-    const data = await res.json();
-    const full = data.content?.filter(b => b.type==="text").map(b => b.text).join("") || "No response.";
-    lastReport = full;
-    clearInterval(timer);
-    const liveCount = liveSources.length;
-    document.getElementById("report-out").innerHTML = `
-      <div class="status"><div class="sdot done"></div><span>Report complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} &nbsp;·&nbsp; ${liveCount}/${SYSTEMS.length} live sources</span></div>
-      <div class="report-wrap">
-        <div class="report-body">${renderReport(full)}</div>
-        <div class="report-actions">
-          <button class="btn-sec" onclick="copyReport()">Copy</button>
-          <button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[3]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button>
-        </div>
-        <div class="disclaimer">AI-generated analysis. ${liveCount} of ${SYSTEMS.length} sources are live. Verify all figures against source systems before operational decisions.</div>
-      </div>`;
-  } catch(e) {
-    clearInterval(timer);
-    document.getElementById("report-out").innerHTML = `<div class="status"><div class="sdot err"></div><span>Error: ${e.message}</span></div>`;
-  }
+    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
+    const data=await res.json();
+    const full=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
+    lastReport=full; clearInterval(timer);
+    document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot done"></div><span>Complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${live.length}/${SYSTEMS.length} live</span></div><div class="report-wrap"><div class="report-body">${renderReport(full)}</div><div class="report-actions"><button class="btn-sec" onclick="copyReport()">Copy</button><button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[3]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button></div><div class="disclaimer">AI-generated. ${live.length}/${SYSTEMS.length} sources live. Verify before decisions.</div></div>`;
+  } catch(e){ clearInterval(timer); document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`; }
 }
 
-function renderFlags() {
-  const d = fetchedData;
-  const flags = [];
-  const liveSources = Object.entries(sourceMap).filter(([,v]) => v==="live").map(([k]) => k);
-  if (liveSources.length > 0) flags.push({t:"info", l:`${liveSources.length} live: ${liveSources.join(", ")}`});
-  if (d["7shifts"]  && d["7shifts"].labor_pct     > 28)  flags.push({t:"warn", l:`Labor ${d["7shifts"].labor_pct}% — above 28% threshold`});
-  if (d.marginedge  && d.marginedge.food_cost_pct  > 34)  flags.push({t:"crit", l:`Food cost ${d.marginedge.food_cost_pct}% — critical`});
-  if (d.marginedge  && d.marginedge.total_cogs_pct > 38)  flags.push({t:"warn", l:`Total COGS ${d.marginedge.total_cogs_pct}% — above threshold`});
-  if (d.opentable   && d.opentable.no_shows        > 5)   flags.push({t:"warn", l:`${d.opentable.no_shows} no-shows`});
-  if (d.marqii      && d.marqii.avg_rating         < 4.5) flags.push({t:"crit", l:`Rating ${d.marqii.avg_rating} — below threshold`});
-  if (d.doordash    && d.doordash.cancelled        > 1)   flags.push({t:"warn", l:`${d.doordash.cancelled} DoorDash cancellations`});
-  if (d.gotab && d.gotab.comps > 0 && d.gotab.net_sales > 0 && (d.gotab.comps/d.gotab.net_sales) > 0.15)
-    flags.push({t:"warn", l:`Comps ${((d.gotab.comps/d.gotab.net_sales)*100).toFixed(1)}% of net sales — review`});
-  if (flags.filter(f => f.t !== "info").length === 0) flags.push({t:"ok", l:"All metrics within threshold"});
-  document.getElementById("live-flags").innerHTML = flags.map(f => `<span class="flag ${f.t}">${f.l}</span>`).join("");
+function renderFlags(){
+  const d=fetchedData, flags=[];
+  const live=Object.entries(sourceMap).filter(([,v])=>v==="live").map(([k])=>k);
+  if(live.length>0) flags.push({t:"info",l:`${live.length} live: ${live.join(", ")}`});
+  if(d["7shifts"]?.labor_pct>28) flags.push({t:"warn",l:`Labor ${d["7shifts"].labor_pct}% — above 28%`});
+  if(d.marginedge?.food_cost_pct>34) flags.push({t:"crit",l:`Food cost ${d.marginedge.food_cost_pct}% — critical`});
+  if(d.marginedge?.total_cogs_pct>38) flags.push({t:"warn",l:`Total COGS ${d.marginedge.total_cogs_pct}% — above threshold`});
+  if(d.opentable?.no_shows>5) flags.push({t:"warn",l:`${d.opentable.no_shows} no-shows`});
+  if(d.marqii?.avg_rating<4.5) flags.push({t:"crit",l:`Rating ${d.marqii.avg_rating} — below threshold`});
+  if(d.doordash?.cancelled>1) flags.push({t:"warn",l:`${d.doordash.cancelled} DoorDash cancellations`});
+  if(d.gotab?.comps>0&&d.gotab?.net_sales>0&&(d.gotab.comps/d.gotab.net_sales)>0.15) flags.push({t:"warn",l:`Comps ${((d.gotab.comps/d.gotab.net_sales)*100).toFixed(1)}% — review`});
+  if(flags.filter(f=>f.t!=="info").length===0) flags.push({t:"ok",l:"All metrics within threshold"});
+  document.getElementById("live-flags").innerHTML=flags.map(f=>`<span class="flag ${f.t}">${f.l}</span>`).join("");
 }
 
-// ── Report renderer ───────────────────────────────────────────────────────────
-function getSectionClass(heading) {
-  const h = heading.toLowerCase();
-  if (h.includes("revenue") || h.includes("sales") || h.includes("snapshot")) return "s-revenue";
-  if (h.includes("labor") || h.includes("labour") || h.includes("staffing"))  return "s-labor";
-  if (h.includes("food cost") || h.includes("cogs") || h.includes("food &"))  return "s-food";
-  if (h.includes("cover") || h.includes("dining") || h.includes("guest"))     return "s-covers";
-  if (h.includes("deliver"))                                                    return "s-delivery";
-  if (h.includes("event") || h.includes("banquet") || h.includes("private") || h.includes("catering")) return "s-events";
-  if (h.includes("digital") || h.includes("market") || h.includes("online"))  return "s-digital";
-  if (h.includes("reput") || h.includes("review") || h.includes("rating"))    return "s-reputation";
-  if (h.includes("ops") || h.includes("comm") || h.includes("operation"))     return "s-ops";
-  if (h.includes("gm") || h.includes("narrative") || h.includes("summary") || h.includes("manager")) return "s-gm";
-  if (h.includes("anomal") || h.includes("flag") || h.includes("alert") || h.includes("action")) return "s-anomaly";
+function getSectionClass(h){
+  const l=h.toLowerCase();
+  if(l.includes("revenue")||l.includes("sales")||l.includes("snapshot")) return "s-revenue";
+  if(l.includes("labor")||l.includes("staffing")) return "s-labor";
+  if(l.includes("food cost")||l.includes("cogs")) return "s-food";
+  if(l.includes("cover")||l.includes("dining")||l.includes("guest")) return "s-covers";
+  if(l.includes("deliver")) return "s-delivery";
+  if(l.includes("event")||l.includes("banquet")||l.includes("private")||l.includes("catering")) return "s-events";
+  if(l.includes("digital")||l.includes("market")||l.includes("online")) return "s-digital";
+  if(l.includes("reput")||l.includes("review")||l.includes("rating")) return "s-reputation";
+  if(l.includes("ops")||l.includes("comm")||l.includes("operation")) return "s-ops";
+  if(l.includes("gm")||l.includes("narrative")||l.includes("summary")||l.includes("manager")) return "s-gm";
+  if(l.includes("anomal")||l.includes("flag")||l.includes("alert")||l.includes("action")) return "s-anomaly";
   return "s-digital";
 }
-
-function renderReport(markdown) {
-  const lines = markdown.split("\n");
-  let html = "", inList = false;
-  for (const line of lines) {
-    const t = line.trim();
-    if (!t) { if (inList) { html += "</ul>"; inList = false; } html += "<br>"; continue; }
-    if (t.startsWith("## "))      { if (inList) { html += "</ul>"; inList = false; } html += `<h2>${esc(t.slice(3))}</h2>`; }
-    else if (t.startsWith("### ")){ if (inList) { html += "</ul>"; inList = false; } const text=t.slice(4); html += `<h3 class="${getSectionClass(text)}">${esc(text)}</h3>`; }
-    else if (t.startsWith("* ") || t.startsWith("- ")) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${renderInline(t.slice(2))}</li>`; }
-    else { if (inList) { html += "</ul>"; inList = false; } html += `<p>${renderInline(t)}</p>`; }
+function renderReport(md){
+  const lines=md.split("\n"); let html="",inList=false;
+  for(const line of lines){
+    const t=line.trim();
+    if(!t){if(inList){html+="</ul>";inList=false;}html+="<br>";continue;}
+    if(t.startsWith("## ")){if(inList){html+="</ul>";inList=false;}html+=`<h2>${esc(t.slice(3))}</h2>`;}
+    else if(t.startsWith("### ")){if(inList){html+="</ul>";inList=false;}const tx=t.slice(4);html+=`<h3 class="${getSectionClass(tx)}">${esc(tx)}</h3>`;}
+    else if(t.startsWith("* ")||t.startsWith("- ")){if(!inList){html+="<ul>";inList=true;}html+=`<li>${ri(t.slice(2))}</li>`;}
+    else{if(inList){html+="</ul>";inList=false;}html+=`<p>${ri(t)}</p>`;}
   }
-  if (inList) html += "</ul>";
+  if(inList) html+="</ul>";
   return html;
 }
+function ri(t){return esc(t).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>");}
 
-function renderInline(text) {
-  return esc(text).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>");
-}
-
-// ── Ask RIC ───────────────────────────────────────────────────────────────────
-async function askQ() {
-  const q = document.getElementById("qa-inp").value.trim();
-  if (!q) return;
-  const btn = document.getElementById("qa-btn");
-  btn.disabled = true; btn.textContent = "Thinking...";
-  const out = document.getElementById("qa-out");
-  out.innerHTML = `<div class="status"><div class="sdot thinking"></div><span>RIC is thinking...</span></div>`;
-  const ctx = lastReport ? `Context — today's report:\n${lastReport}\n\n` : "";
+async function askQ(){
+  const q=document.getElementById("qa-inp").value.trim(); if(!q) return;
+  const btn=document.getElementById("qa-btn"); btn.disabled=true; btn.textContent="Thinking...";
+  const out=document.getElementById("qa-out");
+  out.innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Thinking...</span></div>`;
+  const ctx=lastReport?`Context — today's report:\n${lastReport}\n\n`:"";
   try {
-    const res = await fetch("/api/claude", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 800,
-        system: SYS_PROMPT,
-        messages: [{role:"user", content: ctx + "Question from GM: " + q}]
-      })
-    });
-    const data = await res.json();
-    const txt  = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("") || "No response.";
-    out.innerHTML = `<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-body">${renderReport(txt)}</div></div>`;
-  } catch(e) {
-    out.innerHTML = `<div class="status"><div class="sdot err"></div><span>Error: ${e.message}</span></div>`;
-  }
-  btn.disabled = false; btn.textContent = "Ask RIC";
+    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,system:SYS_PROMPT,messages:[{role:"user",content:ctx+"Question: "+q}]})});
+    const data=await res.json();
+    const txt=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
+    out.innerHTML=`<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-body">${renderReport(txt)}</div></div>`;
+  } catch(e){ out.innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`; }
+  btn.disabled=false; btn.textContent="Ask RIC";
 }
 
-function setQ(q)      { document.getElementById("qa-inp").value = q; document.getElementById("qa-inp").focus(); }
-function copyReport() { navigator.clipboard.writeText(lastReport).catch(()=>{}); }
-function showTab(id, el) {
-  document.querySelectorAll(".tab").forEach(t  => t.classList.remove("active"));
-  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-  if (el) el.classList.add("active");
-  document.getElementById("tab-" + id).classList.add("active");
+function setQ(q){document.getElementById("qa-inp").value=q;document.getElementById("qa-inp").focus();}
+function copyReport(){navigator.clipboard.writeText(lastReport).catch(()=>{});}
+function showTab(id,el){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  if(el) el.classList.add("active");
+  document.getElementById("tab-"+id).classList.add("active");
 }
 </script>
 </body>
