@@ -313,66 +313,36 @@ app.get("/api/7shifts", async (req, res) => {
 });
 
 // MarginEdge only
-app.get("/api/marginedge", async (req, res) => {
-  try {
-    const date = req.query.date || today();
-    const data = await fetchMarginEdge(date);
-    res.json({ ok: true, source: "marginedge_live", date, ...data });
-  } catch (err) {
-    console.error("MarginEdge error:", err.message);
-    res.status(500).json({ ok: false, error: err.message });
-  }
-});
+// MarginEdge diagnostic
+app.get("/api/marginedge/probe", async (req, res) => {
+  const headers = {
+    "x-api-key":    MARGINEDGE_API_KEY,
+    "Content-Type": "application/json",
+    "Accept":       "application/json",
+  };
+  const tenant = MARGINEDGE_TENANT_ID;
+  const results = {};
 
-// Combined
-app.get("/api/ric", async (req, res) => {
-  const date = req.query.date || today();
-  const result = { date, sources: {} };
+  const urls = [
+    `https://api.marginedge.com/public/v1/restaurants/${tenant}/invoices`,
+    `https://api.marginedge.com/v1/restaurants/${tenant}/invoices`,
+    `https://api.marginedge.com/public/v1/invoices?tenant=${tenant}`,
+    `https://api.marginedge.com/public/v1/restaurants/${tenant}`,
+    `https://api.marginedge.com/public/v1/restaurants`,
+    `https://api.marginedge.com/public/v1`,
+  ];
 
-  try {
-    const token  = await getGoTabToken();
-    const gqlRes = await fetch("https://gotab.io/api/v2/graph", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID, date)),
-    });
-    const gqlData = await gqlRes.json();
-    const tabs = gqlData?.data?.locations?.[0]?.tabs || [];
-    result.gotab = normalizeGoTab(tabs);
-    result.sources.gotab = "live";
-  } catch (e) {
-    console.error("GoTab failed in /api/ric:", e.message);
-    result.gotab = null;
-    result.sources.gotab = `error: ${e.message}`;
-  }
-
-  try {
-    const shifts = await fetch7Shifts(date);
-    if (result.gotab?.net_sales && shifts.labor_cost)
-      shifts.labor_pct = +((shifts.labor_cost / result.gotab.net_sales) * 100).toFixed(1);
-    result["7shifts"] = shifts;
-    result.sources["7shifts"] = "live";
-  } catch (e) {
-    console.error("7Shifts failed in /api/ric:", e.message);
-    result["7shifts"] = null;
-    result.sources["7shifts"] = `error: ${e.message}`;
-  }
-
-  try {
-    const me = await fetchMarginEdge(date);
-    if (result.gotab?.net_sales) {
-      if (me.cogs?.food)  me.food_cost_pct  = +((me.cogs.food  / result.gotab.net_sales) * 100).toFixed(1);
-      if (me.cogs?.total) me.total_cogs_pct = +((me.cogs.total / result.gotab.net_sales) * 100).toFixed(1);
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { headers });
+      const body = await r.text();
+      results[url] = { status: r.status, body: body.slice(0, 200) };
+    } catch (e) {
+      results[url] = { error: e.message };
     }
-    result.marginedge = me;
-    result.sources.marginedge = "live";
-  } catch (e) {
-    console.error("MarginEdge failed in /api/ric:", e.message);
-    result.marginedge = null;
-    result.sources.marginedge = `error: ${e.message}`;
   }
 
-  res.json({ ok: true, ...result });
+  res.json(results);
 });
 
 // Claude proxy (non-streaming)
