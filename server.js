@@ -16,7 +16,7 @@ const SHIFTS_COMPANY_GUID   = process.env.SHIFTS_COMPANY_GUID;
 const SHIFTS_COMPANY_ID     = process.env.SHIFTS_COMPANY_ID;
 const SHIFTS_LOCATION_ID    = process.env.SHIFTS_LOCATION_ID;
 const MARGINEDGE_API_KEY    = process.env.MARGINEDGE_API_KEY;
-const MARGINEDGE_TENANT_ID  = process.env.MARGINEDGE_TENANT_ID; // numeric: 683280536
+const MARGINEDGE_TENANT_ID  = process.env.MARGINEDGE_TENANT_ID; // 683280536
 
 app.use(cors({ origin: "*", methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type","Authorization"] }));
 app.options("*", cors());
@@ -158,56 +158,103 @@ async function fetch7Shifts(date) {
 }
 
 // ── MarginEdge ────────────────────────────────────────────────────────────────
+function bucketCogs(cogs, cat, amt) {
+  const c = (cat || "").toLowerCase();
+  if      (c.includes("meat") || c.includes("protein") || c.includes("bbq") || c.includes("poultry") || c.includes("seafood") || c.includes("fish")) { cogs.meat    += amt; cogs.food += amt; }
+  else if (c.includes("produce") || c.includes("vegetable") || c.includes("fruit"))                                                                    { cogs.produce += amt; cogs.food += amt; }
+  else if (c.includes("dairy") || c.includes("egg") || c.includes("cheese"))                                                                           { cogs.dairy   += amt; cogs.food += amt; }
+  else if (c.includes("grocery") || c.includes("dry") || c.includes("pantry") || c.includes("baked") || c.includes("bread") || c.includes("bakery"))  { cogs.grocery += amt; cogs.food += amt; }
+  else if (c.includes("liquor") || c.includes("spirit") || c.includes("cocktail") || c.includes("spirits"))                                            { cogs.liquor  += amt; }
+  else if (c.includes("beer") || c.includes("draft") || c.includes("brew"))                                                                            { cogs.beer    += amt; }
+  else if (c.includes("wine"))                                                                                                                          { cogs.wine    += amt; }
+  else if (c.includes("non-alc") || c.includes("na bev") || c.includes("beverage") || c.includes("soda") || c.includes("juice") || c.includes("water")){ cogs.na_bev  += amt; }
+  else if (c.includes("paper") || c.includes("packaging") || c.includes("to-go") || c.includes("disposable") || c.includes("supplies"))               { cogs.paper   += amt; }
+  else if (c.includes("cleaning") || c.includes("chemical") || c.includes("janitorial"))                                                               { cogs.supplies += amt; }
+  else                                                                                                                                                   { cogs.other   += amt; }
+}
+
 async function fetchMarginEdge(date) {
-  const headers = {
+  const meHeaders = {
     "X-Api-Key": MARGINEDGE_API_KEY,
     "Accept":    "application/json",
   };
   const base = "https://api.marginedge.com/public";
-  const rid  = MARGINEDGE_TENANT_ID; // numeric restaurant unit ID: 683280536
+  const rid  = MARGINEDGE_TENANT_ID;
 
-  // Fetch orders (invoices/COGS) for the date range
-  // orderStatus=CLOSED ensures only processed invoices are included
+  // Step 1: get all CLOSED orders for the date
   const ordersRes = await fetch(
     `${base}/orders?restaurantUnitId=${rid}&startDate=${date}&endDate=${date}&orderStatus=CLOSED`,
-    { headers }
+    { headers: meHeaders }
   );
-
   if (!ordersRes.ok) throw new Error(`MarginEdge orders failed: ${ordersRes.status}`);
 
   const ordersJson = await ordersRes.json();
-  const orders     = ordersJson.orders || ordersJson.data || (Array.isArray(ordersJson) ? ordersJson : []);
+  const orders = ordersJson.orders || ordersJson.data || (Array.isArray(ordersJson) ? ordersJson : []);
 
-  // Fetch categories for mapping
-  let categories = {};
-  try {
-    const catRes  = await fetch(`${base}/categories?restaurantUnitId=${rid}`, { headers });
-    const catJson = await catRes.json();
-    const catList = catJson.categories || catJson.data || [];
-    for (const c of catList) categories[c.id] = c.name || c.categoryName || "";
-  } catch (_) {}
-
-  // Aggregate COGS by category
   const cogs = { food: 0, meat: 0, produce: 0, dairy: 0, grocery: 0,
                  liquor: 0, beer: 0, wine: 0, na_bev: 0,
                  paper: 0, supplies: 0, other: 0, total: 0 };
 
-  let pending_invoices = 0, invoice_count = 0;
+  let invoice_count   = orders.length;
+  let pending_invoices = 0;
+  let raw_detail      = null; // first order detail for field inspection
 
-  for (const order of orders) {
-    invoice_count++;
-    if ((order.status || order.orderStatus || "").toLowerCase().includes("pending")) pending_invoices++;
+  // Step 2: fetch detail for each order to get line items + categories
+  // Cap at 20 orders to stay within rate limits; daily invoices rarely exceed this
+  const detailFetches = orders.slice(0, 20).map(o =>
+    fetch(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`, { headers: meHeaders })
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null)
+  );
+  const details = await Promise.all(detailFetches);
 
-    // Order-level total if no line items
-    const orderTotal = parseFloat(order.total || order.invoiceTotal || order.amount || 0);
-    const cat = (
-      categories[order.categoryId] ||
-      order.category || order.categoryName || ""
-    ).toLowerCase();
+  for (let i = 0; i < details.length; i++) {
+    const detail = details[i];
+    const order  = orders[i];
 
-    if (orderTotal) {
-      cogs.total += orderTotal;
-      bucketCogs(cogs, cat, orderTotal);
+    if (!detail) {
+      // Fall back to order-level total bucketed as "other"
+      const amt = parseFloat(order.orderTotal || 0);
+      if (amt) { cogs.total += amt; cogs.other += amt; }
+      continue;
+    }
+
+    // Capture first detail for raw inspection
+    if (i === 0) raw_detail = detail;
+
+    if ((detail.status || order.status || "").toLowerCase().includes("pending")) pending_invoices++;
+
+    // Line items live under various keys — try all
+    const lines = detail.lineItems || detail.line_items || detail.items || detail.orderItems || [];
+
+    if (lines.length === 0) {
+      // No line items — use order total, bucket by vendor name heuristic
+      const amt = parseFloat(detail.orderTotal || order.orderTotal || 0);
+      const vendorName = (detail.vendorName || order.vendorName || "").toLowerCase();
+      if (amt) { cogs.total += amt; bucketCogs(cogs, vendorName, amt); }
+      continue;
+    }
+
+    for (const line of lines) {
+      const cat = (
+        line.category      ||
+        line.categoryName  ||
+        line.category_name ||
+        line.categoryType  ||
+        ""
+      );
+      const amt = parseFloat(
+        line.extendedCost  ||
+        line.extended_cost ||
+        line.amount        ||
+        line.total         ||
+        line.cost          ||
+        line.lineTotal     ||
+        0
+      );
+      if (!amt) continue;
+      cogs.total += amt;
+      bucketCogs(cogs, cat, amt);
     }
   }
 
@@ -219,23 +266,9 @@ async function fetchMarginEdge(date) {
     cogs,
     food_cost_pct:  null,
     total_cogs_pct: null,
-    raw_sample:     orders.slice(0, 2), // first 2 orders for field inspection
+    raw_detail,      // first order detail — inspect field names, remove once confirmed
     data_as_of:     nowET(),
   };
-}
-
-function bucketCogs(cogs, cat, amt) {
-  if      (cat.includes("meat") || cat.includes("protein") || cat.includes("bbq") || cat.includes("poultry") || cat.includes("seafood")) { cogs.meat    += amt; cogs.food += amt; }
-  else if (cat.includes("produce") || cat.includes("vegetable") || cat.includes("fruit"))                                                  { cogs.produce += amt; cogs.food += amt; }
-  else if (cat.includes("dairy") || cat.includes("egg"))                                                                                   { cogs.dairy   += amt; cogs.food += amt; }
-  else if (cat.includes("grocery") || cat.includes("dry") || cat.includes("pantry") || cat.includes("baked") || cat.includes("bread"))     { cogs.grocery += amt; cogs.food += amt; }
-  else if (cat.includes("liquor") || cat.includes("spirit") || cat.includes("cocktail"))                                                   { cogs.liquor  += amt; }
-  else if (cat.includes("beer"))                                                                                                            { cogs.beer    += amt; }
-  else if (cat.includes("wine"))                                                                                                            { cogs.wine    += amt; }
-  else if (cat.includes("non-alc") || cat.includes("na bev") || cat.includes("beverage") || cat.includes("soda") || cat.includes("juice")) { cogs.na_bev  += amt; }
-  else if (cat.includes("paper") || cat.includes("packaging") || cat.includes("to-go") || cat.includes("disposable"))                      { cogs.paper   += amt; }
-  else if (cat.includes("supply") || cat.includes("supplies") || cat.includes("cleaning") || cat.includes("chemical"))                     { cogs.supplies += amt; }
-  else                                                                                                                                       { cogs.other   += amt; }
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
@@ -354,7 +387,7 @@ app.get("/api/ric", async (req, res) => {
       if (me.cogs?.food)  me.food_cost_pct  = +((me.cogs.food  / result.gotab.net_sales) * 100).toFixed(1);
       if (me.cogs?.total) me.total_cogs_pct = +((me.cogs.total / result.gotab.net_sales) * 100).toFixed(1);
     }
-    delete me.raw_sample; // strip diagnostic field from combined response
+    delete me.raw_detail;
     result.marginedge = me;
     result.sources.marginedge = "live";
   } catch (e) {
