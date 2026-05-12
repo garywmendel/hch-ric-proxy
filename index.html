@@ -107,30 +107,60 @@ h3.s-anomaly{color:#cc0000 !important}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .chip{padding:6px 11px;border-radius:100px;font-size:12px;border:0.5px solid var(--b1);color:var(--t1);background:none;cursor:pointer;font-family:var(--font);min-height:34px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent}
 .chip:active{background:var(--bg1);color:var(--t0)}
-.field-label{font-size:11px;font-weight:500;color:var(--t1);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:block}
-.field-group{margin-bottom:14px}
 .inp{width:100%;padding:10px 11px;font-size:14px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;appearance:none;min-height:44px}
 .inp:focus{outline:none;border-color:var(--b0)}
 textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
+
+/* P&L styles */
+.pl-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.pl-date-wrap{display:flex;align-items:center;gap:6px;flex:1}
+.pl-date-label{font-size:11px;color:var(--t1);white-space:nowrap}
+.pl-date-inp{padding:7px 10px;font-size:13px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;appearance:none;flex:1;min-width:130px}
+.pl-date-inp:focus{outline:none;border-color:var(--b0)}
+.btn-pl-fetch{padding:8px 14px;font-size:12px;font-weight:500;background:var(--t0);color:var(--bg0);border:none;border-radius:var(--r-md);cursor:pointer;font-family:var(--font);white-space:nowrap;min-height:36px}
+.btn-pl-fetch:disabled{opacity:0.35;cursor:not-allowed}
+.pl-status{font-size:11px;color:var(--t1);display:flex;align-items:center;gap:5px}
+.pl-status-dot{width:6px;height:6px;border-radius:50%;background:var(--b1);flex-shrink:0}
+.pl-status-dot.live{background:var(--green)}
+.pl-status-dot.loading{background:var(--amber);animation:blink 0.8s infinite}
+.pl-status-dot.err{background:#E24B4A}
 .pl-section{margin-bottom:20px}
-.pl-title{font-size:13px;font-weight:600;color:var(--t0);margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid var(--b2)}
+.pl-title{font-size:13px;font-weight:600;color:var(--t0);margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid var(--b2);display:flex;align-items:center;justify-content:space-between}
+.pl-title-badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:100px}
+.pl-kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px}
+@media(min-width:480px){.pl-kpi-grid{grid-template-columns:repeat(4,1fr)}}
+.pl-kpi{background:var(--bg1);border-radius:var(--r-md);padding:10px 12px}
+.pl-kpi-label{font-size:10px;color:var(--t1);margin-bottom:3px}
+.pl-kpi-val{font-size:16px;font-weight:600;color:var(--t0);line-height:1.2}
+.pl-kpi-sub{font-size:10px;color:var(--t1);margin-top:2px}
+.pl-kpi-val.ok{color:var(--green)}
+.pl-kpi-val.warn{color:var(--amber)}
+.pl-kpi-val.crit{color:#E24B4A}
 .pl-table{width:100%;border-collapse:collapse;font-size:11px}
 .pl-table th{text-align:left;padding:5px 8px;background:var(--bg1);color:var(--t1);font-weight:500;border-bottom:0.5px solid var(--b2)}
-.pl-table td{padding:5px 8px;border-bottom:0.5px solid var(--b2);color:var(--t0);vertical-align:top}
+.pl-table td{padding:5px 8px;border-bottom:0.5px solid var(--b2);color:var(--t0);vertical-align:middle}
 .pl-table tr:last-child td{border-bottom:none}
 .pl-table .total-row td{font-weight:600;background:var(--bg1)}
+.pl-table .sub-row td{color:var(--t1)}
 .badge{display:inline-block;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:500}
 .badge.live{background:var(--green-bg);color:var(--green-t)}
 .badge.pending{background:var(--amber-bg);color:var(--amber-t)}
 .badge.partial{background:var(--blue-bg);color:var(--blue-t)}
-.pl-metric{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg1);border-radius:var(--r-md);margin-bottom:6px;font-size:12px}
-.pl-metric-label{color:var(--t1)}
-.pl-metric-val{font-weight:500;color:var(--t0)}
-.pl-metric-val.warn{color:var(--amber)}
-.pl-metric-val.crit{color:#E24B4A}
-.pl-metric-val.ok{color:var(--green)}
+.pct-bar-wrap{display:flex;align-items:center;gap:6px}
+.pct-bar{height:4px;border-radius:2px;flex:1;background:var(--b2);overflow:hidden}
+.pct-fill{height:100%;border-radius:2px;transition:width 0.4s}
+.pct-fill.ok{background:var(--green)}
+.pct-fill.warn{background:var(--amber)}
+.pct-fill.crit{background:#E24B4A}
+.pct-val{font-size:11px;font-weight:500;white-space:nowrap;min-width:44px;text-align:right}
+.pct-val.ok{color:var(--green)}
+.pct-val.warn{color:var(--amber)}
+.pct-val.crit{color:#E24B4A}
+.pl-empty{text-align:center;padding:32px 16px;color:var(--t1);font-size:13px}
 .pl-obs{background:var(--amber-bg);border-radius:var(--r-md);padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--amber-t);line-height:1.6}
+.pl-obs.ok{background:var(--green-bg);color:var(--green-t)}
 .pl-obs strong{font-weight:600}
+.pl-divider{height:0.5px;background:var(--b2);margin:20px 0}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
@@ -194,103 +224,45 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 
 <!-- P&L -->
 <div id="tab-pl" class="panel">
-  <h2 class="sr-only">P&L data source mapping</h2>
-  <div class="pl-section">
-    <div class="pl-title">Key Metrics — Week of Apr 20–26, 2026</div>
-    <div class="pl-metric"><span class="pl-metric-label">Total Net Sales</span><span class="pl-metric-val">$76,517 <span class="badge live">GoTab Live</span></span></div>
-    <div class="pl-metric"><span class="pl-metric-label">vs Same Week 2025</span><span class="pl-metric-val crit">-$21,121 (-21.6%)</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Total COGS</span><span class="pl-metric-val">$23,692 <span class="badge live">MarginEdge Live</span></span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Gross Profit</span><span class="pl-metric-val">$52,825</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Overall Food Cost %</span><span class="pl-metric-val ok">30.96%</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Total Labor</span><span class="pl-metric-val">$32,465 <span class="badge pending">7Shifts + QB Pending</span></span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Total Labor %</span><span class="pl-metric-val warn">42.43%</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Prime Cost %</span><span class="pl-metric-val crit">~73%</span></div>
+  <h2 class="sr-only">Live P&L</h2>
+
+  <!-- Date picker toolbar -->
+  <div class="pl-toolbar">
+    <div class="pl-date-wrap">
+      <span class="pl-date-label">Date</span>
+      <input type="date" class="pl-date-inp" id="pl-date" />
+    </div>
+    <button class="btn-pl-fetch" id="pl-fetch-btn" onclick="fetchPL()">Load</button>
+    <div class="pl-status" id="pl-status"><div class="pl-status-dot" id="pl-sdot"></div><span id="pl-stext">Select a date</span></div>
   </div>
-  <div class="pl-obs">⚠️ <strong>Wine cost at 47.51%</strong> — target is 25–30%. Live MarginEdge data now tracking this daily.</div>
-  <div class="pl-obs">⚠️ <strong>N/A Beverage cost at 59.14%</strong> — extremely high, likely a pricing or portioning issue.</div>
-  <div class="pl-obs">⚠️ <strong>Revenue down 21.6% YoY.</strong> Same week 2025 was $97,639. This trend requires weekly tracking.</div>
+
+  <!-- Dynamic P&L content -->
+  <div id="pl-content">
+    <div class="pl-empty">Select a date and tap Load to view live P&L data.<br><br>💡 <strong>Tip:</strong> Yesterday gives the richest data — GoTab revenue + MarginEdge COGS both fully populated.</div>
+  </div>
+
+  <!-- Static benchmark divider -->
+  <div class="pl-divider"></div>
   <div class="pl-section">
-    <div class="pl-title">Income — Data Source Mapping</div>
+    <div class="pl-title">
+      Benchmark — Week of Apr 20–26, 2026
+      <span class="pl-title-badge badge partial">Reference</span>
+    </div>
     <table class="pl-table">
-      <thead><tr><th>Account</th><th>Description</th><th>Week Total</th><th>RIC Source</th></tr></thead>
+      <thead><tr><th>Metric</th><th>Actual</th><th>Target</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>4105</td><td>Sales, Food</td><td>$49,922</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4110</td><td>Sales, Liquor</td><td>$7,833</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4115</td><td>Sales, Beer</td><td>$5,573</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4120</td><td>Sales, Wine</td><td>$880</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4125</td><td>Sales, Non-Alcoholic Beverage</td><td>$1,406</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4130</td><td>Sales, Retail</td><td>$20</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4140</td><td>Sales, Miscellaneous</td><td>$14</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4145</td><td>Sales, Banquet Admin Fee</td><td>$671</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4150</td><td>Sales, Ticket</td><td>$1,520</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4155</td><td>Sales, Catering Food</td><td>$4,930</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4156</td><td>Sales, Catering N/A Beverage</td><td>$48</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4193</td><td>Sales, Banquet N/A Beverage</td><td>$450</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4194</td><td>Sales, Banquet Food</td><td>$3,600</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4200</td><td>Sales, Transport Fee</td><td>$150</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr><td>4500</td><td>Discounts and Comps</td><td>-$498</td><td><span class="badge live">GoTab Live</span></td></tr>
-        <tr class="total-row"><td colspan="2">Total Sales</td><td>$76,517</td><td><span class="badge live">GoTab Live</span></td></tr>
+        <tr><td>Total Net Sales</td><td>$76,517</td><td>—</td><td><span style="font-size:10px;color:var(--t1)">vs $97,639 prior yr</span></td></tr>
+        <tr><td>Food Cost %</td><td>30.96%</td><td>&lt;32%</td><td><span class="badge live">✓</span></td></tr>
+        <tr><td>Liquor Cost %</td><td>11.32%</td><td>&lt;18%</td><td><span class="badge live">✓</span></td></tr>
+        <tr><td>Beer Cost %</td><td>28.10%</td><td>&lt;30%</td><td><span class="badge live">✓</span></td></tr>
+        <tr><td>Wine Cost %</td><td>47.51%</td><td>&lt;30%</td><td><span class="badge pending">✗</span></td></tr>
+        <tr><td>N/A Bev Cost %</td><td>59.14%</td><td>&lt;40%</td><td><span class="badge pending">✗</span></td></tr>
+        <tr><td>FOH Labor %</td><td>10.29%</td><td>&lt;12%</td><td><span class="badge live">✓</span></td></tr>
+        <tr><td>BOH Labor %</td><td>17.37%</td><td>&lt;18%</td><td><span class="badge live">✓</span></td></tr>
+        <tr><td>Total Labor %</td><td>42.43%</td><td>&lt;35%</td><td><span class="badge pending">✗</span></td></tr>
+        <tr><td>Prime Cost %</td><td>~73%</td><td>&lt;65%</td><td><span class="badge pending">✗</span></td></tr>
       </tbody>
     </table>
-  </div>
-  <div class="pl-section">
-    <div class="pl-title">Cost of Goods Sold — Data Source Mapping</div>
-    <table class="pl-table">
-      <thead><tr><th>Account</th><th>Description</th><th>Week Total</th><th>RIC Source</th></tr></thead>
-      <tbody>
-        <tr><td>5101</td><td>COGS, Meat &amp; Poultry</td><td>$12,507</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr><td>5103</td><td>COGS, Produce</td><td>$2,041</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr><td>5104</td><td>COGS, Grocery</td><td>$1,724</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr><td>5105</td><td>COGS, Bakery</td><td>$140</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr><td>5106</td><td>COGS, Dairy</td><td>$1,742</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr><td>5110</td><td>COGS, Liquor</td><td>$887</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr><td>5115</td><td>COGS, Beer</td><td>$1,566</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr><td>5120</td><td>COGS, Wine</td><td>$418</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr><td>5125</td><td>COGS, Non-Alcoholic</td><td>$1,126</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr><td>5135</td><td>COGS, Packaging</td><td>$1,540</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr class="total-row"><td colspan="2">Total COGS</td><td>$23,692</td><td><span class="badge live">MarginEdge Live</span></td></tr>
-        <tr class="total-row"><td colspan="2">Gross Profit</td><td>$52,825</td><td><span class="badge partial">GoTab + MarginEdge</span></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="pl-section">
-    <div class="pl-title">Labor — Data Source Mapping</div>
-    <table class="pl-table">
-      <thead><tr><th>Account</th><th>Description</th><th>Week Total</th><th>RIC Source</th></tr></thead>
-      <tbody>
-        <tr><td>5205-1</td><td>Labor, Bartender</td><td>$1,584</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5205-2</td><td>Labor, Bar Back</td><td>$309</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5205-3</td><td>Labor, Busser</td><td>$1,221</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5205-7</td><td>Labor, Host</td><td>$1,964</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5205-8</td><td>Labor, Server</td><td>$2,796</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr class="total-row"><td colspan="2">Total FOH Labor (10.29%)</td><td>$7,874</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5210-1</td><td>Labor, Prep</td><td>$1,962</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5210-2</td><td>Labor, Dishwasher/Porter</td><td>$4,207</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5210-3</td><td>Labor, Line Cook</td><td>$5,776</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5210-5</td><td>Labor, Chef</td><td>$3,365</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5210-6</td><td>Labor, Sous Chef</td><td>$1,346</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr class="total-row"><td colspan="2">Total BOH Labor (17.37%)</td><td>$13,291</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5220-2</td><td>Labor, Management</td><td>$8,350</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr class="total-row"><td colspan="2">Total Direct Labor</td><td>$29,742</td><td><span class="badge pending">7Shifts Pending</span></td></tr>
-        <tr><td>5315-1</td><td>Payroll Taxes, FICA</td><td>$3,032</td><td><span class="badge pending">QuickBooks Pending</span></td></tr>
-        <tr><td>5315-2</td><td>Payroll Taxes, SUI</td><td>$663</td><td><span class="badge pending">QuickBooks Pending</span></td></tr>
-        <tr><td>5320</td><td>Health/Dental Insurance</td><td>-$1,004</td><td><span class="badge pending">QuickBooks Pending</span></td></tr>
-        <tr><td>5325</td><td>Workers Comp Insurance</td><td>$3,044</td><td><span class="badge pending">QuickBooks Pending</span></td></tr>
-        <tr class="total-row"><td colspan="2">Total Labor (42.43%)</td><td>$32,465</td><td><span class="badge pending">7Shifts + QB Pending</span></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="pl-section">
-    <div class="pl-title">Cost % Targets vs Actuals</div>
-    <div class="pl-metric"><span class="pl-metric-label">Food Cost % (target &lt;32%)</span><span class="pl-metric-val ok">30.96% ✓</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Liquor Cost % (target &lt;18%)</span><span class="pl-metric-val ok">11.32% ✓</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Beer Cost % (target &lt;30%)</span><span class="pl-metric-val ok">28.10% ✓</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Wine Cost % (target &lt;30%)</span><span class="pl-metric-val crit">47.51% ✗</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">N/A Bev Cost % (target &lt;40%)</span><span class="pl-metric-val crit">59.14% ✗</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">FOH Labor % (target &lt;12%)</span><span class="pl-metric-val ok">10.29% ✓</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">BOH Labor % (target &lt;18%)</span><span class="pl-metric-val ok">17.37% ✓</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Total Labor % (target &lt;35%)</span><span class="pl-metric-val crit">42.43% ✗</span></div>
-    <div class="pl-metric"><span class="pl-metric-label">Prime Cost % (target &lt;65%)</span><span class="pl-metric-val crit">~73% ✗</span></div>
   </div>
 </div>
 
@@ -305,7 +277,7 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <button class="chip" onclick="setQ('How do we benchmark against top NYC BBQ operators?')">NYC benchmarks</button>
     <button class="chip" onclick="setQ('What anomalies in today\'s data need immediate attention?')">Anomaly review</button>
   </div>
-  <div class="field-group">
+  <div style="margin-bottom:14px">
     <textarea class="inp" id="qa-inp" placeholder="Ask any financial, operational, or strategic question..." style="margin-bottom:8px"></textarea>
     <button class="btn-primary" id="qa-btn" onclick="askQ()">Ask RIC</button>
   </div>
@@ -314,6 +286,7 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 
 </div>
 <script>
+// ── Constants ─────────────────────────────────────────────────────────────────
 const SYSTEMS = [
   {id:"gotab",     name:"GoTab",         domain:"POS & Revenue", color:"#185FA5", icon:"GT"},
   {id:"quickbooks",name:"QuickBooks",    domain:"Financials",    color:"#1D9E75", icon:"QB"},
@@ -342,6 +315,16 @@ const MOCK = {
   doordash:    {orders:68,delivery_revenue:1820,avg_order_value:26.76,cancelled:2,avg_rating:4.7},
 };
 
+// Cost % targets
+const TARGETS = {
+  food_cost:   32,
+  liquor_cost: 18,
+  beer_cost:   30,
+  wine_cost:   30,
+  na_bev_cost: 40,
+  total_cogs:  38,
+};
+
 const SYS_PROMPT = `You are the Restaurant Intelligence Controller (RIC) for Hill Country BBQ, New York. Analyze live operational data from 11 integrated systems and produce clear, actionable daily intelligence reports for GM and store leadership. Be direct, specific, and write for someone reading at 7am before service. Use dollar amounts and percentages. Flag anomalies clearly. When data is marked as mock/demo, note it briefly but still provide useful analysis.
 
 MarginEdge data notes:
@@ -351,59 +334,220 @@ MarginEdge data notes:
 - total_cogs_pct = total COGS as % of net_sales (calculated live)
 - If invoice_count is 0, note that MarginEdge data reflects a prior day due to processing lag`;
 
-function getSectionClass(heading) {
-  const h = heading.toLowerCase();
-  if (h.includes("revenue") || h.includes("sales") || h.includes("snapshot")) return "s-revenue";
-  if (h.includes("labor") || h.includes("labour") || h.includes("staffing")) return "s-labor";
-  if (h.includes("food cost") || h.includes("cogs") || h.includes("food &")) return "s-food";
-  if (h.includes("cover") || h.includes("dining") || h.includes("guest")) return "s-covers";
-  if (h.includes("deliver")) return "s-delivery";
-  if (h.includes("event") || h.includes("banquet") || h.includes("private") || h.includes("catering")) return "s-events";
-  if (h.includes("digital") || h.includes("market") || h.includes("online")) return "s-digital";
-  if (h.includes("reput") || h.includes("review") || h.includes("rating")) return "s-reputation";
-  if (h.includes("ops") || h.includes("comm") || h.includes("operation")) return "s-ops";
-  if (h.includes("gm") || h.includes("narrative") || h.includes("summary") || h.includes("manager")) return "s-gm";
-  if (h.includes("anomal") || h.includes("flag") || h.includes("alert") || h.includes("action")) return "s-anomaly";
-  return "s-digital";
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const fmt$ = v => v == null ? "—" : "$" + Number(v).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtPct = v => v == null ? "—" : Number(v).toFixed(1) + "%";
+const statusClass = (val, target, higherIsBad = true) => {
+  if (val == null || !target) return "";
+  if (higherIsBad) return val <= target * 0.97 ? "ok" : val <= target ? "warn" : "crit";
+  return val >= target ? "ok" : val >= target * 0.97 ? "warn" : "crit";
+};
+
+function pctBar(val, target, max = 60) {
+  if (val == null) return "—";
+  const cls = statusClass(val, target);
+  const width = Math.min((val / max) * 100, 100);
+  return `<div class="pct-bar-wrap"><div class="pct-bar"><div class="pct-fill ${cls}" style="width:${width}%"></div></div><span class="pct-val ${cls}">${fmtPct(val)}</span></div>`;
 }
 
-function renderReport(markdown) {
-  const lines = markdown.split("\n");
-  let html = "";
-  let inList = false;
-  for (const line of lines) {
-    const t = line.trim();
-    if (!t) {
-      if (inList) { html += "</ul>"; inList = false; }
-      html += "<br>";
-      continue;
-    }
-    if (t.startsWith("## ")) {
-      if (inList) { html += "</ul>"; inList = false; }
-      html += `<h2>${esc(t.slice(3))}</h2>`;
-    } else if (t.startsWith("### ")) {
-      if (inList) { html += "</ul>"; inList = false; }
-      const text = t.slice(4);
-      const cls = getSectionClass(text);
-      html += `<h3 class="${cls}">${esc(text)}</h3>`;
-    } else if (t.startsWith("* ") || t.startsWith("- ")) {
-      if (!inList) { html += "<ul>"; inList = true; }
-      html += `<li>${renderInline(t.slice(2))}</li>`;
-    } else {
-      if (inList) { html += "</ul>"; inList = false; }
-      html += `<p>${renderInline(t)}</p>`;
-    }
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Date picker default = yesterday ──────────────────────────────────────────
+(function initDatePicker() {
+  const inp = document.getElementById("pl-date");
+  const now = new Date();
+  now.setDate(now.getDate() - 1);
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,"0");
+  const d = String(now.getDate()).padStart(2,"0");
+  inp.value = `${y}-${m}-${d}`;
+  inp.max   = new Date().toISOString().slice(0,10);
+})();
+
+// ── P&L fetch & render ────────────────────────────────────────────────────────
+async function fetchPL() {
+  const date = document.getElementById("pl-date").value;
+  if (!date) return;
+
+  const btn  = document.getElementById("pl-fetch-btn");
+  const dot  = document.getElementById("pl-sdot");
+  const txt  = document.getElementById("pl-stext");
+  const cont = document.getElementById("pl-content");
+
+  btn.disabled = true;
+  dot.className = "pl-status-dot loading";
+  txt.textContent = "Fetching...";
+  cont.innerHTML = "";
+
+  try {
+    const [gtRes, meRes] = await Promise.all([
+      fetch(`/api/gotab?date=${date}`),
+      fetch(`/api/marginedge?date=${date}`),
+    ]);
+
+    const gt = gtRes.ok ? await gtRes.json() : null;
+    const me = meRes.ok ? await meRes.json() : null;
+
+    dot.className = "pl-status-dot live";
+    const dateLabel = new Date(date + "T12:00:00").toLocaleDateString("en-US", {weekday:"short", month:"short", day:"numeric", year:"numeric"});
+    txt.textContent = `Live · ${dateLabel}`;
+
+    cont.innerHTML = renderPL(gt, me, date);
+  } catch(e) {
+    dot.className = "pl-status-dot err";
+    txt.textContent = "Error — check connection";
+    cont.innerHTML = `<div class="pl-empty" style="color:var(--red-t)">Failed to load: ${esc(e.message)}</div>`;
   }
-  if (inList) html += "</ul>";
+
+  btn.disabled = false;
+}
+
+function renderPL(gt, me, date) {
+  const ns    = gt?.net_sales   || 0;
+  const bar   = gt?.bar_sales   || 0;
+  const cat   = gt?.catering_sales || 0;
+  const comps = gt?.comps       || 0;
+  const voids = gt?.voids       || 0;
+  const tabs  = gt?.tab_count   || 0;
+  const food_sales = ns - bar - cat;
+
+  const cogs       = me?.cogs || {};
+  const totalCogs  = cogs.total || 0;
+  const foodCogs   = cogs.food  || 0;
+  const grossProfit = ns - totalCogs;
+
+  const foodPct   = ns > 0 && foodCogs  > 0 ? (foodCogs  / ns * 100) : null;
+  const cogsTotal = ns > 0 && totalCogs > 0 ? (totalCogs / ns * 100) : null;
+  const liquorPct = ns > 0 && cogs.liquor > 0 ? (cogs.liquor / ns * 100) : null;
+  const beerPct   = ns > 0 && cogs.beer   > 0 ? (cogs.beer   / ns * 100) : null;
+  const winePct   = ns > 0 && cogs.wine   > 0 ? (cogs.wine   / ns * 100) : null;
+  const naBevPct  = ns > 0 && cogs.na_bev > 0 ? (cogs.na_bev / ns * 100) : null;
+
+  const meInvoices = me?.invoice_count || 0;
+  const hasRevenue = ns > 0;
+  const hasCogs    = totalCogs > 0;
+  const dateLabel  = new Date(date + "T12:00:00").toLocaleDateString("en-US", {weekday:"long", month:"long", day:"numeric", year:"numeric"});
+
+  let html = "";
+
+  // ── KPI strip ──
+  html += `<div class="pl-section">
+    <div class="pl-title">${esc(dateLabel)} <span class="pl-title-badge badge ${hasRevenue ? "live" : "pending"}">${hasRevenue ? "GoTab Live" : "No revenue data"}</span></div>
+    <div class="pl-kpi-grid">
+      <div class="pl-kpi">
+        <div class="pl-kpi-label">Net Sales</div>
+        <div class="pl-kpi-val">${fmt$(ns)}</div>
+        <div class="pl-kpi-sub">${tabs} tabs</div>
+      </div>
+      <div class="pl-kpi">
+        <div class="pl-kpi-label">Total COGS</div>
+        <div class="pl-kpi-val ${cogsTotal ? statusClass(cogsTotal, TARGETS.total_cogs) : ""}">${fmt$(totalCogs)}</div>
+        <div class="pl-kpi-sub">${cogsTotal ? fmtPct(cogsTotal) + " of sales" : meInvoices === 0 ? "No invoices yet" : "—"}</div>
+      </div>
+      <div class="pl-kpi">
+        <div class="pl-kpi-label">Gross Profit</div>
+        <div class="pl-kpi-val">${hasCogs ? fmt$(grossProfit) : "—"}</div>
+        <div class="pl-kpi-sub">${hasCogs && ns > 0 ? fmtPct((grossProfit/ns)*100) + " margin" : "Needs COGS"}</div>
+      </div>
+      <div class="pl-kpi">
+        <div class="pl-kpi-label">Food Cost %</div>
+        <div class="pl-kpi-val ${foodPct ? statusClass(foodPct, TARGETS.food_cost) : ""}">${foodPct ? fmtPct(foodPct) : "—"}</div>
+        <div class="pl-kpi-sub">Target &lt;${TARGETS.food_cost}%</div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Observations ──
+  if (!hasRevenue) {
+    html += `<div class="pl-obs">No GoTab revenue data for this date. The restaurant may have been closed, or data hasn't synced yet.</div>`;
+  }
+  if (hasRevenue && meInvoices === 0) {
+    html += `<div class="pl-obs">MarginEdge has 0 invoices for this date — COGS data reflects a 24-48hr processing lag. Try the previous day for full food cost visibility.</div>`;
+  }
+  if (foodPct && foodPct > TARGETS.food_cost) {
+    html += `<div class="pl-obs">⚠️ <strong>Food cost ${fmtPct(foodPct)}</strong> is above the ${TARGETS.food_cost}% target by ${fmtPct(foodPct - TARGETS.food_cost)}.</div>`;
+  }
+  if (winePct && winePct > TARGETS.wine_cost) {
+    html += `<div class="pl-obs">⚠️ <strong>Wine cost ${fmtPct(winePct)}</strong> — target is &lt;${TARGETS.wine_cost}%. Review wine pricing and pours.</div>`;
+  }
+  if (naBevPct && naBevPct > TARGETS.na_bev_cost) {
+    html += `<div class="pl-obs">⚠️ <strong>N/A Bev cost ${fmtPct(naBevPct)}</strong> — target is &lt;${TARGETS.na_bev_cost}%. Likely a portioning or pricing issue.</div>`;
+  }
+  if (hasCogs && foodPct && foodPct <= TARGETS.food_cost) {
+    html += `<div class="pl-obs ok">✓ Food cost ${fmtPct(foodPct)} is within the ${TARGETS.food_cost}% target.</div>`;
+  }
+
+  // ── Revenue breakdown ──
+  html += `<div class="pl-section">
+    <div class="pl-title">Revenue <span class="pl-title-badge badge live">GoTab Live</span></div>
+    <table class="pl-table">
+      <thead><tr><th>Channel</th><th>Amount</th><th>% of Sales</th></tr></thead>
+      <tbody>
+        <tr><td>Dine-in / Food</td><td>${fmt$(food_sales)}</td><td>${ns > 0 ? fmtPct(food_sales/ns*100) : "—"}</td></tr>
+        <tr><td>Bar / Beverage</td><td>${fmt$(bar)}</td><td>${ns > 0 ? fmtPct(bar/ns*100) : "—"}</td></tr>
+        <tr><td>Catering / Events</td><td>${fmt$(cat)}</td><td>${ns > 0 ? fmtPct(cat/ns*100) : "—"}</td></tr>
+        <tr class="sub-row"><td>Comps</td><td>(${fmt$(comps)})</td><td>${ns > 0 ? fmtPct(comps/ns*100) : "—"}</td></tr>
+        <tr class="sub-row"><td>Voids</td><td>(${fmt$(voids)})</td><td>${ns > 0 ? fmtPct(voids/ns*100) : "—"}</td></tr>
+        <tr class="total-row"><td>Net Sales</td><td>${fmt$(ns)}</td><td>100%</td></tr>
+      </tbody>
+    </table>
+  </div>`;
+
+  // ── COGS breakdown ──
+  html += `<div class="pl-section">
+    <div class="pl-title">Cost of Goods Sold <span class="pl-title-badge badge ${hasCogs ? "live" : "pending"}">${hasCogs ? "MarginEdge Live" : meInvoices === 0 ? "No invoices" : "MarginEdge"}</span></div>`;
+
+  if (hasCogs) {
+    html += `<table class="pl-table">
+      <thead><tr><th>Category</th><th>Amount</th><th>Cost %</th></tr></thead>
+      <tbody>`;
+
+    const rows = [
+      {label:"Food (total)",  val:cogs.food,     pct:foodPct,   target:TARGETS.food_cost,   indent:false},
+      {label:"↳ Meat",        val:cogs.meat,     pct:ns>0&&cogs.meat?(cogs.meat/ns*100):null,   target:null, indent:true},
+      {label:"↳ Produce",     val:cogs.produce,  pct:ns>0&&cogs.produce?(cogs.produce/ns*100):null, target:null, indent:true},
+      {label:"↳ Dairy",       val:cogs.dairy,    pct:ns>0&&cogs.dairy?(cogs.dairy/ns*100):null,   target:null, indent:true},
+      {label:"↳ Grocery",     val:cogs.grocery,  pct:ns>0&&cogs.grocery?(cogs.grocery/ns*100):null, target:null, indent:true},
+      {label:"Liquor",        val:cogs.liquor,   pct:liquorPct, target:TARGETS.liquor_cost, indent:false},
+      {label:"Beer",          val:cogs.beer,     pct:beerPct,   target:TARGETS.beer_cost,   indent:false},
+      {label:"Wine",          val:cogs.wine,     pct:winePct,   target:TARGETS.wine_cost,   indent:false},
+      {label:"N/A Beverage",  val:cogs.na_bev,   pct:naBevPct,  target:TARGETS.na_bev_cost, indent:false},
+      {label:"Paper / Pkg",   val:cogs.paper,    pct:ns>0&&cogs.paper?(cogs.paper/ns*100):null,  target:null, indent:false},
+      {label:"Supplies",      val:cogs.supplies, pct:ns>0&&cogs.supplies?(cogs.supplies/ns*100):null, target:null, indent:false},
+      {label:"Other",         val:cogs.other,    pct:ns>0&&cogs.other?(cogs.other/ns*100):null,   target:null, indent:false},
+    ].filter(r => r.val > 0);
+
+    for (const r of rows) {
+      const cls = r.indent ? "sub-row" : "";
+      const bar = r.pct != null ? pctBar(r.pct, r.target || 50) : "—";
+      html += `<tr class="${cls}"><td>${esc(r.label)}</td><td>${fmt$(r.val)}</td><td>${bar}</td></tr>`;
+    }
+
+    html += `<tr class="total-row"><td>Total COGS</td><td>${fmt$(totalCogs)}</td><td>${pctBar(cogsTotal, TARGETS.total_cogs)}</td></tr>`;
+    html += `<tr class="total-row"><td>Gross Profit</td><td>${fmt$(grossProfit)}</td><td>${ns > 0 ? fmtPct((grossProfit/ns)*100) : "—"}</td></tr>`;
+    html += `</tbody></table>`;
+  } else {
+    html += `<div class="pl-empty" style="padding:16px 0">No COGS data for this date.<br>MarginEdge invoices are processed within 24-48 hours.</div>`;
+  }
+
+  html += `</div>`;
+
+  // ── Labor (pending) ──
+  html += `<div class="pl-section">
+    <div class="pl-title">Labor <span class="pl-title-badge badge pending">7Shifts Pending</span></div>
+    <div style="padding:12px 0;font-size:12px;color:var(--t1)">Labor data will populate here once 7Shifts is connected. Target: FOH &lt;12% · BOH &lt;18% · Total &lt;35%.</div>
+  </div>`;
+
+  // ── Data as of ──
+  html += `<div style="font-size:10px;color:var(--t2);margin-top:4px">
+    GoTab as of ${gt?.data_as_of || "—"} · MarginEdge as of ${me?.data_as_of || "—"}
+  </div>`;
+
   return html;
 }
 
-function renderInline(text) {
-  return esc(text)
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>");
-}
-
+// ── Live Systems ──────────────────────────────────────────────────────────────
 let sysSt = {};
 let lastReport = "";
 let fetchedData = {};
@@ -495,8 +639,6 @@ async function generateReport() {
   const mockSources = Object.entries(sourceMap).filter(([,v]) => v==="mock").map(([k]) => k);
 
   let elapsed = 0;
-  let timer = null;
-
   const now = new Date();
   const etHour = parseInt(now.toLocaleString("en-US", {timeZone:"America/New_York", hour:"numeric", hour12:false}));
   const isOpen = etHour >= 12;
@@ -504,11 +646,10 @@ async function generateReport() {
     ? `The restaurant is currently OPEN (opened at 12:00 PM ET).`
     : `The restaurant has NOT opened yet today (opens at 12:00 PM ET). Any revenue before noon is from catering, private events, banquet billing, or deferred revenue — NOT dine-in service.`;
 
-  // Build MarginEdge summary for prompt
   const me = fetchedData.marginedge || {};
   const meContext = me.invoice_count > 0
-    ? `MarginEdge: ${me.invoice_count} invoices processed. Total COGS $${me.cogs?.total?.toFixed(2) || 0} (${me.total_cogs_pct || "—"}% of sales). Food COGS $${me.cogs?.food?.toFixed(2) || 0} (${me.food_cost_pct || "—"}%). Meat $${me.cogs?.meat?.toFixed(2) || 0}, Produce $${me.cogs?.produce?.toFixed(2) || 0}, Dairy $${me.cogs?.dairy?.toFixed(2) || 0}, Grocery $${me.cogs?.grocery?.toFixed(2) || 0}, Liquor $${me.cogs?.liquor?.toFixed(2) || 0}, Beer $${me.cogs?.beer?.toFixed(2) || 0}, Wine $${me.cogs?.wine?.toFixed(2) || 0}, N/A Bev $${me.cogs?.na_bev?.toFixed(2) || 0}, Paper/Pkg $${me.cogs?.paper?.toFixed(2) || 0}.`
-    : `MarginEdge: 0 invoices for today (24-48hr processing lag is normal — use prior day data for food cost analysis).`;
+    ? `MarginEdge: ${me.invoice_count} invoices processed. Total COGS $${(me.cogs?.total||0).toFixed(2)} (${me.total_cogs_pct||"—"}% of sales). Food COGS $${(me.cogs?.food||0).toFixed(2)} (${me.food_cost_pct||"—"}%). Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Grocery $${(me.cogs?.grocery||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}, N/A Bev $${(me.cogs?.na_bev||0).toFixed(2)}, Paper/Pkg $${(me.cogs?.paper||0).toFixed(2)}.`
+    : `MarginEdge: 0 invoices for today (24-48hr processing lag is normal).`;
 
   const prompt = `Location: Hill Country BBQ — New York
 Date: ${now.toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"})}
@@ -528,7 +669,7 @@ GoTab data notes:
 - catering_sales = subset of net_sales from catering/banquet accounting streams
 - deferred_revenue = event deposits paid in advance, NOT earned revenue today
 - tip_total = not available from GoTab API
-- If before 12:00 PM ET: any net_sales are from catering/banquet/events only — do NOT imply the dining room is open or active
+- If before 12:00 PM ET: any net_sales are from catering/banquet/events only
 
 Produce the Daily Intelligence Report:
 
@@ -549,7 +690,7 @@ Produce the Daily Intelligence Report:
 
 Format rules: Always insert a blank line between every section. Be specific with $ and %. Write for a GM at 7am. Note which sections use live vs demo data.`;
 
-  timer = setInterval(() => {
+  const timer = setInterval(() => {
     elapsed++;
     const el = document.getElementById("report-timer");
     if (el) el.textContent = `${elapsed}s`;
@@ -572,17 +713,16 @@ Format rules: Always insert a blank line between every section. Be specific with
     const full = data.content?.filter(b => b.type==="text").map(b => b.text).join("") || "No response.";
     lastReport = full;
     clearInterval(timer);
-    const liveCount  = liveSources.length;
-    const totalCount = SYSTEMS.length;
+    const liveCount = liveSources.length;
     document.getElementById("report-out").innerHTML = `
-      <div class="status"><div class="sdot done"></div><span>Report complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} &nbsp;·&nbsp; ${liveCount}/${totalCount} live sources</span></div>
+      <div class="status"><div class="sdot done"></div><span>Report complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} &nbsp;·&nbsp; ${liveCount}/${SYSTEMS.length} live sources</span></div>
       <div class="report-wrap">
         <div class="report-body">${renderReport(full)}</div>
         <div class="report-actions">
           <button class="btn-sec" onclick="copyReport()">Copy</button>
           <button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[3]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button>
         </div>
-        <div class="disclaimer">AI-generated analysis. ${liveCount} of ${totalCount} sources are live. Verify all figures against source systems before operational decisions.</div>
+        <div class="disclaimer">AI-generated analysis. ${liveCount} of ${SYSTEMS.length} sources are live. Verify all figures against source systems before operational decisions.</div>
       </div>`;
   } catch(e) {
     clearInterval(timer);
@@ -595,18 +735,55 @@ function renderFlags() {
   const flags = [];
   const liveSources = Object.entries(sourceMap).filter(([,v]) => v==="live").map(([k]) => k);
   if (liveSources.length > 0) flags.push({t:"info", l:`${liveSources.length} live: ${liveSources.join(", ")}`});
-  if (d["7shifts"]   && d["7shifts"].labor_pct       > 28)   flags.push({t:"warn", l:`Labor ${d["7shifts"].labor_pct}% — above 28% threshold`});
-  if (d.marginedge   && d.marginedge.food_cost_pct    > 34)   flags.push({t:"crit", l:`Food cost ${d.marginedge.food_cost_pct}% — critical`});
-  if (d.marginedge   && d.marginedge.total_cogs_pct   > 38)   flags.push({t:"warn", l:`Total COGS ${d.marginedge.total_cogs_pct}% — above threshold`});
-  if (d.opentable    && d.opentable.no_shows          > 5)    flags.push({t:"warn", l:`${d.opentable.no_shows} no-shows`});
-  if (d.marqii       && d.marqii.avg_rating           < 4.5)  flags.push({t:"crit", l:`Rating ${d.marqii.avg_rating} — below threshold`});
-  if (d.doordash     && d.doordash.cancelled          > 1)    flags.push({t:"warn", l:`${d.doordash.cancelled} DoorDash cancellations`});
-  if (d.gotab && d.gotab.comps > 0 && d.gotab.net_sales > 0 && (d.gotab.comps / d.gotab.net_sales) > 0.15)
+  if (d["7shifts"]  && d["7shifts"].labor_pct     > 28)  flags.push({t:"warn", l:`Labor ${d["7shifts"].labor_pct}% — above 28% threshold`});
+  if (d.marginedge  && d.marginedge.food_cost_pct  > 34)  flags.push({t:"crit", l:`Food cost ${d.marginedge.food_cost_pct}% — critical`});
+  if (d.marginedge  && d.marginedge.total_cogs_pct > 38)  flags.push({t:"warn", l:`Total COGS ${d.marginedge.total_cogs_pct}% — above threshold`});
+  if (d.opentable   && d.opentable.no_shows        > 5)   flags.push({t:"warn", l:`${d.opentable.no_shows} no-shows`});
+  if (d.marqii      && d.marqii.avg_rating         < 4.5) flags.push({t:"crit", l:`Rating ${d.marqii.avg_rating} — below threshold`});
+  if (d.doordash    && d.doordash.cancelled        > 1)   flags.push({t:"warn", l:`${d.doordash.cancelled} DoorDash cancellations`});
+  if (d.gotab && d.gotab.comps > 0 && d.gotab.net_sales > 0 && (d.gotab.comps/d.gotab.net_sales) > 0.15)
     flags.push({t:"warn", l:`Comps ${((d.gotab.comps/d.gotab.net_sales)*100).toFixed(1)}% of net sales — review`});
   if (flags.filter(f => f.t !== "info").length === 0) flags.push({t:"ok", l:"All metrics within threshold"});
   document.getElementById("live-flags").innerHTML = flags.map(f => `<span class="flag ${f.t}">${f.l}</span>`).join("");
 }
 
+// ── Report renderer ───────────────────────────────────────────────────────────
+function getSectionClass(heading) {
+  const h = heading.toLowerCase();
+  if (h.includes("revenue") || h.includes("sales") || h.includes("snapshot")) return "s-revenue";
+  if (h.includes("labor") || h.includes("labour") || h.includes("staffing"))  return "s-labor";
+  if (h.includes("food cost") || h.includes("cogs") || h.includes("food &"))  return "s-food";
+  if (h.includes("cover") || h.includes("dining") || h.includes("guest"))     return "s-covers";
+  if (h.includes("deliver"))                                                    return "s-delivery";
+  if (h.includes("event") || h.includes("banquet") || h.includes("private") || h.includes("catering")) return "s-events";
+  if (h.includes("digital") || h.includes("market") || h.includes("online"))  return "s-digital";
+  if (h.includes("reput") || h.includes("review") || h.includes("rating"))    return "s-reputation";
+  if (h.includes("ops") || h.includes("comm") || h.includes("operation"))     return "s-ops";
+  if (h.includes("gm") || h.includes("narrative") || h.includes("summary") || h.includes("manager")) return "s-gm";
+  if (h.includes("anomal") || h.includes("flag") || h.includes("alert") || h.includes("action")) return "s-anomaly";
+  return "s-digital";
+}
+
+function renderReport(markdown) {
+  const lines = markdown.split("\n");
+  let html = "", inList = false;
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) { if (inList) { html += "</ul>"; inList = false; } html += "<br>"; continue; }
+    if (t.startsWith("## "))      { if (inList) { html += "</ul>"; inList = false; } html += `<h2>${esc(t.slice(3))}</h2>`; }
+    else if (t.startsWith("### ")){ if (inList) { html += "</ul>"; inList = false; } const text=t.slice(4); html += `<h3 class="${getSectionClass(text)}">${esc(text)}</h3>`; }
+    else if (t.startsWith("* ") || t.startsWith("- ")) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${renderInline(t.slice(2))}</li>`; }
+    else { if (inList) { html += "</ul>"; inList = false; } html += `<p>${renderInline(t)}</p>`; }
+  }
+  if (inList) html += "</ul>";
+  return html;
+}
+
+function renderInline(text) {
+  return esc(text).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>");
+}
+
+// ── Ask RIC ───────────────────────────────────────────────────────────────────
 async function askQ() {
   const q = document.getElementById("qa-inp").value.trim();
   if (!q) return;
@@ -627,7 +804,7 @@ async function askQ() {
       })
     });
     const data = await res.json();
-    const txt  = data.content?.filter(b => b.type==="text").map(b => b.text).join("") || "No response.";
+    const txt  = data.content?.filter(b=>b.type==="text").map(b=>b.text).join("") || "No response.";
     out.innerHTML = `<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-body">${renderReport(txt)}</div></div>`;
   } catch(e) {
     out.innerHTML = `<div class="status"><div class="sdot err"></div><span>Error: ${e.message}</span></div>`;
@@ -636,9 +813,7 @@ async function askQ() {
 }
 
 function setQ(q)      { document.getElementById("qa-inp").value = q; document.getElementById("qa-inp").focus(); }
-function copyReport() { navigator.clipboard.writeText(lastReport).catch(() => {}); }
-function esc(s)       { return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
-function sleep(ms)    { return new Promise(r => setTimeout(r, ms)); }
+function copyReport() { navigator.clipboard.writeText(lastReport).catch(()=>{}); }
 function showTab(id, el) {
   document.querySelectorAll(".tab").forEach(t  => t.classList.remove("active"));
   document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
