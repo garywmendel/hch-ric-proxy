@@ -1,4 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v2.8
+// Hill Country Hospitality — RIC Proxy Server v2.9
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -8,13 +8,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-const GOTAB_ID            = process.env.GOTAB_ID;
-const GOTAB_SECRET        = process.env.GOTAB_SECRET;
-const GOTAB_LOCATION_UUID = process.env.GOTAB_LOCATION_UUID;
-const SHIFTS_TOKEN        = process.env.SHIFTS_TOKEN;
-const SHIFTS_COMPANY_GUID = process.env.SHIFTS_COMPANY_GUID;
-const SHIFTS_COMPANY_ID   = process.env.SHIFTS_COMPANY_ID;
-const SHIFTS_LOCATION_ID  = process.env.SHIFTS_LOCATION_ID;
+const GOTAB_ID              = process.env.GOTAB_ID;
+const GOTAB_SECRET          = process.env.GOTAB_SECRET;
+const GOTAB_LOCATION_UUID   = process.env.GOTAB_LOCATION_UUID;
+const SHIFTS_TOKEN          = process.env.SHIFTS_TOKEN;
+const SHIFTS_COMPANY_GUID   = process.env.SHIFTS_COMPANY_GUID;
+const SHIFTS_COMPANY_ID     = process.env.SHIFTS_COMPANY_ID;
+const SHIFTS_LOCATION_ID    = process.env.SHIFTS_LOCATION_ID;
+const MARGINEDGE_API_KEY    = process.env.MARGINEDGE_API_KEY;
+const MARGINEDGE_TENANT_ID  = process.env.MARGINEDGE_TENANT_ID;
 
 app.use(cors({ origin: "*", methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type","Authorization"] }));
 app.options("*", cors());
@@ -103,24 +105,12 @@ function normalizeGoTab(tabs) {
         if (g === "DEFERRED_REVENUE") deferred_revenue += amt;
         continue;
       }
-
-      if (n.startsWith("Discounts and Comps")) {
-        comps += Math.abs(amt);
-        continue;
-      }
-
-      if (item.voided || g === "VOID") {
-        voids += Math.abs(amt);
-        continue;
-      }
+      if (n.startsWith("Discounts and Comps")) { comps += Math.abs(amt); continue; }
+      if (item.voided || g === "VOID")          { voids += Math.abs(amt); continue; }
 
       net_sales += amt;
-
-      if (BAR_STREAMS.some(b => n.startsWith(b))) {
-        bar_sales += amt;
-      } else if (CATERING_STREAMS.some(b => n.startsWith(b))) {
-        catering_sales += amt;
-      }
+      if (BAR_STREAMS.some(b => n.startsWith(b)))      bar_sales      += amt;
+      else if (CATERING_STREAMS.some(b => n.startsWith(b))) catering_sales += amt;
     }
   }
 
@@ -140,20 +130,16 @@ function normalizeGoTab(tabs) {
 
 // ── 7Shifts ───────────────────────────────────────────────────────────────────
 async function fetch7Shifts(date) {
-  // Only send x-company-guid if the var is actually set
   const headers = {
     "Authorization": `Bearer ${SHIFTS_TOKEN}`,
     "Content-Type":  "application/json",
     ...(SHIFTS_COMPANY_GUID ? { "x-company-guid": SHIFTS_COMPANY_GUID } : {}),
   };
-
   const base = `https://api.7shifts.com/v2/company/${SHIFTS_COMPANY_ID}`;
-
   const [sRes, pRes] = await Promise.all([
     fetch(`${base}/shifts?location_id=${SHIFTS_LOCATION_ID}&start=${date}T00:00:00&end=${date}T23:59:59&limit=200`, { headers }),
     fetch(`${base}/time_punches?location_id=${SHIFTS_LOCATION_ID}&clocked_in_gte=${date}T00:00:00&clocked_in_lte=${date}T23:59:59&limit=200`, { headers }),
   ]);
-
   if (!sRes.ok) throw new Error(`7Shifts shifts failed: ${sRes.status}`);
   if (!pRes.ok) throw new Error(`7Shifts punches failed: ${pRes.status}`);
 
@@ -161,11 +147,7 @@ async function fetch7Shifts(date) {
   const punches = (await pRes.json()).data || [];
 
   let scheduled_hours = 0, actual_hours = 0, labor_cost = 0, overtime_hours = 0, no_shows = 0;
-
-  for (const s of shifts) {
-    scheduled_hours += (new Date(s.end) - new Date(s.start)) / 3600000;
-  }
-
+  for (const s of shifts) scheduled_hours += (new Date(s.end) - new Date(s.start)) / 3600000;
   for (const p of punches) {
     if (p.clocked_in && p.clocked_out) {
       const hrs = (new Date(p.clocked_out) - new Date(p.clocked_in)) / 3600000;
@@ -174,7 +156,6 @@ async function fetch7Shifts(date) {
       if (hrs > 8) overtime_hours += hrs - 8;
     }
   }
-
   const punchedIds = new Set(punches.map(p => p.user_id));
   for (const s of shifts) if (s.user_id && !punchedIds.has(s.user_id)) no_shows++;
 
@@ -191,9 +172,85 @@ async function fetch7Shifts(date) {
   };
 }
 
+// ── MarginEdge ────────────────────────────────────────────────────────────────
+async function fetchMarginEdge(date) {
+  const headers = {
+    "x-api-key":    MARGINEDGE_API_KEY,
+    "Content-Type": "application/json",
+    "Accept":       "application/json",
+  };
+  const base   = `https://api.marginedge.com/public/v1`;
+  const tenant = MARGINEDGE_TENANT_ID;
+
+  // Fetch invoices (COGS) and P&L in parallel; P&L may not exist — fail softly
+  const [invoiceRes, plRes] = await Promise.allSettled([
+    fetch(`${base}/restaurants/${tenant}/invoices?startDate=${date}&endDate=${date}&limit=200`, { headers }),
+    fetch(`${base}/restaurants/${tenant}/pnl?startDate=${date}&endDate=${date}`, { headers }),
+  ]);
+
+  if (invoiceRes.status === "rejected" || !invoiceRes.value.ok) {
+    const status = invoiceRes.value?.status || "network error";
+    throw new Error(`MarginEdge invoices failed: ${status}`);
+  }
+
+  const invoiceJson = await invoiceRes.value.json();
+  const invoices    = invoiceJson.data || invoiceJson.invoices || (Array.isArray(invoiceJson) ? invoiceJson : []);
+
+  // Aggregate COGS by category
+  const cogs = { food: 0, meat: 0, produce: 0, dairy: 0, grocery: 0,
+                 liquor: 0, beer: 0, wine: 0, na_bev: 0,
+                 paper: 0, supplies: 0, other: 0, total: 0 };
+
+  let pending_invoices = 0;
+  let invoice_count    = 0;
+
+  for (const inv of invoices) {
+    invoice_count++;
+    if ((inv.status || "").toLowerCase().includes("pending")) pending_invoices++;
+
+    for (const line of inv.lineItems || inv.line_items || inv.lines || []) {
+      const cat = (line.category || line.categoryName || line.category_name || "").toLowerCase();
+      const amt = parseFloat(line.amount || line.total || line.cost || line.extended_cost || 0);
+      if (!amt) continue;
+
+      cogs.total += amt;
+
+      if      (cat.includes("meat") || cat.includes("protein") || cat.includes("bbq") || cat.includes("poultry") || cat.includes("seafood")) { cogs.meat    += amt; cogs.food += amt; }
+      else if (cat.includes("produce") || cat.includes("vegetable") || cat.includes("fruit"))                                                  { cogs.produce += amt; cogs.food += amt; }
+      else if (cat.includes("dairy") || cat.includes("egg"))                                                                                   { cogs.dairy   += amt; cogs.food += amt; }
+      else if (cat.includes("grocery") || cat.includes("dry") || cat.includes("pantry") || cat.includes("baked") || cat.includes("bread"))     { cogs.grocery += amt; cogs.food += amt; }
+      else if (cat.includes("liquor") || cat.includes("spirit") || cat.includes("cocktail"))                                                   { cogs.liquor  += amt; }
+      else if (cat.includes("beer"))                                                                                                            { cogs.beer    += amt; }
+      else if (cat.includes("wine"))                                                                                                            { cogs.wine    += amt; }
+      else if (cat.includes("non-alc") || cat.includes("na bev") || cat.includes("beverage") || cat.includes("soda") || cat.includes("juice")) { cogs.na_bev  += amt; }
+      else if (cat.includes("paper") || cat.includes("packaging") || cat.includes("to-go") || cat.includes("disposable"))                      { cogs.paper   += amt; }
+      else if (cat.includes("supply") || cat.includes("supplies") || cat.includes("cleaning") || cat.includes("chemical"))                     { cogs.supplies += amt; }
+      else                                                                                                                                       { cogs.other   += amt; }
+    }
+  }
+
+  for (const key of Object.keys(cogs)) cogs[key] = +cogs[key].toFixed(2);
+
+  // P&L — optional, fail softly
+  let pnl = null;
+  if (plRes.status === "fulfilled" && plRes.value.ok) {
+    try { pnl = await plRes.value.json(); } catch (_) {}
+  }
+
+  return {
+    invoice_count,
+    pending_invoices,
+    cogs,
+    food_cost_pct:   null, // populated in /api/ric when net_sales is known
+    total_cogs_pct:  null,
+    pnl,
+    data_as_of:      nowET(),
+  };
+}
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-// Diagnostic: all accounting streams sorted by revenue
+// Diagnostic: all GoTab accounting streams sorted by revenue
 app.get("/api/gotab/streams", async (req, res) => {
   try {
     const date  = req.query.date || today();
@@ -255,6 +312,18 @@ app.get("/api/7shifts", async (req, res) => {
   }
 });
 
+// MarginEdge only
+app.get("/api/marginedge", async (req, res) => {
+  try {
+    const date = req.query.date || today();
+    const data = await fetchMarginEdge(date);
+    res.json({ ok: true, source: "marginedge_live", date, ...data });
+  } catch (err) {
+    console.error("MarginEdge error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Combined
 app.get("/api/ric", async (req, res) => {
   const date = req.query.date || today();
@@ -289,6 +358,20 @@ app.get("/api/ric", async (req, res) => {
     result.sources["7shifts"] = `error: ${e.message}`;
   }
 
+  try {
+    const me = await fetchMarginEdge(date);
+    if (result.gotab?.net_sales) {
+      if (me.cogs?.food)  me.food_cost_pct  = +((me.cogs.food  / result.gotab.net_sales) * 100).toFixed(1);
+      if (me.cogs?.total) me.total_cogs_pct = +((me.cogs.total / result.gotab.net_sales) * 100).toFixed(1);
+    }
+    result.marginedge = me;
+    result.sources.marginedge = "live";
+  } catch (e) {
+    console.error("MarginEdge failed in /api/ric:", e.message);
+    result.marginedge = null;
+    result.sources.marginedge = `error: ${e.message}`;
+  }
+
   res.json({ ok: true, ...result });
 });
 
@@ -317,7 +400,7 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.8" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.9" }));
 
 // Serve RIC app
 app.get("/", (_req, res) => {
@@ -325,4 +408,4 @@ app.get("/", (_req, res) => {
   res.sendFile(join(__dirname, "index.html"));
 });
 
-app.listen(PORT, () => console.log(`RIC proxy v2.8 running on port ${PORT}`));
+app.listen(PORT, () => console.log(`RIC proxy v2.9 running on port ${PORT}`));
