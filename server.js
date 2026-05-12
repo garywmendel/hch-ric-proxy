@@ -1,4 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v2.9
+// Hill Country Hospitality — RIC Proxy Server v3.0
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -8,15 +8,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-const GOTAB_ID              = process.env.GOTAB_ID;
-const GOTAB_SECRET          = process.env.GOTAB_SECRET;
-const GOTAB_LOCATION_UUID   = process.env.GOTAB_LOCATION_UUID;
-const SHIFTS_TOKEN          = process.env.SHIFTS_TOKEN;
-const SHIFTS_COMPANY_GUID   = process.env.SHIFTS_COMPANY_GUID;
-const SHIFTS_COMPANY_ID     = process.env.SHIFTS_COMPANY_ID;
-const SHIFTS_LOCATION_ID    = process.env.SHIFTS_LOCATION_ID;
-const MARGINEDGE_API_KEY    = process.env.MARGINEDGE_API_KEY;
-const MARGINEDGE_TENANT_ID  = process.env.MARGINEDGE_TENANT_ID; // 683280536
+const GOTAB_ID             = process.env.GOTAB_ID;
+const GOTAB_SECRET         = process.env.GOTAB_SECRET;
+const GOTAB_LOCATION_UUID  = process.env.GOTAB_LOCATION_UUID;
+const SHIFTS_TOKEN         = process.env.SHIFTS_TOKEN;
+const SHIFTS_COMPANY_GUID  = process.env.SHIFTS_COMPANY_GUID;
+const SHIFTS_COMPANY_ID    = process.env.SHIFTS_COMPANY_ID;
+const SHIFTS_LOCATION_ID   = process.env.SHIFTS_LOCATION_ID;
+const MARGINEDGE_API_KEY   = process.env.MARGINEDGE_API_KEY;
+const MARGINEDGE_TENANT_ID = process.env.MARGINEDGE_TENANT_ID; // 683280536
 
 app.use(cors({ origin: "*", methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type","Authorization"] }));
 app.options("*", cors());
@@ -164,45 +164,38 @@ function bucketCogs(cogs, cat, amt) {
   else if (c.includes("produce") || c.includes("vegetable") || c.includes("fruit"))                                                                    { cogs.produce += amt; cogs.food += amt; }
   else if (c.includes("dairy") || c.includes("egg") || c.includes("cheese"))                                                                           { cogs.dairy   += amt; cogs.food += amt; }
   else if (c.includes("grocery") || c.includes("dry") || c.includes("pantry") || c.includes("baked") || c.includes("bread") || c.includes("bakery"))  { cogs.grocery += amt; cogs.food += amt; }
-  else if (c.includes("liquor") || c.includes("spirit") || c.includes("cocktail") || c.includes("spirits"))                                            { cogs.liquor  += amt; }
+  else if (c.includes("liquor") || c.includes("spirit") || c.includes("spirits") || c.includes("cocktail"))                                            { cogs.liquor  += amt; }
   else if (c.includes("beer") || c.includes("draft") || c.includes("brew"))                                                                            { cogs.beer    += amt; }
   else if (c.includes("wine"))                                                                                                                          { cogs.wine    += amt; }
   else if (c.includes("non-alc") || c.includes("na bev") || c.includes("beverage") || c.includes("soda") || c.includes("juice") || c.includes("water")){ cogs.na_bev  += amt; }
-  else if (c.includes("paper") || c.includes("packaging") || c.includes("to-go") || c.includes("disposable") || c.includes("supplies"))               { cogs.paper   += amt; }
-  else if (c.includes("cleaning") || c.includes("chemical") || c.includes("janitorial"))                                                               { cogs.supplies += amt; }
+  else if (c.includes("paper") || c.includes("packaging") || c.includes("to-go") || c.includes("disposable"))                                         { cogs.paper   += amt; }
+  else if (c.includes("supply") || c.includes("supplies") || c.includes("cleaning") || c.includes("chemical") || c.includes("janitorial"))             { cogs.supplies += amt; }
   else                                                                                                                                                   { cogs.other   += amt; }
 }
 
 async function fetchMarginEdge(date) {
-  const meHeaders = {
-    "X-Api-Key": MARGINEDGE_API_KEY,
-    "Accept":    "application/json",
-  };
-  const base = "https://api.marginedge.com/public";
-  const rid  = MARGINEDGE_TENANT_ID;
+  const headers = { "X-Api-Key": MARGINEDGE_API_KEY, "Accept": "application/json" };
+  const base    = "https://api.marginedge.com/public";
+  const rid     = MARGINEDGE_TENANT_ID;
 
-  // Step 1: get all CLOSED orders for the date
   const ordersRes = await fetch(
     `${base}/orders?restaurantUnitId=${rid}&startDate=${date}&endDate=${date}&orderStatus=CLOSED`,
-    { headers: meHeaders }
+    { headers }
   );
   if (!ordersRes.ok) throw new Error(`MarginEdge orders failed: ${ordersRes.status}`);
 
   const ordersJson = await ordersRes.json();
-  const orders = ordersJson.orders || ordersJson.data || (Array.isArray(ordersJson) ? ordersJson : []);
+  const orders     = ordersJson.orders || ordersJson.data || (Array.isArray(ordersJson) ? ordersJson : []);
 
   const cogs = { food: 0, meat: 0, produce: 0, dairy: 0, grocery: 0,
                  liquor: 0, beer: 0, wine: 0, na_bev: 0,
                  paper: 0, supplies: 0, other: 0, total: 0 };
 
-  let invoice_count   = orders.length;
-  let pending_invoices = 0;
-  let raw_detail      = null; // first order detail for field inspection
+  const invoice_count = orders.length;
 
-  // Step 2: fetch detail for each order to get line items + categories
-  // Cap at 20 orders to stay within rate limits; daily invoices rarely exceed this
+  // Fetch order detail for each order to get line items + categories (cap at 20)
   const detailFetches = orders.slice(0, 20).map(o =>
-    fetch(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`, { headers: meHeaders })
+    fetch(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`, { headers })
       .then(r => r.ok ? r.json() : null)
       .catch(() => null)
   );
@@ -213,45 +206,22 @@ async function fetchMarginEdge(date) {
     const order  = orders[i];
 
     if (!detail) {
-      // Fall back to order-level total bucketed as "other"
       const amt = parseFloat(order.orderTotal || 0);
       if (amt) { cogs.total += amt; cogs.other += amt; }
       continue;
     }
 
-    // Capture first detail for raw inspection
-    if (i === 0) raw_detail = detail;
-
-    if ((detail.status || order.status || "").toLowerCase().includes("pending")) pending_invoices++;
-
-    // Line items live under various keys — try all
     const lines = detail.lineItems || detail.line_items || detail.items || detail.orderItems || [];
 
     if (lines.length === 0) {
-      // No line items — use order total, bucket by vendor name heuristic
       const amt = parseFloat(detail.orderTotal || order.orderTotal || 0);
-      const vendorName = (detail.vendorName || order.vendorName || "").toLowerCase();
-      if (amt) { cogs.total += amt; bucketCogs(cogs, vendorName, amt); }
+      if (amt) { cogs.total += amt; bucketCogs(cogs, detail.vendorName || order.vendorName || "", amt); }
       continue;
     }
 
     for (const line of lines) {
-      const cat = (
-        line.category      ||
-        line.categoryName  ||
-        line.category_name ||
-        line.categoryType  ||
-        ""
-      );
-      const amt = parseFloat(
-        line.extendedCost  ||
-        line.extended_cost ||
-        line.amount        ||
-        line.total         ||
-        line.cost          ||
-        line.lineTotal     ||
-        0
-      );
+      const cat = line.category || line.categoryName || line.category_name || line.categoryType || "";
+      const amt = parseFloat(line.extendedCost || line.extended_cost || line.amount || line.total || line.cost || line.lineTotal || 0);
       if (!amt) continue;
       cogs.total += amt;
       bucketCogs(cogs, cat, amt);
@@ -262,18 +232,16 @@ async function fetchMarginEdge(date) {
 
   return {
     invoice_count,
-    pending_invoices,
+    pending_invoices: 0,
     cogs,
     food_cost_pct:  null,
     total_cogs_pct: null,
-    raw_detail,      // first order detail — inspect field names, remove once confirmed
     data_as_of:     nowET(),
   };
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-// GoTab streams diagnostic
 app.get("/api/gotab/streams", async (req, res) => {
   try {
     const date  = req.query.date || today();
@@ -302,7 +270,6 @@ app.get("/api/gotab/streams", async (req, res) => {
   }
 });
 
-// GoTab only
 app.get("/api/gotab", async (req, res) => {
   try {
     const date  = req.query.date || today();
@@ -323,7 +290,6 @@ app.get("/api/gotab", async (req, res) => {
   }
 });
 
-// 7Shifts only
 app.get("/api/7shifts", async (req, res) => {
   try {
     const date = req.query.date || today();
@@ -335,7 +301,6 @@ app.get("/api/7shifts", async (req, res) => {
   }
 });
 
-// MarginEdge only
 app.get("/api/marginedge", async (req, res) => {
   try {
     const date = req.query.date || today();
@@ -347,9 +312,8 @@ app.get("/api/marginedge", async (req, res) => {
   }
 });
 
-// Combined
 app.get("/api/ric", async (req, res) => {
-  const date = req.query.date || today();
+  const date   = req.query.date || today();
   const result = { date, sources: {} };
 
   try {
@@ -364,7 +328,7 @@ app.get("/api/ric", async (req, res) => {
     result.gotab = normalizeGoTab(tabs);
     result.sources.gotab = "live";
   } catch (e) {
-    console.error("GoTab failed in /api/ric:", e.message);
+    console.error("GoTab failed:", e.message);
     result.gotab = null;
     result.sources.gotab = `error: ${e.message}`;
   }
@@ -376,7 +340,7 @@ app.get("/api/ric", async (req, res) => {
     result["7shifts"] = shifts;
     result.sources["7shifts"] = "live";
   } catch (e) {
-    console.error("7Shifts failed in /api/ric:", e.message);
+    console.error("7Shifts failed:", e.message);
     result["7shifts"] = null;
     result.sources["7shifts"] = `error: ${e.message}`;
   }
@@ -387,11 +351,10 @@ app.get("/api/ric", async (req, res) => {
       if (me.cogs?.food)  me.food_cost_pct  = +((me.cogs.food  / result.gotab.net_sales) * 100).toFixed(1);
       if (me.cogs?.total) me.total_cogs_pct = +((me.cogs.total / result.gotab.net_sales) * 100).toFixed(1);
     }
-    delete me.raw_detail;
     result.marginedge = me;
     result.sources.marginedge = "live";
   } catch (e) {
-    console.error("MarginEdge failed in /api/ric:", e.message);
+    console.error("MarginEdge failed:", e.message);
     result.marginedge = null;
     result.sources.marginedge = `error: ${e.message}`;
   }
@@ -399,11 +362,9 @@ app.get("/api/ric", async (req, res) => {
   res.json({ ok: true, ...result });
 });
 
-// Claude proxy (non-streaming)
 app.post("/api/claude", async (req, res) => {
   try {
     const body = { ...req.body, stream: false };
-    console.log("Calling Anthropic API...");
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -414,8 +375,6 @@ app.post("/api/claude", async (req, res) => {
       body: JSON.stringify(body),
     });
     const data = await upstream.json();
-    console.log("Anthropic status:", upstream.status);
-    console.log("Anthropic response:", JSON.stringify(data).slice(0, 300));
     res.json(data);
   } catch(err) {
     console.error("Claude proxy error:", err.message);
@@ -423,13 +382,11 @@ app.post("/api/claude", async (req, res) => {
   }
 });
 
-// Health
-app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "2.9" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "hch-ric-proxy", version: "3.0" }));
 
-// Serve RIC app
 app.get("/", (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   res.sendFile(join(__dirname, "index.html"));
 });
 
-app.listen(PORT, () => console.log(`RIC proxy v2.9 running on port ${PORT}`));
+app.listen(PORT, () => console.log(`RIC proxy v3.0 running on port ${PORT}`));
