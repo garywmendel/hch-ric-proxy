@@ -109,7 +109,7 @@ function normalizeGoTab(tabs) {
       if (item.voided || g === "VOID")          { voids += Math.abs(amt); continue; }
 
       net_sales += amt;
-      if (BAR_STREAMS.some(b => n.startsWith(b)))      bar_sales      += amt;
+      if (BAR_STREAMS.some(b => n.startsWith(b)))           bar_sales      += amt;
       else if (CATERING_STREAMS.some(b => n.startsWith(b))) catering_sales += amt;
     }
   }
@@ -182,7 +182,6 @@ async function fetchMarginEdge(date) {
   const base   = `https://api.marginedge.com/public/v1`;
   const tenant = MARGINEDGE_TENANT_ID;
 
-  // Fetch invoices (COGS) and P&L in parallel; P&L may not exist — fail softly
   const [invoiceRes, plRes] = await Promise.allSettled([
     fetch(`${base}/restaurants/${tenant}/invoices?startDate=${date}&endDate=${date}&limit=200`, { headers }),
     fetch(`${base}/restaurants/${tenant}/pnl?startDate=${date}&endDate=${date}`, { headers }),
@@ -196,25 +195,20 @@ async function fetchMarginEdge(date) {
   const invoiceJson = await invoiceRes.value.json();
   const invoices    = invoiceJson.data || invoiceJson.invoices || (Array.isArray(invoiceJson) ? invoiceJson : []);
 
-  // Aggregate COGS by category
   const cogs = { food: 0, meat: 0, produce: 0, dairy: 0, grocery: 0,
                  liquor: 0, beer: 0, wine: 0, na_bev: 0,
                  paper: 0, supplies: 0, other: 0, total: 0 };
 
-  let pending_invoices = 0;
-  let invoice_count    = 0;
+  let pending_invoices = 0, invoice_count = 0;
 
   for (const inv of invoices) {
     invoice_count++;
     if ((inv.status || "").toLowerCase().includes("pending")) pending_invoices++;
-
     for (const line of inv.lineItems || inv.line_items || inv.lines || []) {
       const cat = (line.category || line.categoryName || line.category_name || "").toLowerCase();
       const amt = parseFloat(line.amount || line.total || line.cost || line.extended_cost || 0);
       if (!amt) continue;
-
       cogs.total += amt;
-
       if      (cat.includes("meat") || cat.includes("protein") || cat.includes("bbq") || cat.includes("poultry") || cat.includes("seafood")) { cogs.meat    += amt; cogs.food += amt; }
       else if (cat.includes("produce") || cat.includes("vegetable") || cat.includes("fruit"))                                                  { cogs.produce += amt; cogs.food += amt; }
       else if (cat.includes("dairy") || cat.includes("egg"))                                                                                   { cogs.dairy   += amt; cogs.food += amt; }
@@ -231,26 +225,17 @@ async function fetchMarginEdge(date) {
 
   for (const key of Object.keys(cogs)) cogs[key] = +cogs[key].toFixed(2);
 
-  // P&L — optional, fail softly
   let pnl = null;
   if (plRes.status === "fulfilled" && plRes.value.ok) {
     try { pnl = await plRes.value.json(); } catch (_) {}
   }
 
-  return {
-    invoice_count,
-    pending_invoices,
-    cogs,
-    food_cost_pct:   null, // populated in /api/ric when net_sales is known
-    total_cogs_pct:  null,
-    pnl,
-    data_as_of:      nowET(),
-  };
+  return { invoice_count, pending_invoices, cogs, food_cost_pct: null, total_cogs_pct: null, pnl, data_as_of: nowET() };
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-// Diagnostic: all GoTab accounting streams sorted by revenue
+// GoTab streams diagnostic
 app.get("/api/gotab/streams", async (req, res) => {
   try {
     const date  = req.query.date || today();
@@ -312,8 +297,7 @@ app.get("/api/7shifts", async (req, res) => {
   }
 });
 
-// MarginEdge only
-// MarginEdge diagnostic
+// MarginEdge auth header diagnostic
 app.get("/api/marginedge/auth", async (req, res) => {
   const key    = MARGINEDGE_API_KEY;
   const tenant = MARGINEDGE_TENANT_ID;
@@ -321,17 +305,17 @@ app.get("/api/marginedge/auth", async (req, res) => {
   const results = {};
 
   const attempts = [
-    { label: "x-api-key",          headers: { "x-api-key": key } },
+    { label: "x-api-key",           headers: { "x-api-key": key } },
     { label: "Authorization Bearer", headers: { "Authorization": `Bearer ${key}` } },
-    { label: "Authorization Basic", headers: { "Authorization": `Basic ${Buffer.from(key).toString("base64")}` } },
-    { label: "api-key",             headers: { "api-key": key } },
-    { label: "X-Auth-Token",        headers: { "X-Auth-Token": key } },
-    { label: "token",               headers: { "token": key } },
+    { label: "Authorization Basic",  headers: { "Authorization": `Basic ${Buffer.from(key).toString("base64")}` } },
+    { label: "api-key",              headers: { "api-key": key } },
+    { label: "X-Auth-Token",         headers: { "X-Auth-Token": key } },
+    { label: "token",                headers: { "token": key } },
   ];
 
   for (const { label, headers } of attempts) {
     try {
-      const r = await fetch(url, { headers: { ...headers, "Accept": "application/json" } });
+      const r    = await fetch(url, { headers: { ...headers, "Accept": "application/json" } });
       const body = await r.text();
       results[label] = { status: r.status, body: body.slice(0, 200) };
     } catch (e) {
@@ -342,7 +326,67 @@ app.get("/api/marginedge/auth", async (req, res) => {
   res.json(results);
 });
 
-  res.json(results);
+// MarginEdge only
+app.get("/api/marginedge", async (req, res) => {
+  try {
+    const date = req.query.date || today();
+    const data = await fetchMarginEdge(date);
+    res.json({ ok: true, source: "marginedge_live", date, ...data });
+  } catch (err) {
+    console.error("MarginEdge error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// Combined
+app.get("/api/ric", async (req, res) => {
+  const date = req.query.date || today();
+  const result = { date, sources: {} };
+
+  try {
+    const token  = await getGoTabToken();
+    const gqlRes = await fetch("https://gotab.io/api/v2/graph", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID, date)),
+    });
+    const gqlData = await gqlRes.json();
+    const tabs = gqlData?.data?.locations?.[0]?.tabs || [];
+    result.gotab = normalizeGoTab(tabs);
+    result.sources.gotab = "live";
+  } catch (e) {
+    console.error("GoTab failed in /api/ric:", e.message);
+    result.gotab = null;
+    result.sources.gotab = `error: ${e.message}`;
+  }
+
+  try {
+    const shifts = await fetch7Shifts(date);
+    if (result.gotab?.net_sales && shifts.labor_cost)
+      shifts.labor_pct = +((shifts.labor_cost / result.gotab.net_sales) * 100).toFixed(1);
+    result["7shifts"] = shifts;
+    result.sources["7shifts"] = "live";
+  } catch (e) {
+    console.error("7Shifts failed in /api/ric:", e.message);
+    result["7shifts"] = null;
+    result.sources["7shifts"] = `error: ${e.message}`;
+  }
+
+  try {
+    const me = await fetchMarginEdge(date);
+    if (result.gotab?.net_sales) {
+      if (me.cogs?.food)  me.food_cost_pct  = +((me.cogs.food  / result.gotab.net_sales) * 100).toFixed(1);
+      if (me.cogs?.total) me.total_cogs_pct = +((me.cogs.total / result.gotab.net_sales) * 100).toFixed(1);
+    }
+    result.marginedge = me;
+    result.sources.marginedge = "live";
+  } catch (e) {
+    console.error("MarginEdge failed in /api/ric:", e.message);
+    result.marginedge = null;
+    result.sources.marginedge = `error: ${e.message}`;
+  }
+
+  res.json({ ok: true, ...result });
 });
 
 // Claude proxy (non-streaming)
