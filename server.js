@@ -314,33 +314,33 @@ app.get("/api/7shifts", async (req, res) => {
 
 // MarginEdge only
 // MarginEdge diagnostic
-app.get("/api/marginedge/probe", async (req, res) => {
-  const headers = {
-    "x-api-key":    MARGINEDGE_API_KEY,
-    "Content-Type": "application/json",
-    "Accept":       "application/json",
-  };
+app.get("/api/marginedge/auth", async (req, res) => {
+  const key    = MARGINEDGE_API_KEY;
   const tenant = MARGINEDGE_TENANT_ID;
+  const url    = `https://api.marginedge.com/public/v1/restaurants/${tenant}/invoices`;
   const results = {};
 
-  const urls = [
-    `https://api.marginedge.com/public/v1/restaurants/${tenant}/invoices`,
-    `https://api.marginedge.com/v1/restaurants/${tenant}/invoices`,
-    `https://api.marginedge.com/public/v1/invoices?tenant=${tenant}`,
-    `https://api.marginedge.com/public/v1/restaurants/${tenant}`,
-    `https://api.marginedge.com/public/v1/restaurants`,
-    `https://api.marginedge.com/public/v1`,
+  const attempts = [
+    { label: "x-api-key",          headers: { "x-api-key": key } },
+    { label: "Authorization Bearer", headers: { "Authorization": `Bearer ${key}` } },
+    { label: "Authorization Basic", headers: { "Authorization": `Basic ${Buffer.from(key).toString("base64")}` } },
+    { label: "api-key",             headers: { "api-key": key } },
+    { label: "X-Auth-Token",        headers: { "X-Auth-Token": key } },
+    { label: "token",               headers: { "token": key } },
   ];
 
-  for (const url of urls) {
+  for (const { label, headers } of attempts) {
     try {
-      const r = await fetch(url, { headers });
+      const r = await fetch(url, { headers: { ...headers, "Accept": "application/json" } });
       const body = await r.text();
-      results[url] = { status: r.status, body: body.slice(0, 200) };
+      results[label] = { status: r.status, body: body.slice(0, 200) };
     } catch (e) {
-      results[url] = { error: e.message };
+      results[label] = { error: e.message };
     }
   }
+
+  res.json(results);
+});
 
   res.json(results);
 });
