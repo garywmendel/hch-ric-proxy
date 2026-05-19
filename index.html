@@ -444,7 +444,7 @@ function renderWeeklyPL(qb,me,label,startDate,endDate){
   }
 
   // ── Prime cost banner ──
-  if(primePct!=null){
+  if(primePct!=null && totalLabor!=null){
     const pcCls=fc(primePct,TARGETS.prime);
     h+=`<div class="prime-banner ${pcCls}">
       <div>
