@@ -479,7 +479,7 @@ function renderWeeklyPL(qb,me,label,startDate,endDate){
   if(food_pct&&food_pct>TARGETS.food) h+=obs("warn",`<strong>Food cost ${fp(food_pct)}</strong> is above the ${TARGETS.food}% target.`);
   if(wine_pct&&wine_pct>TARGETS.wine) h+=obs("warn",`<strong>Wine cost ${fp(wine_pct)}</strong> — target &lt;${TARGETS.wine}%.`);
   if(nabev_pct&&nabev_pct>TARGETS.na_bev) h+=obs("warn",`<strong>N/A Bev cost ${fp(nabev_pct)}</strong> — target &lt;${TARGETS.na_bev}%.`);
-  if(me.invoice_count===0&&hasQb) h+=obs("info","MarginEdge has 0 invoices for this week — COGS category detail unavailable. QB COGS totals shown instead.");
+  if(me.invoice_count===0) h+=obs("warn","MarginEdge has 0 invoices for this week — COGS data unavailable. Load a prior completed week for accurate food cost analysis.");
   if(primePct&&primePct<=TARGETS.prime) h+=obs("ok",`✓ Prime cost ${fp(primePct)} is within the ${TARGETS.prime}% target.`);
 
   // ── Source note ──
