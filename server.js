@@ -706,14 +706,16 @@ app.get("/api/ric",async(req,res)=>{
       const hasRevenue=(qb.income?.total_sales||0)>0;
       const hasLabor=(qb.total_labor||0)>0;
       const hasSignificantExpenses=(qb.total_controllable||0)>1000;
-      if(hasRevenue||hasLabor||hasSignificantExpenses){
-        if(result.gotab?.net_sales&&qb.total_labor)
-          qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
-        result.quickbooks=qb;result.sources.quickbooks="live";
-      } else {
-        result.quickbooks=null;result.sources.quickbooks="pending";
-        console.log("QB excluded from daily report — no meaningful data for today");
-      }
+      // Always mark QB as live if authorized — exclude sparse data from report payload only
+result.sources.quickbooks="live";
+if(hasRevenue||hasLabor||hasSignificantExpenses){
+  if(result.gotab?.net_sales&&qb.total_labor)
+    qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
+  result.quickbooks=qb;
+} else {
+  result.quickbooks=null;
+  console.log("QB excluded from daily report payload — no meaningful data for today");
+}
     }
   }catch(e){console.error("QB failed:",e.message);result.quickbooks=null;result.sources.quickbooks=`error: ${e.message}`;}
 
