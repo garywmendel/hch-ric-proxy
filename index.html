@@ -389,7 +389,7 @@ function renderMonthlyPL(qb,me,label){
   const ns=qbInc.total_sales||0;
 
   // COGS — prefer ME for category detail, fall back to QB
-  const hasMeCogs=(me.cogs?.total||0)>0;
+  const hasMeCogs=(me.cogs?.total||0)>5000;
   const hasQbCogs=(qb?.cogs?.total||0)>0;
   const cd=hasMeCogs?me.cogs:(qb?.cogs||{});
   const tc=cd.total||0,fc_f=cd.food||0;
