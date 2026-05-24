@@ -99,7 +99,7 @@ async function getQBToken() {
 async function qbGet(endpoint) {
   const token   = await getQBToken();
   const realmId = qbState.realmId;
-  if (!realmId) throw new Error("QB Realm ID not set — visit /auth/quickbooks");
+  if (!realmId) throw new Error("QB Realm ID not set");
   const url = `https://quickbooks.api.intuit.com/v3/company/${realmId}/${endpoint}&minorversion=65`;
   const res = await fetchWithRetry(url, {
     headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
@@ -130,20 +130,16 @@ function parseQBRows(rows, accounts = {}) {
 
 function acct(raw, ...keys) {
   for (const k of keys) {
-    for (const [name, val] of Object.entries(raw)) {
-      if (name.startsWith(k)) return val;
-    }
+    for (const [name, val] of Object.entries(raw)) { if (name.startsWith(k)) return val; }
     const kl = k.toLowerCase();
-    for (const [name, val] of Object.entries(raw)) {
-      if (name.toLowerCase().includes(kl)) return val;
-    }
+    for (const [name, val] of Object.entries(raw)) { if (name.toLowerCase().includes(kl)) return val; }
   }
   return null;
 }
 
 function sum(...vals) { return vals.reduce((a, v) => a + (v || 0), 0); }
 
-// ── QuickBooks fetch + full normalize ─────────────────────────────────────────
+// ── QuickBooks fetch ──────────────────────────────────────────────────────────
 async function fetchQuickBooks(startDate, endDate) {
   const [plRes, cdcRes] = await Promise.allSettled([
     qbGet(`reports/ProfitAndLoss?start_date=${startDate}&end_date=${endDate}&accounting_method=Accrual&`),
@@ -151,10 +147,8 @@ async function fetchQuickBooks(startDate, endDate) {
       ? qbGet(`cdc?entities=Invoice,Bill,JournalEntry,Payment,Purchase&changedSince=${qbState.lastSyncTime}&`)
       : Promise.resolve(null),
   ]);
-
   qbState.lastSyncTime = new Date().toISOString();
   if (plRes.status === "rejected") throw new Error("QB P&L unavailable: " + plRes.reason);
-
   const raw = parseQBRows(plRes.value?.Rows?.Row);
   const cdc = cdcRes.status === "fulfilled" ? cdcRes.value : null;
 
@@ -199,26 +193,21 @@ async function fetchQuickBooks(startDate, endDate) {
   };
   boh.total = sum(boh.prep, boh.dishwasher_porter, boh.line_cook, boh.chef, boh.sous_chef);
 
-  const mgmt = {
-    admin: acct(raw,"5215"), manager_salary: acct(raw,"5220-2"), labor_other: acct(raw,"5230"),
-  };
+  const mgmt = { admin: acct(raw,"5215"), manager_salary: acct(raw,"5220-2"), labor_other: acct(raw,"5230") };
   mgmt.total = sum(mgmt.admin, mgmt.manager_salary, mgmt.labor_other);
-
   const direct_labor = sum(foh.total, boh.total, mgmt.total);
 
   const labor_related = {
     commission: acct(raw,"5310"), payroll_fica: acct(raw,"5315-1"),
     payroll_sui: acct(raw,"5315-2"), payroll_fui: acct(raw,"5315-3"),
     payroll_mta: acct(raw,"5315-4"), health_insurance: acct(raw,"5320"),
-    workers_comp: acct(raw,"5325"), disability_ins: acct(raw,"5330"),
-    epli_insurance: acct(raw,"5350"),
+    workers_comp: acct(raw,"5325"), disability_ins: acct(raw,"5330"), epli_insurance: acct(raw,"5350"),
   };
   labor_related.total = sum(
     labor_related.commission, labor_related.payroll_fica, labor_related.payroll_sui,
     labor_related.payroll_fui, labor_related.payroll_mta, labor_related.health_insurance,
     labor_related.workers_comp, labor_related.disability_ins, labor_related.epli_insurance
   );
-
   const total_labor = sum(direct_labor, labor_related.total);
 
   const direct_ops = {
@@ -231,19 +220,16 @@ async function fetchQuickBooks(startDate, endDate) {
   direct_ops.total = sum(
     direct_ops.cash_over_under, direct_ops.equipment_lease, direct_ops.cleaning_supplies,
     direct_ops.restaurant_supplies, direct_ops.laundry, direct_ops.smallwares,
-    direct_ops.wood_supplies, direct_ops.delivery_expense, direct_ops.catering_rental,
-    direct_ops.music_dj
+    direct_ops.wood_supplies, direct_ops.delivery_expense, direct_ops.catering_rental, direct_ops.music_dj
   );
 
   const transaction_expenses = {
     cc_fees: acct(raw,"6205"), reservation_system: acct(raw,"6210"),
-    third_party_commissions: acct(raw,"6215"), late_fees: acct(raw,"6220"),
-    chargeback: acct(raw,"6615"),
+    third_party_commissions: acct(raw,"6215"), late_fees: acct(raw,"6220"), chargeback: acct(raw,"6615"),
   };
   transaction_expenses.total = sum(
     transaction_expenses.cc_fees, transaction_expenses.reservation_system,
-    transaction_expenses.third_party_commissions, transaction_expenses.late_fees,
-    transaction_expenses.chargeback
+    transaction_expenses.third_party_commissions, transaction_expenses.late_fees, transaction_expenses.chargeback
   );
 
   const marketing = {
@@ -257,29 +243,25 @@ async function fetchQuickBooks(startDate, endDate) {
 
   const ga_expenses = {
     research_development: acct(raw,"6450"), accounting_bookkeeping: acct(raw,"6505"),
-    recruiting: acct(raw,"6512"), legal: acct(raw,"6520"),
-    payroll_processing: acct(raw,"6525"), computer_software_it: acct(raw,"6535"),
-    dues_subscriptions: acct(raw,"6550"), bank_charges: acct(raw,"6560"),
-    license_permits: acct(raw,"6570"), office_supplies: acct(raw,"6575"),
-    postage: acct(raw,"6585","6603"), liability_insurance: acct(raw,"6590"),
-    penalties_settlements: acct(raw,"6600"), phone_internet: acct(raw,"6605"),
+    recruiting: acct(raw,"6512"), legal: acct(raw,"6520"), payroll_processing: acct(raw,"6525"),
+    computer_software_it: acct(raw,"6535"), dues_subscriptions: acct(raw,"6550"),
+    bank_charges: acct(raw,"6560"), license_permits: acct(raw,"6570"),
+    office_supplies: acct(raw,"6575"), postage: acct(raw,"6585","6603"),
+    liability_insurance: acct(raw,"6590"), penalties_settlements: acct(raw,"6600"),
+    phone_internet: acct(raw,"6605"),
   };
   ga_expenses.total = sum(
-    ga_expenses.research_development, ga_expenses.accounting_bookkeeping,
-    ga_expenses.recruiting, ga_expenses.legal, ga_expenses.payroll_processing,
-    ga_expenses.computer_software_it, ga_expenses.dues_subscriptions,
-    ga_expenses.bank_charges, ga_expenses.license_permits, ga_expenses.office_supplies,
-    ga_expenses.postage, ga_expenses.liability_insurance,
+    ga_expenses.research_development, ga_expenses.accounting_bookkeeping, ga_expenses.recruiting,
+    ga_expenses.legal, ga_expenses.payroll_processing, ga_expenses.computer_software_it,
+    ga_expenses.dues_subscriptions, ga_expenses.bank_charges, ga_expenses.license_permits,
+    ga_expenses.office_supplies, ga_expenses.postage, ga_expenses.liability_insurance,
     ga_expenses.penalties_settlements, ga_expenses.phone_internet
   );
 
   const travel_meals = {
-    travel_transport: acct(raw,"6705"), meals_entertainment: acct(raw,"6710"),
-    parking: acct(raw,"6720"),
+    travel_transport: acct(raw,"6705"), meals_entertainment: acct(raw,"6710"), parking: acct(raw,"6720"),
   };
-  travel_meals.total = sum(
-    travel_meals.travel_transport, travel_meals.meals_entertainment, travel_meals.parking
-  );
+  travel_meals.total = sum(travel_meals.travel_transport, travel_meals.meals_entertainment, travel_meals.parking);
 
   const repair_maintenance = {
     equipment: acct(raw,"6810"), pest_control: acct(raw,"6820"),
@@ -341,76 +323,61 @@ async function fetchQuickBooks(startDate, endDate) {
 
 // ── Mailchimp ─────────────────────────────────────────────────────────────────
 async function fetchMailchimp() {
-  if (!MC_API_KEY || !MC_SERVER || !MC_AUDIENCE_ID) {
-    throw new Error("Mailchimp credentials not set in environment variables");
-  }
-
+  if (!MC_API_KEY || !MC_SERVER || !MC_AUDIENCE_ID) throw new Error("Mailchimp credentials not configured");
   const base    = `https://${MC_SERVER}.api.mailchimp.com/3.0`;
   const auth    = "Basic " + Buffer.from(`anystring:${MC_API_KEY}`).toString("base64");
   const headers = { "Authorization": auth, "Content-Type": "application/json" };
 
-  // Fetch in parallel: audience stats, recent campaigns, recent activity
   const [listRes, campaignsRes, activityRes] = await Promise.all([
     fetchWithRetry(`${base}/lists/${MC_AUDIENCE_ID}?fields=id,name,stats,date_created`, { headers }),
     fetchWithRetry(`${base}/campaigns?list_id=${MC_AUDIENCE_ID}&status=sent&count=5&sort_field=send_time&sort_dir=DESC&fields=campaigns.id,campaigns.settings.subject_line,campaigns.send_time,campaigns.emails_sent,campaigns.report_summary`, { headers }),
     fetchWithRetry(`${base}/lists/${MC_AUDIENCE_ID}/activity?fields=activity.day,activity.emails_sent,activity.unique_opens,activity.recipient_clicks,activity.subs,activity.unsubs&count=30`, { headers }),
   ]);
 
-  if (!listRes.ok) {
-    const body = await listRes.text();
-    throw new Error(`Mailchimp list failed: ${listRes.status} | ${body}`);
-  }
-
+  if (!listRes.ok) throw new Error(`Mailchimp list failed: ${listRes.status}`);
   const list      = await listRes.json();
   const campaigns = campaignsRes.ok ? await campaignsRes.json() : { campaigns: [] };
   const activity  = activityRes.ok  ? await activityRes.json()  : { activity: [] };
+  const stats     = list.stats || {};
 
-  // Audience stats
-  const stats = list.stats || {};
-
-  // Last 30 days activity aggregation
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  let emails_sent_30d = 0, opens_30d = 0, clicks_30d = 0, subs_30d = 0, unsubs_30d = 0;
+  // Last 30 days aggregation
+  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  let emails_sent_30d=0,opens_30d=0,clicks_30d=0,subs_30d=0,unsubs_30d=0;
   for (const day of activity.activity || []) {
-    const dayDate = new Date(day.day);
-    if (dayDate >= thirtyDaysAgo) {
-      emails_sent_30d += day.emails_sent  || 0;
-      opens_30d       += day.unique_opens || 0;
+    if (new Date(day.day) >= thirtyDaysAgo) {
+      emails_sent_30d += day.emails_sent      || 0;
+      opens_30d       += day.unique_opens     || 0;
       clicks_30d      += day.recipient_clicks || 0;
-      subs_30d        += day.subs   || 0;
-      unsubs_30d      += day.unsubs || 0;
+      subs_30d        += day.subs             || 0;
+      unsubs_30d      += day.unsubs           || 0;
     }
   }
 
-  // Recent campaigns summary
-  const recent_campaigns = (campaigns.campaigns || []).map(c => ({
-    subject:     c.settings?.subject_line || "—",
-    send_time:   c.send_time,
-    emails_sent: c.emails_sent || 0,
-    open_rate:   c.report_summary?.open_rate ? +(c.report_summary.open_rate * 100).toFixed(1) : null,
-    click_rate:  c.report_summary?.click_rate ? +(c.report_summary.click_rate * 100).toFixed(1) : null,
-    opens:       c.report_summary?.unique_opens || 0,
-    clicks:      c.report_summary?.subscriber_clicks || 0,
-  }));
+  // Mailchimp stores audience-level rates as raw decimals (0.2142 = 21.42%)
+  // Campaign-level rates come back already as percentages from our calculation
+  const toPercent = (v) => v != null ? +(v * 100).toFixed(1) : null;
 
   return {
-    // Audience
     audience_name:     list.name,
-    total_subscribers: stats.member_count       || 0,
-    open_rate_avg:     stats.open_rate ? +(stats.open_rate * 100).toFixed(1) : null,
-    click_rate_avg:    stats.click_rate ? +(stats.click_rate * 100).toFixed(1) : null,
-    unsubscribe_rate:  stats.unsubscribe_rate ? +(stats.unsubscribe_rate * 100).toFixed(2) : null,
+    total_subscribers: stats.member_count        || 0,
+    open_rate_avg:     toPercent(stats.open_rate),
+    click_rate_avg:    toPercent(stats.click_rate),
+    unsubscribe_rate:  toPercent(stats.unsubscribe_rate),
     // Last 30 days
-    emails_sent_30d,
-    opens_30d,
-    clicks_30d,
-    subs_30d,
-    unsubs_30d,
+    emails_sent_30d, opens_30d, clicks_30d, subs_30d, unsubs_30d,
     open_rate_30d:  emails_sent_30d > 0 ? +((opens_30d  / emails_sent_30d) * 100).toFixed(1) : null,
     click_rate_30d: emails_sent_30d > 0 ? +((clicks_30d / emails_sent_30d) * 100).toFixed(1) : null,
+    net_list_growth_30d: subs_30d - unsubs_30d,
     // Recent campaigns
-    recent_campaigns,
+    recent_campaigns: (campaigns.campaigns || []).map(c => ({
+      subject:     c.settings?.subject_line || "—",
+      send_time:   c.send_time,
+      emails_sent: c.emails_sent || 0,
+      open_rate:   c.report_summary?.open_rate   != null ? +(c.report_summary.open_rate   * 100).toFixed(1) : null,
+      click_rate:  c.report_summary?.click_rate  != null ? +(c.report_summary.click_rate  * 100).toFixed(1) : null,
+      opens:       c.report_summary?.unique_opens           || 0,
+      clicks:      c.report_summary?.subscriber_clicks      || 0,
+    })),
     data_as_of: nowET(),
   };
 }
@@ -418,8 +385,7 @@ async function fetchMailchimp() {
 // ── GoTab auth ────────────────────────────────────────────────────────────────
 async function getGoTabToken() {
   const res = await fetchWithRetry("https://gotab.io/api/oauth/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ api_access_id: GOTAB_ID, api_access_secret: GOTAB_SECRET }),
   });
   if (!res.ok) throw new Error(`GoTab auth failed: ${res.status}`);
@@ -428,8 +394,7 @@ async function getGoTabToken() {
 
 function goTabQuery(locationUuid, fiscalDay) {
   return {
-    query: `
-      query($locationUuid: String, $tabCreationDate: Datetime) {
+    query: `query($locationUuid: String, $tabCreationDate: Datetime) {
         locations: locationsList(condition: { locationUuid: $locationUuid }) {
           name locationUuid
           tabs: tabsList(filter: { created: { greaterThan: $tabCreationDate } ordersPlaced: { greaterThan: 0 } }) {
@@ -448,30 +413,28 @@ function goTabQuery(locationUuid, fiscalDay) {
 
 function normalizeGoTab(tabs) {
   let net_sales=0,tax_total=0,bar_sales=0,catering_sales=0,voids=0,comps=0,tip_total=0,tab_count=0,deferred_revenue=0;
-  const BAR_STREAMS=["Sales, Liquor:","Sales, Beer:","Sales, Non-Alcoholic Beverage:","Sales, Wine:","Sales, Banquet Liquor:","Sales, Banquet Beer:","Sales, Banquet Wine:","Sales, Banquet N/A Beverage:"];
-  const CATERING_STREAMS=["Sales, Catering Food:","Sales, Banquet Food:","Sales, Banquet Admin Fee:","Sales, Transport Fee:"];
-  const EXCLUDE_GROUPS=["DEFERRED_REVENUE","PROCESSORS","EXPENSE"];
+  const BAR=["Sales, Liquor:","Sales, Beer:","Sales, Non-Alcoholic Beverage:","Sales, Wine:","Sales, Banquet Liquor:","Sales, Banquet Beer:","Sales, Banquet Wine:","Sales, Banquet N/A Beverage:"];
+  const CAT=["Sales, Catering Food:","Sales, Banquet Food:","Sales, Banquet Admin Fee:","Sales, Transport Fee:"];
+  const EX=["DEFERRED_REVENUE","PROCESSORS","EXPENSE"];
   for (const tab of tabs) {
-    const tabTax=tab.tax||0,tabTotal=tab.total||0,tabSub=tab.subtotal||0,tabAuto=tab.autogratDue||0;
-    tax_total+=tabTax;
-    const tabTip=tabTotal-tabSub-tabTax-tabAuto;if(tabTip>0) tip_total+=tabTip;
-    tab_count++;
+    const tt=tab.tax||0,tto=tab.total||0,ts=tab.subtotal||0,ta=tab.autogratDue||0;
+    tax_total+=tt; const tip=tto-ts-tt-ta; if(tip>0) tip_total+=tip; tab_count++;
     for (const item of tab.items||[]) {
-      const g=item.accountingStream?.reportingGroup||"",n=item.accountingStream?.name||"",amt=item.subtotal||0;
-      if(EXCLUDE_GROUPS.includes(g)){if(g==="DEFERRED_REVENUE") deferred_revenue+=amt;continue;}
-      if(n.startsWith("Discounts and Comps")){comps+=Math.abs(amt);continue;}
-      if(item.voided||g==="VOID"){voids+=Math.abs(amt);continue;}
-      net_sales+=amt;
-      if(BAR_STREAMS.some(b=>n.startsWith(b))) bar_sales+=amt;
-      else if(CATERING_STREAMS.some(b=>n.startsWith(b))) catering_sales+=amt;
+      const g=item.accountingStream?.reportingGroup||"",n=item.accountingStream?.name||"",a=item.subtotal||0;
+      if(EX.includes(g)){if(g==="DEFERRED_REVENUE") deferred_revenue+=a;continue;}
+      if(n.startsWith("Discounts and Comps")){comps+=Math.abs(a);continue;}
+      if(item.voided||g==="VOID"){voids+=Math.abs(a);continue;}
+      net_sales+=a;
+      if(BAR.some(b=>n.startsWith(b))) bar_sales+=a;
+      else if(CAT.some(b=>n.startsWith(b))) catering_sales+=a;
     }
   }
   return {
-    net_sales:+(net_sales/100).toFixed(2),tab_count,
-    bar_sales:+(bar_sales/100).toFixed(2),catering_sales:+(catering_sales/100).toFixed(2),
-    voids:+(voids/100).toFixed(2),comps:+(comps/100).toFixed(2),
-    tax_total:+(tax_total/100).toFixed(2),tip_total:+(tip_total/100).toFixed(2),
-    deferred_revenue:+(deferred_revenue/100).toFixed(2),data_as_of:nowET(),
+    net_sales:+(net_sales/100).toFixed(2), tab_count,
+    bar_sales:+(bar_sales/100).toFixed(2), catering_sales:+(catering_sales/100).toFixed(2),
+    voids:+(voids/100).toFixed(2), comps:+(comps/100).toFixed(2),
+    tax_total:+(tax_total/100).toFixed(2), tip_total:+(tip_total/100).toFixed(2),
+    deferred_revenue:+(deferred_revenue/100).toFixed(2), data_as_of:nowET(),
   };
 }
 
@@ -489,21 +452,12 @@ async function fetch7Shifts(date) {
   if(!sRes.ok) throw new Error(`7Shifts shifts failed: ${sRes.status}`);
   if(!pRes.ok) throw new Error(`7Shifts punches failed: ${pRes.status}`);
   const shifts=(await sRes.json()).data||[],punches=(await pRes.json()).data||[];
-  let scheduled_hours=0,actual_hours=0,labor_cost=0,overtime_hours=0,no_shows=0;
-  for(const s of shifts) scheduled_hours+=(new Date(s.end)-new Date(s.start))/3600000;
-  for(const p of punches){
-    if(p.clocked_in&&p.clocked_out){
-      const hrs=(new Date(p.clocked_out)-new Date(p.clocked_in))/3600000;
-      actual_hours+=hrs;if(p.wage_cents) labor_cost+=(hrs*p.wage_cents)/100;if(hrs>8) overtime_hours+=hrs-8;
-    }
-  }
-  const punchedIds=new Set(punches.map(p=>p.user_id));
-  for(const s of shifts) if(s.user_id&&!punchedIds.has(s.user_id)) no_shows++;
-  return {
-    scheduled_hours:+scheduled_hours.toFixed(1),actual_hours:+actual_hours.toFixed(1),
-    labor_cost:+labor_cost.toFixed(2),labor_pct:null,overtime_hours:+overtime_hours.toFixed(1),
-    no_shows,shift_count:shifts.length,punch_count:punches.length,data_as_of:nowET()
-  };
+  let sh=0,ah=0,lc=0,oh=0,ns=0;
+  for(const s of shifts) sh+=(new Date(s.end)-new Date(s.start))/3600000;
+  for(const p of punches){if(p.clocked_in&&p.clocked_out){const h=(new Date(p.clocked_out)-new Date(p.clocked_in))/3600000;ah+=h;if(p.wage_cents) lc+=(h*p.wage_cents)/100;if(h>8) oh+=h-8;}}
+  const pi=new Set(punches.map(p=>p.user_id));
+  for(const s of shifts) if(s.user_id&&!pi.has(s.user_id)) ns++;
+  return {scheduled_hours:+sh.toFixed(1),actual_hours:+ah.toFixed(1),labor_cost:+lc.toFixed(2),labor_pct:null,overtime_hours:+oh.toFixed(1),no_shows:ns,shift_count:shifts.length,punch_count:punches.length,data_as_of:nowET()};
 }
 
 // ── MarginEdge ────────────────────────────────────────────────────────────────
@@ -530,26 +484,20 @@ async function fetchMarginEdge(date) {
   const ordersJson=await ordersRes.json();
   const orders=ordersJson.orders||ordersJson.data||(Array.isArray(ordersJson)?ordersJson:[]);
   const cogs={food:0,meat:0,produce:0,dairy:0,grocery:0,liquor:0,beer:0,wine:0,na_bev:0,paper:0,supplies:0,other:0,total:0};
-  const detailFetches=orders.slice(0,20).map(o=>fetchWithRetry(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.ok?r.json():null).catch(()=>null));
-  const details=await Promise.all(detailFetches);
+  const details=await Promise.all(orders.slice(0,20).map(o=>fetchWithRetry(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.ok?r.json():null).catch(()=>null)));
   for(let i=0;i<details.length;i++){
-    const detail=details[i],order=orders[i];
-    if(!detail){const amt=parseFloat(order.orderTotal||0);if(amt){cogs.total+=amt;cogs.other+=amt;}continue;}
-    const lines=detail.lineItems||detail.line_items||detail.items||detail.orderItems||[];
-    if(lines.length===0){const amt=parseFloat(detail.orderTotal||order.orderTotal||0);if(amt){cogs.total+=amt;bucketCogs(cogs,detail.vendorName||order.vendorName||"",amt);}continue;}
-    for(const line of lines){
-      const cat=line.category||line.categoryName||line.category_name||line.categoryType||"";
-      const amt=parseFloat(line.extendedCost||line.extended_cost||line.amount||line.total||line.cost||line.lineTotal||0);
-      if(!amt) continue;cogs.total+=amt;bucketCogs(cogs,cat,amt);
-    }
+    const d=details[i],o=orders[i];
+    if(!d){const a=parseFloat(o.orderTotal||0);if(a){cogs.total+=a;cogs.other+=a;}continue;}
+    const lines=d.lineItems||d.line_items||d.items||d.orderItems||[];
+    if(!lines.length){const a=parseFloat(d.orderTotal||o.orderTotal||0);if(a){cogs.total+=a;bucketCogs(cogs,d.vendorName||o.vendorName||"",a);}continue;}
+    for(const l of lines){const cat=l.category||l.categoryName||l.category_name||l.categoryType||"";const a=parseFloat(l.extendedCost||l.extended_cost||l.amount||l.total||l.cost||l.lineTotal||0);if(!a) continue;cogs.total+=a;bucketCogs(cogs,cat,a);}
   }
-  for(const key of Object.keys(cogs)) cogs[key]=+cogs[key].toFixed(2);
+  for(const k of Object.keys(cogs)) cogs[k]=+cogs[k].toFixed(2);
   return {invoice_count:orders.length,pending_invoices:0,cogs,food_cost_pct:null,total_cogs_pct:null,data_as_of:nowET()};
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-// QB OAuth step 1
 app.get("/auth/quickbooks",(req,res)=>{
   if(!QB_CLIENT_ID) return res.status(500).send("QB_CLIENT_ID not set.");
   const url=new URL("https://appcenter.intuit.com/connect/oauth2");
@@ -559,83 +507,49 @@ app.get("/auth/quickbooks",(req,res)=>{
   res.redirect(url.toString());
 });
 
-// QB OAuth step 2
 app.get("/auth/quickbooks/callback",async(req,res)=>{
   const{code,realmId,error}=req.query;
   if(error) return res.send(`<h2>QB Auth Failed</h2><p>${error}</p>`);
   if(!code||!realmId) return res.status(400).send("<h2>Missing code or realmId</h2>");
   try{
     const creds=Buffer.from(`${QB_CLIENT_ID}:${QB_CLIENT_SECRET}`).toString("base64");
-    const tokenRes=await fetchWithRetry("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",{
-      method:"POST",headers:{"Authorization":`Basic ${creds}`,"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},
-      body:new URLSearchParams({grant_type:"authorization_code",code,redirect_uri:QB_REDIRECT_URI})
-    });
+    const tokenRes=await fetchWithRetry("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",{method:"POST",headers:{"Authorization":`Basic ${creds}`,"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},body:new URLSearchParams({grant_type:"authorization_code",code,redirect_uri:QB_REDIRECT_URI})});
     const intuitTid=tokenRes.headers?.get("intuit_tid")||"unknown";
     if(!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>Token exchange failed</h2><p>${tokenRes.status}</p><pre>${body}</pre>`);}
     const tokens=await tokenRes.json();
     qbState.accessToken=tokens.access_token;qbState.refreshToken=tokens.refresh_token;
     qbState.realmId=realmId;qbState.tokenExpiresAt=Date.now()+(tokens.expires_in-60)*1000;
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title>
-<style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}
-h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}
-.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}
-.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}
-.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px}
-.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head>
-<body><h1>✓ QuickBooks Connected</h1><p>Copy these into Railway → Variables, then redeploy.</p>
-<div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div>
-<div class="card"><div class="label">QB_REFRESH_TOKEN</div><div class="value">${tokens.refresh_token}</div></div>
-<div class="step">Once redeployed: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div>
-<div class="warn">⚠️ Close this tab after copying. Rotate your Client Secret after setup.</div>
-</body></html>`);
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Copy these into Railway → Variables, then redeploy.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN</div><div class="value">${tokens.refresh_token}</div></div><div class="step">Once redeployed: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div><div class="warn">⚠️ Close this tab after copying. Rotate your Client Secret after setup.</div></body></html>`);
   }catch(err){res.status(500).send(`<h2>Callback error</h2><pre>${err.message}</pre>`);}
 });
 
-// QB status
 app.get("/api/quickbooks/status",(_req,res)=>{
-  res.json({ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,
-    tokenValid:Date.now()<qbState.tokenExpiresAt,
-    tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,
-    lastSyncTime:qbState.lastSyncTime});
+  res.json({ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,tokenValid:Date.now()<qbState.tokenExpiresAt,tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,lastSyncTime:qbState.lastSyncTime});
 });
 
-// QB only
 app.get("/api/quickbooks",async(req,res)=>{
   try{
     if(!qbState.refreshToken) return res.status(401).json({ok:false,error:"Not authorized — visit /auth/quickbooks"});
     const start=req.query.start||today(),end=req.query.end||today();
-    const data=await fetchQuickBooks(start,end);
-    res.json({ok:true,source:"quickbooks_live",start,end,...data});
+    res.json({ok:true,source:"quickbooks_live",start,end,...await fetchQuickBooks(start,end)});
   }catch(err){console.error("QB error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-// Mailchimp only
 app.get("/api/mailchimp",async(req,res)=>{
-  try{
-    const data=await fetchMailchimp();
-    res.json({ok:true,source:"mailchimp_live",...data});
-  }catch(err){
-    console.error("Mailchimp error:",err.message);
-    res.status(500).json({ok:false,error:err.message});
-  }
+  try{res.json({ok:true,source:"mailchimp_live",...await fetchMailchimp()});}
+  catch(err){console.error("Mailchimp error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-// GoTab streams
 app.get("/api/gotab/streams",async(req,res)=>{
   try{
     const date=req.query.date||today(),token=await getGoTabToken();
     const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
     const gqlData=await gqlRes.json(),tabs=gqlData?.data?.locations?.[0]?.tabs||[],streams={};
-    for(const tab of tabs) for(const item of tab.items||[]){
-      const g=item.accountingStream?.reportingGroup||"NONE",n=item.accountingStream?.name||"NONE",key=`${g} | ${n}`;
-      if(!streams[key]) streams[key]={reportingGroup:g,name:n,count:0,subtotal_cents:0};
-      streams[key].count++;streams[key].subtotal_cents+=item.subtotal||0;
-    }
+    for(const tab of tabs) for(const item of tab.items||[]){const g=item.accountingStream?.reportingGroup||"NONE",n=item.accountingStream?.name||"NONE",key=`${g} | ${n}`;if(!streams[key]) streams[key]={reportingGroup:g,name:n,count:0,subtotal_cents:0};streams[key].count++;streams[key].subtotal_cents+=item.subtotal||0;}
     res.json({total_tabs:tabs.length,streams:Object.values(streams).sort((a,b)=>b.subtotal_cents-a.subtotal_cents)});
   }catch(err){res.status(500).json({ok:false,error:err.message});}
 });
 
-// GoTab only
 app.get("/api/gotab",async(req,res)=>{
   try{
     const date=req.query.date||today(),token=await getGoTabToken();
@@ -643,31 +557,27 @@ app.get("/api/gotab",async(req,res)=>{
     if(!gqlRes.ok) throw new Error(`GoTab GraphQL error: ${gqlRes.status}`);
     const gqlData=await gqlRes.json();
     if(gqlData.errors) throw new Error(gqlData.errors[0]?.message||"GraphQL error");
-    const tabs=gqlData?.data?.locations?.[0]?.tabs||[];
-    res.json({ok:true,source:"gotab_live",date,...normalizeGoTab(tabs)});
+    res.json({ok:true,source:"gotab_live",date,...normalizeGoTab(gqlData?.data?.locations?.[0]?.tabs||[])});
   }catch(err){console.error("GoTab error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-// 7Shifts only
 app.get("/api/7shifts",async(req,res)=>{
-  try{const date=req.query.date||today(),data=await fetch7Shifts(date);res.json({ok:true,source:"7shifts_live",date,...data});}
+  try{res.json({ok:true,source:"7shifts_live",date:req.query.date||today(),...await fetch7Shifts(req.query.date||today())});}
   catch(err){console.error("7Shifts error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-// MarginEdge only
 app.get("/api/marginedge",async(req,res)=>{
-  try{const date=req.query.date||today(),data=await fetchMarginEdge(date);res.json({ok:true,source:"marginedge_live",date,...data});}
+  try{res.json({ok:true,source:"marginedge_live",date:req.query.date||today(),...await fetchMarginEdge(req.query.date||today())});}
   catch(err){console.error("MarginEdge error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-// Combined /api/ric
 app.get("/api/ric",async(req,res)=>{
   const date=req.query.date||today(),result={date,sources:{}};
 
   try{
     const token=await getGoTabToken();
     const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
-    const gqlData=await gqlRes.json(),tabs=gqlData?.data?.locations?.[0]?.tabs||[];
+    const tabs=( await gqlRes.json())?.data?.locations?.[0]?.tabs||[];
     result.gotab=normalizeGoTab(tabs);result.sources.gotab="live";
   }catch(e){console.error("GoTab failed:",e.message);result.gotab=null;result.sources.gotab=`error: ${e.message}`;}
 
@@ -694,41 +604,28 @@ app.get("/api/ric",async(req,res)=>{
       const hasLabor=(qb.total_labor||0)>0;
       const hasSignificantExpenses=(qb.total_controllable||0)>1000;
       if(hasRevenue||hasLabor||hasSignificantExpenses){
-        if(result.gotab?.net_sales&&qb.total_labor)
-          qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
+        if(result.gotab?.net_sales&&qb.total_labor) qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
         result.quickbooks=qb;
-      } else {
-        result.quickbooks=null;
-        console.log("QB excluded from daily report payload — no meaningful data for today");
-      }
+      }else{result.quickbooks=null;console.log("QB excluded from daily report — sparse data");}
     }
   }catch(e){console.error("QB failed:",e.message);result.quickbooks=null;result.sources.quickbooks=`error: ${e.message}`;}
 
   try{
-    const mc=await fetchMailchimp();
-    result.mailchimp=mc;result.sources.mailchimp="live";
+    result.mailchimp=await fetchMailchimp();result.sources.mailchimp="live";
   }catch(e){console.error("Mailchimp failed:",e.message);result.mailchimp=null;result.sources.mailchimp=`error: ${e.message}`;}
 
   res.json({ok:true,...result});
 });
 
-// Claude proxy
 app.post("/api/claude",async(req,res)=>{
   try{
-    const body={...req.body,stream:false};
-    const upstream=await fetchWithRetry("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},
-      body:JSON.stringify(body)
-    });
+    const upstream=await fetchWithRetry("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({...req.body,stream:false})});
     res.json(await upstream.json());
   }catch(err){console.error("Claude proxy error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-// Health
 app.get("/health",(_req,res)=>res.json({ok:true,service:"hch-ric-proxy",version:"3.5"}));
 
-// Serve app
 app.get("/",(_req,res)=>{
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate");
   res.sendFile(join(__dirname,"index.html"));
