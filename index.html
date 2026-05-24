@@ -93,7 +93,7 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 h3.s-revenue{color:#1D9E75!important}h3.s-labor{color:#1a1a18!important}h3.s-food{color:#D85A30!important}
 h3.s-covers{color:#534AB7!important}h3.s-delivery{color:#993C1D!important}h3.s-events{color:#854F0B!important}
 h3.s-digital{color:#185FA5!important}h3.s-reputation{color:#A32D2D!important}h3.s-ops{color:#3B6D11!important}
-h3.s-gm{color:#1D9E75!important}h3.s-anomaly{color:#cc0000!important}
+h3.s-gm{color:#1D9E75!important}h3.s-anomaly{color:#cc0000!important}h3.s-marketing{color:#3B6D11!important}
 .report-body strong{font-weight:600}
 .report-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--b2);flex-wrap:wrap}
 .disclaimer{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
@@ -111,7 +111,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 .pl-meta{font-size:11px;color:var(--t1);display:flex;align-items:center;gap:5px}
 .pl-dot{width:6px;height:6px;border-radius:50%;background:var(--b1);flex-shrink:0}
 .pl-dot.live{background:var(--green)}.pl-dot.load{background:var(--amber);animation:blink 0.8s infinite}.pl-dot.err{background:var(--red)}
-/* Prime banner */
 .prime-banner{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:var(--r-md);margin-bottom:14px;flex-wrap:wrap;gap:8px}
 .prime-banner.ok{background:var(--green-bg);border:1px solid var(--green)}
 .prime-banner.warn{background:var(--amber-bg);border:1px solid var(--amber)}
@@ -121,7 +120,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 .prime-val{font-size:24px;font-weight:700}
 .prime-val.ok{color:var(--green)}.prime-val.warn{color:var(--amber)}.prime-val.crit{color:var(--red)}
 .prime-detail{font-size:11px;color:var(--t1);margin-top:2px}
-/* KPI */
 .kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px}
 @media(min-width:480px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
 .kpi{background:var(--bg1);border-radius:var(--r-md);padding:10px 12px}
@@ -129,7 +127,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 .kpi-v{font-size:16px;font-weight:600;color:var(--t0)}
 .kpi-s{font-size:10px;color:var(--t1);margin-top:2px}
 .kpi-v.ok{color:var(--green)}.kpi-v.warn{color:var(--amber)}.kpi-v.crit{color:var(--red)}
-/* Metric strip */
 .metric-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px}
 @media(min-width:480px){.metric-strip{grid-template-columns:repeat(3,1fr)}}
 .metric-card{background:var(--bg1);border-radius:var(--r-md);padding:10px 12px;border-left:3px solid var(--b1)}
@@ -138,14 +135,12 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 .metric-l{font-size:10px;color:var(--t1);margin-bottom:2px}
 .metric-v{font-size:14px;font-weight:600;color:var(--t0)}
 .metric-s{font-size:10px;color:var(--t1);margin-top:2px;line-height:1.4}
-/* Obs */
 .obs{border-radius:var(--r-md);padding:9px 12px;margin-bottom:7px;font-size:12px;line-height:1.5}
 .obs.warn{background:var(--amber-bg);color:var(--amber-t)}
 .obs.ok{background:var(--green-bg);color:var(--green-t)}
 .obs.info{background:var(--blue-bg);color:var(--blue-t)}
 .obs.crit{background:var(--red-bg);color:var(--red-t)}
 .obs strong{font-weight:600}
-/* Table */
 .fr-wrap{overflow-x:auto}
 .fr-table{width:100%;border-collapse:collapse;font-size:11px;min-width:360px}
 .fr-table th{text-align:right;padding:5px 8px;background:var(--bg1);color:var(--t1);font-weight:500;border-bottom:0.5px solid var(--b2);white-space:nowrap}
@@ -169,7 +164,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 .badge{display:inline-block;padding:1px 5px;border-radius:100px;font-size:9px;font-weight:600;vertical-align:middle;margin-left:3px}
 .badge.live{background:var(--green-bg);color:var(--green-t)}
 .badge.pend{background:var(--amber-bg);color:var(--amber-t)}
-/* Future panel */
 .future-panel{background:var(--bg1);border-radius:var(--r-lg);padding:14px 16px;margin-top:16px;border:0.5px solid var(--b2)}
 .future-title{font-size:12px;font-weight:600;color:var(--t0);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .future-title::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0}
@@ -264,7 +258,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
       <div class="future-item"><div class="future-src">7Shifts</div><div class="future-metrics">FOH/BOH labor by role<br>Scheduled vs actual hrs<br>Overtime & no-shows</div></div>
       <div class="future-item"><div class="future-src">OpenTable</div><div class="future-metrics">Revenue per cover<br>Table turn time<br>No-show rate</div></div>
       <div class="future-item"><div class="future-src">TripleSeat</div><div class="future-metrics">Event revenue / month<br>Private dining margin<br>Deposit pipeline</div></div>
-      <div class="future-item"><div class="future-src">Mailchimp</div><div class="future-metrics">Email → reservation rate<br>Campaign revenue lift<br>List growth</div></div>
       <div class="future-item"><div class="future-src">GA4</div><div class="future-metrics">Online order conversion<br>Digital revenue attribution<br>Search visibility</div></div>
       <div class="future-item"><div class="future-src">Marqii</div><div class="future-metrics">Rating trend<br>Review sentiment score<br>Competitor delta</div></div>
       <div class="future-item"><div class="future-src">DoorDash</div><div class="future-metrics">Delivery margin after fees<br>Avg order value trend<br>Cancellation rate</div></div>
@@ -280,8 +273,8 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <button class="chip" onclick="setQ('What is our true brisket margin after trim loss and current beef prices?')">Brisket margin</button>
     <button class="chip" onclick="setQ('How does delivery profitability compare to dine-in after platform fees?')">Delivery vs dine-in</button>
     <button class="chip" onclick="setQ('What labor changes would have the biggest impact on prime cost?')">Labor optimization</button>
+    <button class="chip" onclick="setQ('How is our email marketing performing and what campaigns drive the most traffic?')">Email performance</button>
     <button class="chip" onclick="setQ('Where are our biggest hidden profit opportunities?')">Hidden opportunities</button>
-    <button class="chip" onclick="setQ('How do we benchmark against top NYC BBQ operators?')">NYC benchmarks</button>
     <button class="chip" onclick="setQ('What anomalies in today\'s data need immediate attention?')">Anomaly review</button>
   </div>
   <div style="margin-bottom:14px">
@@ -297,10 +290,10 @@ const SYSTEMS=[
   {id:"gotab",     name:"GoTab",         domain:"POS & Revenue", color:"#185FA5",icon:"GT"},
   {id:"marginedge",name:"MarginEdge",    domain:"Food Cost",     color:"#D85A30",icon:"ME"},
   {id:"quickbooks",name:"QuickBooks",    domain:"Financials",    color:"#1D9E75",icon:"QB"},
+  {id:"mailchimp", name:"Mailchimp",     domain:"Marketing",     color:"#3B6D11",icon:"MC"},
   {id:"7shifts",   name:"7Shifts",       domain:"Labor",         color:"#534AB7",icon:"7S"},
   {id:"opentable", name:"OpenTable",     domain:"Reservations",  color:"#A32D2D",icon:"OT"},
   {id:"tripleseat",name:"TripleSeat",    domain:"Events",        color:"#854F0B",icon:"TS"},
-  {id:"mailchimp", name:"Mailchimp",     domain:"Marketing",     color:"#3B6D11",icon:"MC"},
   {id:"ga4",       name:"GA4",           domain:"Digital",       color:"#185FA5",icon:"GA"},
   {id:"m365",      name:"Microsoft 365", domain:"Comms",         color:"#534AB7",icon:"M3"},
   {id:"marqii",    name:"Marqii",        domain:"Reputation",    color:"#1D9E75",icon:"MQ"},
@@ -312,13 +305,14 @@ const TARGETS={food:32,liquor:18,beer:30,wine:30,na_bev:40,total_cogs:38,foh_lab
 const SYS_PROMPT=`You are the Restaurant Intelligence Controller (RIC) for Hill Country BBQ, New York — a live AI-powered intelligence system built on Railway, integrating 11 operational data sources via their APIs.
 
 LIVE sources currently connected:
-- GoTab (POS): real-time revenue, tabs, bar sales, catering, comps, voids — used for the daily report
+- GoTab (POS): real-time revenue, tabs, bar sales, catering, comps, voids
 - MarginEdge: COGS by category (meat, produce, dairy, grocery, liquor, beer, wine, packaging) — 24-48hr lag
-- QuickBooks Online: full monthly P&L — all income, COGS, labor, controllable + non-controllable expenses, net operating income
+- QuickBooks Online: full monthly P&L — all income, COGS, labor, controllable + non-controllable expenses
+- Mailchimp: email audience (27,317 subscribers), campaign performance, open/click rates, list growth
 
-PENDING sources (integrations in progress): 7Shifts, OpenTable, TripleSeat, Mailchimp, GA4, Microsoft 365, Marqii, DoorDash.
+PENDING sources (integrations in progress): 7Shifts, OpenTable, TripleSeat, GA4, Microsoft 365, Marqii, DoorDash.
 
-Only data from live sources is included. Do not fabricate or estimate data for pending sources. The system IS actively pulling live data from GoTab, MarginEdge, and QuickBooks.
+Only data from live sources is included in reports. Do not fabricate or estimate data for pending sources.
 
 Produce clear, actionable intelligence for GM and store leadership. Be direct, specific, write for someone reading at 7am. Use $ and %. Flag anomalies clearly.`;
 
@@ -328,10 +322,9 @@ const fc=(v,t,hi=true)=>{if(v==null||!t) return "";return hi?(v<=t*0.97?"ok":v<=
 const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-// Date picker: default last day of last month
 (function(){
   const inp=document.getElementById("pl-date");
-  const d=new Date(); d.setDate(0); // last day of previous month
+  const d=new Date();d.setDate(0);
   inp.value=d.toISOString().slice(0,10);
   inp.max=new Date().toISOString().slice(0,10);
 })();
@@ -343,7 +336,6 @@ function monthRange(endDate){
   return{startDate:start.toISOString().slice(0,10),endDate,label:fmt(end)};
 }
 
-// ── P&L fetch ─────────────────────────────────────────────────────────────────
 async function fetchPL(){
   const endDate=document.getElementById("pl-date").value;if(!endDate) return;
   const btn=document.getElementById("pl-btn"),dot=document.getElementById("pl-dot"),
@@ -352,8 +344,6 @@ async function fetchPL(){
   const{startDate,label}=monthRange(endDate);
   txt.textContent=`Fetching ${label}...`;cont.innerHTML="";
   try{
-    // QB: full month (single call — authoritative)
-    // ME: aggregate daily COGS for category detail
     const dates=[];
     const s=new Date(startDate+"T12:00:00"),e=new Date(endDate+"T12:00:00");
     for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)) dates.push(d.toISOString().slice(0,10));
@@ -363,7 +353,6 @@ async function fetchPL(){
       Promise.all(dates.map(d=>fetch(`/api/marginedge?date=${d}`).then(r=>r.ok?r.json():null).catch(()=>null))),
     ]);
 
-    // Aggregate MarginEdge COGS
     const me={invoice_count:0,cogs:{food:0,meat:0,produce:0,dairy:0,grocery:0,liquor:0,beer:0,wine:0,na_bev:0,paper:0,supplies:0,other:0,total:0},data_as_of:null,ok:false};
     for(const r of meResults){
       if(!r||!r.ok) continue;
@@ -382,250 +371,212 @@ async function fetchPL(){
   btn.disabled=false;
 }
 
-// ── Monthly P&L renderer ──────────────────────────────────────────────────────
 function renderMonthlyPL(qb,me,label){
   const hasQb=qb?.ok&&(qb?.income?.total_sales||0)>0;
   const qbInc=qb?.income||{};
   const ns=qbInc.total_sales||0;
-
-  // COGS — prefer ME for category detail, fall back to QB
   const hasMeCogs=(me.cogs?.total||0)>5000;
   const hasQbCogs=(qb?.cogs?.total||0)>0;
   const cd=hasMeCogs?me.cogs:(qb?.cogs||{});
   const tc=cd.total||0,fc_f=cd.food||0;
   const gp=ns>0&&tc>0?ns-tc:null;
-
   const qbFoh=qb?.foh||{},qbBoh=qb?.boh||{},qbMgmt=qb?.mgmt||{};
-  const qbLR=qb?.labor_related||{};
-  const qbDOps=qb?.direct_ops||{};
-  const qbTxn=qb?.transaction_expenses||{};
-  const qbMkt=qb?.marketing||{};
-  const qbGA=qb?.ga_expenses||{};
-  const qbTM=qb?.travel_meals||{};
-  const qbRM=qb?.repair_maintenance||{};
-  const qbProp=qb?.property_expenses||{};
-  const qbOther=qb?.other_expenses||{};
-
-  const totalLabor=qb?.total_labor||null;
-  const totalCtrl=qb?.total_controllable||null;
-  const totalNonCtrl=qb?.total_non_controllable||null;
-  const totalExp=qb?.total_expenses||null;
+  const qbLR=qb?.labor_related||{},qbDOps=qb?.direct_ops||{};
+  const qbTxn=qb?.transaction_expenses||{},qbMkt=qb?.marketing||{};
+  const qbGA=qb?.ga_expenses||{},qbTM=qb?.travel_meals||{},qbRM=qb?.repair_maintenance||{};
+  const qbProp=qb?.property_expenses||{},qbOther=qb?.other_expenses||{};
+  const totalLabor=qb?.total_labor||null,totalCtrl=qb?.total_controllable||null;
+  const totalNonCtrl=qb?.total_non_controllable||null,totalExp=qb?.total_expenses||null;
   const netOpIncome=qb?.net_operating_income||null;
-  const primeCost=qb?.prime_cost||null;
-  const primePct=qb?.prime_cost_pct||null;
-
+  const primeCost=qb?.prime_cost||null,primePct=qb?.prime_cost_pct||null;
   const pct=(n,d)=>d>0?+((n/d)*100).toFixed(1):null;
   const food_pct=pct(fc_f,ns),liq_pct=pct(cd.liquor,ns),beer_pct=pct(cd.beer,ns);
   const wine_pct=pct(cd.wine,ns),nabev_pct=pct(cd.na_bev,ns),tc_pct=pct(tc,ns);
   const gp_pct=pct(gp,ns),foh_pct=pct(qbFoh.total,ns),boh_pct=pct(qbBoh.total,ns);
   const labor_pct=pct(totalLabor,ns),ctrl_pct=pct(totalCtrl,ns);
   const nonctrl_pct=pct(totalNonCtrl,ns),noi_pct=pct(netOpIncome,ns);
-
-  const qbSrc=hasQb?"live":"pend";
-  const cogsSrc=hasMeCogs?"live":(hasQbCogs?"live":"pend");
+  const qbSrc=hasQb?"live":"pend",cogsSrc=hasMeCogs?"live":(hasQbCogs?"live":"pend");
 
   let h="";
-
   if(!hasQb) h+=obs("info","QuickBooks has no data for this period. Try a prior completed month.");
 
-  // Prime banner
   if(primePct!=null&&totalLabor!=null){
     const pcCls=fc(primePct,TARGETS.prime);
-    h+=`<div class="prime-banner ${pcCls}"><div>
-      <div class="prime-label ${pcCls}">Prime Cost — ${esc(label)}</div>
-      <div class="prime-detail">COGS ${f$(tc)} + Labor ${f$(totalLabor)} = ${f$(primeCost)}</div>
-    </div><div class="prime-val ${pcCls}">${fp(primePct)}</div></div>`;
+    h+=`<div class="prime-banner ${pcCls}"><div><div class="prime-label ${pcCls}">Prime Cost — ${esc(label)}</div><div class="prime-detail">COGS ${f$(tc)} + Labor ${f$(totalLabor)} = ${f$(primeCost)}</div></div><div class="prime-val ${pcCls}">${fp(primePct)}</div></div>`;
   }
 
-  // KPI strip
   h+=`<div class="kpi-grid">`;
-  h+=kpi("Net Sales",     f$(ns||null),                  label,                                        "");
-  h+=kpi("Gross Profit",  gp!=null?f$(gp):"—",           gp_pct?fp(gp_pct)+" margin":"needs COGS",     "");
-  h+=kpi("Total Labor",   totalLabor?f$(totalLabor):"—", labor_pct?fp(labor_pct)+" of sales":"pending", labor_pct?fc(labor_pct,TARGETS.total_labor):"");
+  h+=kpi("Net Sales",f$(ns||null),label,"");
+  h+=kpi("Gross Profit",gp!=null?f$(gp):"—",gp_pct?fp(gp_pct)+" margin":"needs COGS","");
+  h+=kpi("Total Labor",totalLabor?f$(totalLabor):"—",labor_pct?fp(labor_pct)+" of sales":"pending",labor_pct?fc(labor_pct,TARGETS.total_labor):"");
   h+=kpi("Net Op. Income",netOpIncome!=null?f$(netOpIncome):"—",noi_pct?fp(noi_pct)+" margin":"pending","");
   h+=`</div>`;
 
-  // Metrics
   h+=`<div class="metric-strip">`;
-  h+=metric("Food Cost %",   food_pct?fp(food_pct):"—",  `target <${TARGETS.food}%`,       food_pct?fc(food_pct,TARGETS.food):"info");
-  h+=metric("FOH Labor %",   foh_pct?fp(foh_pct):"—",   `target <${TARGETS.foh_labor}% · ${f$(qbFoh.total||null)}`,foh_pct?fc(foh_pct,TARGETS.foh_labor):"info");
-  h+=metric("BOH Labor %",   boh_pct?fp(boh_pct):"—",   `target <${TARGETS.boh_labor}% · ${f$(qbBoh.total||null)}`,boh_pct?fc(boh_pct,TARGETS.boh_labor):"info");
-  h+=metric("Wine Cost %",   wine_pct?fp(wine_pct):"—",  `target <${TARGETS.wine}%`,       wine_pct?fc(wine_pct,TARGETS.wine):"info");
-  h+=metric("3rd Party Comm",qb?.transaction_expenses?.third_party_commissions?f$(qb.transaction_expenses.third_party_commissions):"—","DoorDash + OTA fees","info");
-  h+=metric("Controllable",  totalCtrl?fp(ctrl_pct):"—", `${f$(totalCtrl)} total`,         "info");
+  h+=metric("Food Cost %",food_pct?fp(food_pct):"—",`target <${TARGETS.food}%`,food_pct?fc(food_pct,TARGETS.food):"info");
+  h+=metric("FOH Labor %",foh_pct?fp(foh_pct):"—",`target <${TARGETS.foh_labor}% · ${f$(qbFoh.total||null)}`,foh_pct?fc(foh_pct,TARGETS.foh_labor):"info");
+  h+=metric("BOH Labor %",boh_pct?fp(boh_pct):"—",`target <${TARGETS.boh_labor}% · ${f$(qbBoh.total||null)}`,boh_pct?fc(boh_pct,TARGETS.boh_labor):"info");
+  h+=metric("Wine Cost %",wine_pct?fp(wine_pct):"—",`target <${TARGETS.wine}%`,wine_pct?fc(wine_pct,TARGETS.wine):"info");
+  h+=metric("3rd Party Comm",qbTxn.third_party_commissions?f$(qbTxn.third_party_commissions):"—","DoorDash + OTA fees","info");
+  h+=metric("Controllable",totalCtrl?fp(ctrl_pct):"—",`${f$(totalCtrl)} total`,"info");
   h+=`</div>`;
 
-  // Observations
   if(primePct&&primePct>TARGETS.prime) h+=obs("crit",`<strong>Prime cost ${fp(primePct)}</strong> is ${fp(primePct-TARGETS.prime)} above the ${TARGETS.prime}% target.`);
   if(labor_pct&&labor_pct>TARGETS.total_labor) h+=obs("warn",`<strong>Total labor ${fp(labor_pct)}</strong> — target &lt;${TARGETS.total_labor}%.`);
   if(food_pct&&food_pct>TARGETS.food) h+=obs("warn",`<strong>Food cost ${fp(food_pct)}</strong> is above the ${TARGETS.food}% target.`);
   if(wine_pct&&wine_pct>TARGETS.wine) h+=obs("warn",`<strong>Wine cost ${fp(wine_pct)}</strong> — target &lt;${TARGETS.wine}%.`);
   if(nabev_pct&&nabev_pct>TARGETS.na_bev) h+=obs("warn",`<strong>N/A Bev cost ${fp(nabev_pct)}</strong> — target &lt;${TARGETS.na_bev}%.`);
-  if(me.invoice_count===0&&hasQb) h+=obs("info","MarginEdge has 0 invoices for this period — QB COGS totals shown. For category detail, ensure MarginEdge invoices are processed.");
+  if(me.invoice_count===0&&hasQb) h+=obs("info","MarginEdge has 0 invoices for this period — QB COGS totals shown.");
   if(primePct&&primePct<=TARGETS.prime&&totalLabor) h+=obs("ok",`✓ Prime cost ${fp(primePct)} is within the ${TARGETS.prime}% target.`);
   if(netOpIncome!=null&&netOpIncome<0) h+=obs("warn",`<strong>Net operating income is negative</strong> at ${f$(netOpIncome)} (${fp(noi_pct)}).`);
 
   h+=`<div class="src-note">Revenue & expenses: QuickBooks (accrual basis) · COGS detail: ${hasMeCogs?"MarginEdge":"QuickBooks"} · GoTab used for real-time daily report only</div>`;
 
-  // Table
-  h+=`<div class="fr-wrap"><table class="fr-table">
-    <thead><tr><th>Account</th><th>${esc(label)}</th><th>Source</th><th>% of Sales</th></tr></thead><tbody>`;
+  h+=`<div class="fr-wrap"><table class="fr-table"><thead><tr><th>Account</th><th>${esc(label)}</th><th>Source</th><th>% of Sales</th></tr></thead><tbody>`;
 
-  // ── INCOME ──
-  h+=sec("Income");
-  h+=sec2("4000 Sales");
-  h+=row("4105 Sales, Food",          qbInc.food_sales,      qbSrc,pct(qbInc.food_sales,ns));
-  h+=row("4110 Sales, Liquor",        qbInc.liquor_sales,    qbSrc,pct(qbInc.liquor_sales,ns));
-  h+=row("4115 Sales, Beer",          qbInc.beer_sales,      qbSrc,null,false,true);
-  h+=row("4120 Sales, Wine",          qbInc.wine_sales,      qbSrc,null,false,true);
-  h+=row("4125 Sales, N/A Bev",       qbInc.na_bev_sales,    qbSrc,null,false,true);
-  h+=row("4130 Sales, Retail",        qbInc.retail_sales,    qbSrc,null,false,true);
-  h+=row("4140 Sales, Misc",          qbInc.misc_sales,      qbSrc,null,false,true);
-  h+=row("4145 Banquet Admin Fee",    qbInc.banquet_admin,   qbSrc,null,false,true);
-  h+=row("4150 Sales, Ticket",        qbInc.ticket_sales,    qbSrc,null,false,true);
-  h+=row("4155 Catering Food",        qbInc.catering_food,   qbSrc,null,false,true);
-  h+=row("4156 Catering N/A Bev",     qbInc.catering_na_bev, qbSrc,null,false,true);
-  h+=row("4193 Banquet N/A Bev",      qbInc.banquet_na_bev,  qbSrc,null,false,true);
-  h+=row("4194 Banquet Food",         qbInc.banquet_food,    qbSrc,null,false,true);
-  h+=row("4196 Banquet Liquor",       qbInc.banquet_liquor,  qbSrc,null,false,true);
-  h+=row("4197 Banquet Beer",         qbInc.banquet_beer,    qbSrc,null,false,true);
-  h+=row("4198 Banquet Wine",         qbInc.banquet_wine,    qbSrc,null,false,true);
-  h+=row("4200 Transport Fee",        qbInc.transport_fee,   qbSrc,null,false,true);
-  h+=row("4500 Discounts & Comps",    qbInc.discounts_comps, qbSrc,null);
-  h+=tot("Total Income",              ns||null,qbSrc,null);
+  h+=sec("Income");h+=sec2("4000 Sales");
+  h+=row("4105 Sales, Food",qbInc.food_sales,qbSrc,pct(qbInc.food_sales,ns));
+  h+=row("4110 Sales, Liquor",qbInc.liquor_sales,qbSrc,pct(qbInc.liquor_sales,ns));
+  h+=row("4115 Sales, Beer",qbInc.beer_sales,qbSrc,null,false,true);
+  h+=row("4120 Sales, Wine",qbInc.wine_sales,qbSrc,null,false,true);
+  h+=row("4125 Sales, N/A Bev",qbInc.na_bev_sales,qbSrc,null,false,true);
+  h+=row("4130 Sales, Retail",qbInc.retail_sales,qbSrc,null,false,true);
+  h+=row("4140 Sales, Misc",qbInc.misc_sales,qbSrc,null,false,true);
+  h+=row("4145 Banquet Admin Fee",qbInc.banquet_admin,qbSrc,null,false,true);
+  h+=row("4150 Sales, Ticket",qbInc.ticket_sales,qbSrc,null,false,true);
+  h+=row("4155 Catering Food",qbInc.catering_food,qbSrc,null,false,true);
+  h+=row("4156 Catering N/A Bev",qbInc.catering_na_bev,qbSrc,null,false,true);
+  h+=row("4193 Banquet N/A Bev",qbInc.banquet_na_bev,qbSrc,null,false,true);
+  h+=row("4194 Banquet Food",qbInc.banquet_food,qbSrc,null,false,true);
+  h+=row("4196 Banquet Liquor",qbInc.banquet_liquor,qbSrc,null,false,true);
+  h+=row("4197 Banquet Beer",qbInc.banquet_beer,qbSrc,null,false,true);
+  h+=row("4198 Banquet Wine",qbInc.banquet_wine,qbSrc,null,false,true);
+  h+=row("4200 Transport Fee",qbInc.transport_fee,qbSrc,null,false,true);
+  h+=row("4500 Discounts & Comps",qbInc.discounts_comps,qbSrc,null);
+  h+=tot("Total Income",ns||null,qbSrc,null);
 
-  // ── COGS ──
-  h+=sec("Cost of Goods Sold");
-  h+=sec2("5000 COGS");
-  h+=row("5101 COGS, Meat & Poultry", cd.meat,    cogsSrc,pct(cd.meat,ns));
-  h+=row("5103 COGS, Produce",        cd.produce, cogsSrc,pct(cd.produce,ns),false,true);
-  h+=row("5104 COGS, Grocery",        cd.grocery, cogsSrc,pct(cd.grocery,ns),false,true);
-  h+=row("5105 COGS, Bakery",         cd.bakery||0,cogsSrc,pct(cd.bakery||0,ns),false,true);
-  h+=row("5106 COGS, Dairy",          cd.dairy,   cogsSrc,pct(cd.dairy,ns),false,true);
-  h+=subtot("Food COGS Total",        fc_f||null,cogsSrc,food_pct,food_pct,TARGETS.food);
-  h+=row("5110 COGS, Liquor",         cd.liquor,  cogsSrc,null,false,false,liq_pct,TARGETS.liquor);
-  h+=row("5115 COGS, Beer",           cd.beer,    cogsSrc,null,false,false,beer_pct,TARGETS.beer);
-  h+=row("5120 COGS, Wine",           cd.wine,    cogsSrc,null,false,false,wine_pct,TARGETS.wine);
-  h+=row("5125 COGS, Non-Alcoholic",  cd.na_bev,  cogsSrc,null,false,false,nabev_pct,TARGETS.na_bev);
-  h+=row("5135 COGS, Packaging",      cd.paper||cd.packaging||0,cogsSrc,pct(cd.paper||cd.packaging||0,ns));
-  h+=tot("Total COGS",                tc||null,cogsSrc,tc_pct,TARGETS.total_cogs);
-  h+=grand("Gross Profit",            gp,gp_pct);
+  h+=sec("Cost of Goods Sold");h+=sec2("5000 COGS");
+  h+=row("5101 COGS, Meat & Poultry",cd.meat,cogsSrc,pct(cd.meat,ns));
+  h+=row("5103 COGS, Produce",cd.produce,cogsSrc,pct(cd.produce,ns),false,true);
+  h+=row("5104 COGS, Grocery",cd.grocery,cogsSrc,pct(cd.grocery,ns),false,true);
+  h+=row("5105 COGS, Bakery",cd.bakery||0,cogsSrc,pct(cd.bakery||0,ns),false,true);
+  h+=row("5106 COGS, Dairy",cd.dairy,cogsSrc,pct(cd.dairy,ns),false,true);
+  h+=subtot("Food COGS Total",fc_f||null,cogsSrc,food_pct,food_pct,TARGETS.food);
+  h+=row("5110 COGS, Liquor",cd.liquor,cogsSrc,null,false,false,liq_pct,TARGETS.liquor);
+  h+=row("5115 COGS, Beer",cd.beer,cogsSrc,null,false,false,beer_pct,TARGETS.beer);
+  h+=row("5120 COGS, Wine",cd.wine,cogsSrc,null,false,false,wine_pct,TARGETS.wine);
+  h+=row("5125 COGS, Non-Alcoholic",cd.na_bev,cogsSrc,null,false,false,nabev_pct,TARGETS.na_bev);
+  h+=row("5135 COGS, Packaging",cd.paper||cd.packaging||0,cogsSrc,pct(cd.paper||cd.packaging||0,ns));
+  h+=tot("Total COGS",tc||null,cogsSrc,tc_pct,TARGETS.total_cogs);
+  h+=grand("Gross Profit",gp,gp_pct);
 
-  // ── LABOR ──
-  h+=sec("Labor — 6000");
-  h+=sec2("5200 Direct Labor");
-  h+=sec2("5205 FOH");
-  h+=row("5205-1 Bartender",          qbFoh.bartender,         qbSrc,null,true);
-  h+=row("5205-2 Bar Back",           qbFoh.bar_back,          qbSrc,null,true);
-  h+=row("5205-3 Busser",             qbFoh.busser,            qbSrc,null,true);
-  h+=row("5205-7 Host",               qbFoh.host,              qbSrc,null,true);
-  h+=row("5205-8 Server",             qbFoh.server,            qbSrc,null,true);
-  h+=row("5205-9 FOH Training",       qbFoh.training,          qbSrc,null,true);
-  h+=subtot("Total FOH Labor",        qbFoh.total||null,qbSrc,foh_pct,foh_pct,TARGETS.foh_labor);
+  h+=sec("Labor — 6000");h+=sec2("5200 Direct Labor");h+=sec2("5205 FOH");
+  h+=row("5205-1 Bartender",qbFoh.bartender,qbSrc,null,true);
+  h+=row("5205-2 Bar Back",qbFoh.bar_back,qbSrc,null,true);
+  h+=row("5205-3 Busser",qbFoh.busser,qbSrc,null,true);
+  h+=row("5205-7 Host",qbFoh.host,qbSrc,null,true);
+  h+=row("5205-8 Server",qbFoh.server,qbSrc,null,true);
+  h+=row("5205-9 FOH Training",qbFoh.training,qbSrc,null,true);
+  h+=subtot("Total FOH Labor",qbFoh.total||null,qbSrc,foh_pct,foh_pct,TARGETS.foh_labor);
   h+=sec2("5210 BOH");
-  h+=row("5210-1 Prep",               qbBoh.prep,              qbSrc,null,true);
-  h+=row("5210-2 Dishwasher/Porter",  qbBoh.dishwasher_porter, qbSrc,null,true);
-  h+=row("5210-3 Line Cook",          qbBoh.line_cook,         qbSrc,null,true);
-  h+=row("5210-5 Chef",               qbBoh.chef,              qbSrc,null,true);
-  h+=row("5210-6 Sous Chef",          qbBoh.sous_chef,         qbSrc,null,true);
-  h+=subtot("Total BOH Labor",        qbBoh.total||null,qbSrc,boh_pct,boh_pct,TARGETS.boh_labor);
-  h+=row("5215 Labor, Admin",         qbMgmt.admin,            qbSrc,null);
+  h+=row("5210-1 Prep",qbBoh.prep,qbSrc,null,true);
+  h+=row("5210-2 Dishwasher/Porter",qbBoh.dishwasher_porter,qbSrc,null,true);
+  h+=row("5210-3 Line Cook",qbBoh.line_cook,qbSrc,null,true);
+  h+=row("5210-5 Chef",qbBoh.chef,qbSrc,null,true);
+  h+=row("5210-6 Sous Chef",qbBoh.sous_chef,qbSrc,null,true);
+  h+=subtot("Total BOH Labor",qbBoh.total||null,qbSrc,boh_pct,boh_pct,TARGETS.boh_labor);
+  h+=row("5215 Labor, Admin",qbMgmt.admin,qbSrc,null);
   h+=sec2("5220 Management");
-  h+=row("5220-2 Manager Salaries",   qbMgmt.manager_salary,   qbSrc,null,true);
-  h+=row("5230 Labor-Other",          qbMgmt.labor_other,      qbSrc,null,true);
-  h+=subtot("Total Direct Labor",     qb?.direct_labor||null,qbSrc,null,null,null);
+  h+=row("5220-2 Manager Salaries",qbMgmt.manager_salary,qbSrc,null,true);
+  h+=row("5230 Labor-Other",qbMgmt.labor_other,qbSrc,null,true);
+  h+=subtot("Total Direct Labor",qb?.direct_labor||null,qbSrc,null,null,null);
   h+=sec2("5300 Labor Related");
-  h+=row("5310 Commission/Bonus",     qbLR.commission,         qbSrc,null,true);
-  h+=row("5315-1 Payroll Taxes-FICA", qbLR.payroll_fica,       qbSrc,null,true);
-  h+=row("5315-2 Payroll Taxes-SUI",  qbLR.payroll_sui,        qbSrc,null,true);
-  h+=row("5315-3 Payroll Taxes-FUI",  qbLR.payroll_fui,        qbSrc,null,true);
-  h+=row("5315-4 Payroll Taxes-MTA",  qbLR.payroll_mta,        qbSrc,null,true);
-  h+=row("5320 Health/Dental Ins",    qbLR.health_insurance,   qbSrc,null,true);
-  h+=row("5325 Workers Comp Ins",     qbLR.workers_comp,       qbSrc,null,true);
-  h+=row("5330 Disability Ins",       qbLR.disability_ins,     qbSrc,null,true);
-  h+=row("5350 EPLI Insurance",       qbLR.epli_insurance,     qbSrc,null,true);
-  h+=subtot("Total Labor Related",    qbLR.total||null,qbSrc,null,null,null);
-  h+=tot("Total Labor",               totalLabor,qbSrc,labor_pct,TARGETS.total_labor);
+  h+=row("5310 Commission/Bonus",qbLR.commission,qbSrc,null,true);
+  h+=row("5315-1 Payroll Taxes-FICA",qbLR.payroll_fica,qbSrc,null,true);
+  h+=row("5315-2 Payroll Taxes-SUI",qbLR.payroll_sui,qbSrc,null,true);
+  h+=row("5315-3 Payroll Taxes-FUI",qbLR.payroll_fui,qbSrc,null,true);
+  h+=row("5315-4 Payroll Taxes-MTA",qbLR.payroll_mta,qbSrc,null,true);
+  h+=row("5320 Health/Dental Ins",qbLR.health_insurance,qbSrc,null,true);
+  h+=row("5325 Workers Comp Ins",qbLR.workers_comp,qbSrc,null,true);
+  h+=row("5330 Disability Ins",qbLR.disability_ins,qbSrc,null,true);
+  h+=row("5350 EPLI Insurance",qbLR.epli_insurance,qbSrc,null,true);
+  h+=subtot("Total Labor Related",qbLR.total||null,qbSrc,null,null,null);
+  h+=tot("Total Labor",totalLabor,qbSrc,labor_pct,TARGETS.total_labor);
 
-  // ── CONTROLLABLE ──
-  h+=sec("Controllable Expenses — 7000");
-  h+=sec2("6100 Direct Operating");
-  h+=row("6105 Cash Over/Under",      qbDOps.cash_over_under,     qbSrc,null,true);
-  h+=row("6110 Equipment Lease",      qbDOps.equipment_lease,     qbSrc,null,true);
-  h+=row("6115 Cleaning Supplies",    qbDOps.cleaning_supplies,   qbSrc,null,true);
-  h+=row("6125 Restaurant Supplies",  qbDOps.restaurant_supplies, qbSrc,null,true);
-  h+=row("6135 Laundry & Uniforms",   qbDOps.laundry,             qbSrc,null,true);
-  h+=row("6150 Kitchen Smallwares",   qbDOps.smallwares,          qbSrc,null,true);
-  h+=row("6175 Wood Supplies",        qbDOps.wood_supplies,       qbSrc,null,true);
-  h+=row("6180 Delivery Expense",     qbDOps.delivery_expense,    qbSrc,null,true);
-  h+=row("6185 Catering Rental",      qbDOps.catering_rental,     qbSrc,null,true);
-  h+=row("6305 Music & DJ",           qbDOps.music_dj,            qbSrc,null,true);
-  h+=subtot("Total Direct Operating", qbDOps.total||null,qbSrc,null,null,null);
+  h+=sec("Controllable Expenses — 7000");h+=sec2("6100 Direct Operating");
+  h+=row("6105 Cash Over/Under",qbDOps.cash_over_under,qbSrc,null,true);
+  h+=row("6110 Equipment Lease",qbDOps.equipment_lease,qbSrc,null,true);
+  h+=row("6115 Cleaning Supplies",qbDOps.cleaning_supplies,qbSrc,null,true);
+  h+=row("6125 Restaurant Supplies",qbDOps.restaurant_supplies,qbSrc,null,true);
+  h+=row("6135 Laundry & Uniforms",qbDOps.laundry,qbSrc,null,true);
+  h+=row("6150 Kitchen Smallwares",qbDOps.smallwares,qbSrc,null,true);
+  h+=row("6175 Wood Supplies",qbDOps.wood_supplies,qbSrc,null,true);
+  h+=row("6180 Delivery Expense",qbDOps.delivery_expense,qbSrc,null,true);
+  h+=row("6185 Catering Rental",qbDOps.catering_rental,qbSrc,null,true);
+  h+=row("6305 Music & DJ",qbDOps.music_dj,qbSrc,null,true);
+  h+=subtot("Total Direct Operating",qbDOps.total||null,qbSrc,null,null,null);
   h+=sec2("6200 Transaction Related");
-  h+=row("6205 Credit Card Fees",     qbTxn.cc_fees,                  qbSrc,null,true);
-  h+=row("6210 Reservation System",   qbTxn.reservation_system,       qbSrc,null,true);
-  h+=row("6215 3rd Party Commissions",qbTxn.third_party_commissions,  qbSrc,null,true);
-  h+=row("6220 Late Fees",            qbTxn.late_fees,                qbSrc,null,true);
-  h+=row("6615 Chargeback",           qbTxn.chargeback,               qbSrc,null,true);
-  h+=subtot("Total Transaction Exp",  qbTxn.total||null,qbSrc,null,null,null);
+  h+=row("6205 Credit Card Fees",qbTxn.cc_fees,qbSrc,null,true);
+  h+=row("6210 Reservation System",qbTxn.reservation_system,qbSrc,null,true);
+  h+=row("6215 3rd Party Commissions",qbTxn.third_party_commissions,qbSrc,null,true);
+  h+=row("6220 Late Fees",qbTxn.late_fees,qbSrc,null,true);
+  h+=row("6615 Chargeback",qbTxn.chargeback,qbSrc,null,true);
+  h+=subtot("Total Transaction Exp",qbTxn.total||null,qbSrc,null,null,null);
   h+=sec2("6250 Marketing & Advertising");
-  h+=row("6250 Marketing & Advertising",   qbMkt.marketing_advertising,  qbSrc,null,true);
-  h+=row("6255 Marketing & PR",            qbMkt.marketing_pr,           qbSrc,null,true);
-  h+=row("6260 Advertising & Promotions",  qbMkt.advertising_promotions, qbSrc,null,true);
-  h+=row("6580 Stationary & Printing",     qbMkt.stationary_printing,    qbSrc,null,true);
-  h+=subtot("Total Marketing",             qbMkt.total||null,qbSrc,null,null,null);
+  h+=row("6250 Marketing & Advertising",qbMkt.marketing_advertising,qbSrc,null,true);
+  h+=row("6255 Marketing & PR",qbMkt.marketing_pr,qbSrc,null,true);
+  h+=row("6260 Advertising & Promotions",qbMkt.advertising_promotions,qbSrc,null,true);
+  h+=row("6580 Stationary & Printing",qbMkt.stationary_printing,qbSrc,null,true);
+  h+=subtot("Total Marketing",qbMkt.total||null,qbSrc,null,null,null);
   h+=sec2("6500 General & Administrative");
-  h+=row("6505 Accounting & Bookkeeping",  qbGA.accounting_bookkeeping, qbSrc,null,true);
-  h+=row("6512 Recruiting",               qbGA.recruiting,             qbSrc,null,true);
-  h+=row("6520 Legal",                    qbGA.legal,                  qbSrc,null,true);
-  h+=row("6525 Payroll Processing",       qbGA.payroll_processing,     qbSrc,null,true);
-  h+=row("6535 Computer & Software",      qbGA.computer_software_it,   qbSrc,null,true);
-  h+=row("6550 Dues & Subscriptions",     qbGA.dues_subscriptions,     qbSrc,null,true);
-  h+=row("6560 Bank Charges & Fees",      qbGA.bank_charges,           qbSrc,null,true);
-  h+=row("6570 License & Permits",        qbGA.license_permits,        qbSrc,null,true);
-  h+=row("6585 Postage & Shipping",       qbGA.postage,                qbSrc,null,true);
-  h+=row("6590 Liability Insurance",      qbGA.liability_insurance,    qbSrc,null,true);
-  h+=row("6605 Phone & Internet",         qbGA.phone_internet,         qbSrc,null,true);
-  h+=subtot("Total G&A",                  qbGA.total||null,qbSrc,null,null,null);
+  h+=row("6505 Accounting & Bookkeeping",qbGA.accounting_bookkeeping,qbSrc,null,true);
+  h+=row("6512 Recruiting",qbGA.recruiting,qbSrc,null,true);
+  h+=row("6520 Legal",qbGA.legal,qbSrc,null,true);
+  h+=row("6525 Payroll Processing",qbGA.payroll_processing,qbSrc,null,true);
+  h+=row("6535 Computer & Software",qbGA.computer_software_it,qbSrc,null,true);
+  h+=row("6550 Dues & Subscriptions",qbGA.dues_subscriptions,qbSrc,null,true);
+  h+=row("6560 Bank Charges & Fees",qbGA.bank_charges,qbSrc,null,true);
+  h+=row("6570 License & Permits",qbGA.license_permits,qbSrc,null,true);
+  h+=row("6585 Postage & Shipping",qbGA.postage,qbSrc,null,true);
+  h+=row("6590 Liability Insurance",qbGA.liability_insurance,qbSrc,null,true);
+  h+=row("6605 Phone & Internet",qbGA.phone_internet,qbSrc,null,true);
+  h+=subtot("Total G&A",qbGA.total||null,qbSrc,null,null,null);
   h+=sec2("6700 Travel, Meals & Entertainment");
-  h+=row("6705 Travel & Transport",   qbTM.travel_transport,   qbSrc,null,true);
-  h+=row("6710 Meals & Entertainment",qbTM.meals_entertainment, qbSrc,null,true);
-  h+=row("6720 Parking",              qbTM.parking,            qbSrc,null,true);
-  h+=subtot("Total Travel & Meals",   qbTM.total||null,qbSrc,null,null,null);
+  h+=row("6705 Travel & Transport",qbTM.travel_transport,qbSrc,null,true);
+  h+=row("6710 Meals & Entertainment",qbTM.meals_entertainment,qbSrc,null,true);
+  h+=row("6720 Parking",qbTM.parking,qbSrc,null,true);
+  h+=subtot("Total Travel & Meals",qbTM.total||null,qbSrc,null,null,null);
   h+=sec2("6800 Repair & Maintenance");
-  h+=row("6810 R&M, Equipment",       qbRM.equipment,          qbSrc,null,true);
-  h+=row("6820 Pest Control",         qbRM.pest_control,       qbSrc,null,true);
-  h+=row("6825 Fire Control",         qbRM.fire_control,       qbSrc,null,true);
-  h+=row("6835 Facility Supplies",    qbRM.facility_supplies,  qbSrc,null,true);
-  h+=subtot("Total Repair & Maint",   qbRM.total||null,qbSrc,null,null,null);
-  h+=tot("Total Controllable Exp",    totalCtrl,qbSrc,ctrl_pct);
+  h+=row("6810 R&M, Equipment",qbRM.equipment,qbSrc,null,true);
+  h+=row("6820 Pest Control",qbRM.pest_control,qbSrc,null,true);
+  h+=row("6825 Fire Control",qbRM.fire_control,qbSrc,null,true);
+  h+=row("6835 Facility Supplies",qbRM.facility_supplies,qbSrc,null,true);
+  h+=subtot("Total Repair & Maint",qbRM.total||null,qbSrc,null,null,null);
+  h+=tot("Total Controllable Exp",totalCtrl,qbSrc,ctrl_pct);
 
-  // ── NON-CONTROLLABLE ──
-  h+=secNC("Non-Controllable Expenses — 8000");
-  h+=sec2("7100 Property Expenses");
-  h+=row("7105 Rent/Lease",           qbProp.rent_lease,           qbSrc,pct(qbProp.rent_lease,ns),true);
-  h+=row("7111 Common Area Maint",    qbProp.common_area_maint,    qbSrc,null,true);
-  h+=row("7115 Property/RE Tax",      qbProp.property_re_tax,      qbSrc,null,true);
-  h+=row("7120 Property Insurance",   qbProp.property_insurance,   qbSrc,null,true);
-  h+=row("7125 Utility, Electricity", qbProp.utility_electricity,  qbSrc,pct(qbProp.utility_electricity,ns),true);
-  h+=row("7130 Utility, Gas",         qbProp.utility_gas,          qbSrc,null,true);
-  h+=row("7135 Utility, Trash",       qbProp.utility_trash,        qbSrc,null,true);
-  h+=row("7140 Utility, Water/Sewage",qbProp.utility_water_sewage, qbSrc,null,true);
+  h+=secNC("Non-Controllable Expenses — 8000");h+=sec2("7100 Property Expenses");
+  h+=row("7105 Rent/Lease",qbProp.rent_lease,qbSrc,pct(qbProp.rent_lease,ns),true);
+  h+=row("7111 Common Area Maint",qbProp.common_area_maint,qbSrc,null,true);
+  h+=row("7115 Property/RE Tax",qbProp.property_re_tax,qbSrc,null,true);
+  h+=row("7120 Property Insurance",qbProp.property_insurance,qbSrc,null,true);
+  h+=row("7125 Utility, Electricity",qbProp.utility_electricity,qbSrc,pct(qbProp.utility_electricity,ns),true);
+  h+=row("7130 Utility, Gas",qbProp.utility_gas,qbSrc,null,true);
+  h+=row("7135 Utility, Trash",qbProp.utility_trash,qbSrc,null,true);
+  h+=row("7140 Utility, Water/Sewage",qbProp.utility_water_sewage,qbSrc,null,true);
   h+=subtot("Total Property Expenses",qbProp.total||null,qbSrc,nonctrl_pct,null,null);
   h+=sec2("8100 Other");
-  h+=row("8130 Other Income/Expense", qbOther.other_income_expense,qbSrc,null,true);
-  h+=row("8510 Corporate Overhead",   qbOther.corporate_overhead,  qbSrc,null,true);
-  h+=subtot("Total Other",            qbOther.total||null,qbSrc,null,null,null);
-  h+=tot("Total Non-Controllable",    totalNonCtrl,qbSrc,nonctrl_pct);
-  h+=tot("Total Expenses",            totalExp,qbSrc,pct(totalExp,ns));
-  h+=netRow("Net Operating Income",   netOpIncome,noi_pct);
+  h+=row("8130 Other Income/Expense",qbOther.other_income_expense,qbSrc,null,true);
+  h+=row("8510 Corporate Overhead",qbOther.corporate_overhead,qbSrc,null,true);
+  h+=subtot("Total Other",qbOther.total||null,qbSrc,null,null,null);
+  h+=tot("Total Non-Controllable",totalNonCtrl,qbSrc,nonctrl_pct);
+  h+=tot("Total Expenses",totalExp,qbSrc,pct(totalExp,ns));
+  h+=netRow("Net Operating Income",netOpIncome,noi_pct);
 
   h+=`</tbody></table></div>`;
   h+=`<div class="as-of">QuickBooks: ${qb?.data_as_of||"—"} · MarginEdge: ${me.data_as_of||"—"} · Accrual basis</div>`;
   return h;
 }
 
-// Table helpers
 function kpi(l,v,s,cls){return `<div class="kpi"><div class="kpi-l">${l}</div><div class="kpi-v ${cls}">${v}</div><div class="kpi-s">${s}</div></div>`;}
 function metric(l,v,s,cls){return `<div class="metric-card ${cls}"><div class="metric-l">${l}</div><div class="metric-v">${v}</div><div class="metric-s">${s}</div></div>`;}
 function obs(t,m){return `<div class="obs ${t}">${m}</div>`;}
@@ -678,6 +629,7 @@ function updDot(id,state){
   dot.className="sys-dot"+(state==="connected"?" live":state==="sync"?" sync":state==="err"?" err":"");
   card.className="sys-card"+(state==="connected"?" on":state==="err"?" err":"");
 }
+
 async function runSync(){
   const btn=document.getElementById("sync-btn");
   btn.disabled=true;btn.textContent="Contacting proxy...";
@@ -685,7 +637,7 @@ async function runSync(){
   document.getElementById("live-flags").innerHTML="";
   SYSTEMS.forEach(s=>updDot(s.id,"idle"));
   fetchedData={};sourceMap={};
-  updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");
+  updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");
   btn.textContent="Fetching live data...";
   let ricLive={};
   try{const r=await fetch("/api/ric");if(!r.ok) throw new Error();ricLive=await r.json();}catch(e){}
@@ -711,6 +663,7 @@ async function runSync(){
   btn.disabled=false;btn.textContent="Fetch data + generate daily report";
   renderFlags();
 }
+
 async function generateReport(){
   const live=Object.entries(sourceMap).filter(([,v])=>v==="live").map(([k])=>k);
   const pending=Object.entries(sourceMap).filter(([,v])=>v==="pending").map(([k])=>k);
@@ -721,12 +674,20 @@ async function generateReport(){
   const liveData=Object.fromEntries(Object.entries(fetchedData).filter(([k,v])=>sourceMap[k]==="live"&&v!=null));
   const me=liveData.marginedge||{};
   const qb=liveData.quickbooks||{};
+  const mc=liveData.mailchimp||{};
+
   const meCtx=me.invoice_count>0
     ?`MarginEdge (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)} (${me.total_cogs_pct||"—"}% of sales). Food $${(me.cogs?.food||0).toFixed(2)} (${me.food_cost_pct||"—"}%). Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
     :"MarginEdge (live): 0 invoices today (24-48hr lag).";
+
   const qbCtx=qb.total_labor
     ?`QuickBooks (live): FOH $${(qb.foh?.total||0).toFixed(2)} (${qb.foh_labor_pct||"—"}%), BOH $${(qb.boh?.total||0).toFixed(2)} (${qb.boh_labor_pct||"—"}%), Mgmt $${(qb.mgmt?.total||0).toFixed(2)}. Total labor $${(qb.total_labor||0).toFixed(2)} (${qb.total_labor_pct||"—"}%). Prime cost ${qb.prime_cost_pct||"—"}%. Net operating income $${(qb.net_operating_income||0).toFixed(2)}.`
     :"QuickBooks (live): No labor data for today — posts after payroll runs.";
+
+  const mcCtx=mc.total_subscribers
+    ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()} emails sent, ${mc.open_rate_30d}% open rate, ${mc.click_rate_30d}% click rate, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth. Most recent campaign: "${mc.recent_campaigns?.[0]?.subject||"—"}" — ${mc.recent_campaigns?.[0]?.open_rate}% open, ${mc.recent_campaigns?.[0]?.click_rate}% click.`
+    :"Mailchimp: data unavailable.";
+
   const prompt=`Hill Country BBQ — New York
 Date: ${now.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
 Time: ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET
@@ -735,13 +696,14 @@ Live: ${live.join(", ")||"none"} · Pending: ${pending.join(", ")||"none"}
 
 ${meCtx}
 ${qbCtx}
+${mcCtx}
 
 Live data only:
 ${JSON.stringify(liveData,null,2)}
 
 GoTab: net_sales excludes deferred_revenue/PROCESSORS/EXPENSE. bar_sales and catering_sales are subsets. Before noon: revenue is catering/events only.
 
-CRITICAL: Only include sections where live data exists. Do NOT mention, estimate, or reference any data for pending sources (${pending.join(", ")}). Do not use words like "mock", "demo", or "placeholder". If a section has no live data, skip it entirely.
+CRITICAL: Only include sections where live data exists. Do NOT mention, estimate, or reference data for pending sources (${pending.join(", ")}). Do not use words like "mock", "demo", or "placeholder". Skip sections with no live data.
 
 ## Daily Intelligence Report
 **Hill Country BBQ — New York | ${now.toLocaleDateString()}**
@@ -750,10 +712,12 @@ CRITICAL: Only include sections where live data exists. Do NOT mention, estimate
 ### Labor
 ### Food cost
 ### Events & private dining
+### Digital & marketing
 ### GM narrative
 ### Anomaly flags
 
 Rules: blank line between sections. Specific $ and %. GM at 7am voice.`;
+
   const timer=setInterval(()=>{elapsed++;const el=document.getElementById("report-timer");if(el) el.textContent=`${elapsed}s`;},1000);
   document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
   try{
@@ -764,6 +728,7 @@ Rules: blank line between sections. Specific $ and %. GM at 7am voice.`;
     document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot done"></div><span>Complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${live.length}/${SYSTEMS.length} live</span></div><div class="report-wrap"><div class="report-body">${renderReport(full)}</div><div class="report-actions"><button class="btn-sec" onclick="copyReport()">Copy</button><button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[3]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button></div><div class="disclaimer">AI-generated. ${live.length}/${SYSTEMS.length} sources live. Verify before operational decisions.</div></div>`;
   }catch(e){clearInterval(timer);document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;}
 }
+
 function renderFlags(){
   const d=fetchedData,flags=[];
   const live=Object.entries(sourceMap).filter(([,v])=>v==="live").map(([k])=>k);
@@ -772,9 +737,12 @@ function renderFlags(){
   if(d.quickbooks?.total_labor_pct>TARGETS.total_labor) flags.push({t:"warn",l:`Labor ${d.quickbooks.total_labor_pct}% — above ${TARGETS.total_labor}%`});
   if(d.marginedge?.food_cost_pct>34) flags.push({t:"crit",l:`Food cost ${d.marginedge.food_cost_pct}% — critical`});
   if(d.gotab?.comps>0&&d.gotab?.net_sales>0&&(d.gotab.comps/d.gotab.net_sales)>0.015) flags.push({t:"warn",l:`Comps ${((d.gotab.comps/d.gotab.net_sales)*100).toFixed(1)}% — review`});
+  if(d.mailchimp?.open_rate_30d&&d.mailchimp.open_rate_30d<20) flags.push({t:"warn",l:`Email open rate ${d.mailchimp.open_rate_30d}% — below 20% threshold`});
+  if(d.mailchimp?.net_list_growth_30d<0) flags.push({t:"warn",l:`Email list shrinking — ${d.mailchimp.net_list_growth_30d} net change (30d)`});
   if(flags.filter(f=>f.t!=="info").length===0) flags.push({t:"ok",l:"All live metrics within threshold"});
   document.getElementById("live-flags").innerHTML=flags.map(f=>`<span class="flag ${f.t}">${f.l}</span>`).join("");
 }
+
 function getSectionClass(h){
   const l=h.toLowerCase();
   if(l.includes("revenue")||l.includes("sales")||l.includes("snapshot")) return "s-revenue";
@@ -783,7 +751,7 @@ function getSectionClass(h){
   if(l.includes("cover")||l.includes("dining")||l.includes("guest")) return "s-covers";
   if(l.includes("deliver")) return "s-delivery";
   if(l.includes("event")||l.includes("banquet")||l.includes("private")||l.includes("catering")) return "s-events";
-  if(l.includes("digital")||l.includes("market")||l.includes("online")) return "s-digital";
+  if(l.includes("digital")||l.includes("market")||l.includes("email")||l.includes("mailchimp")||l.includes("online")) return "s-marketing";
   if(l.includes("reput")||l.includes("review")||l.includes("rating")) return "s-reputation";
   if(l.includes("ops")||l.includes("comm")||l.includes("operation")) return "s-ops";
   if(l.includes("gm")||l.includes("narrative")||l.includes("summary")||l.includes("manager")) return "s-gm";
@@ -804,6 +772,7 @@ function renderReport(md){
   return html;
 }
 function ri(t){return esc(t).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>");}
+
 async function askQ(){
   const q=document.getElementById("qa-inp").value.trim();if(!q) return;
   const btn=document.getElementById("qa-btn");btn.disabled=true;btn.textContent="Thinking...";
@@ -819,6 +788,7 @@ async function askQ(){
   }catch(e){out.innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;}
   btn.disabled=false;btn.textContent="Ask RIC";
 }
+
 function setQ(q){document.getElementById("qa-inp").value=q;document.getElementById("qa-inp").focus();}
 function copyReport(){navigator.clipboard.writeText(lastReport).catch(()=>{});}
 function showTab(id,el){
