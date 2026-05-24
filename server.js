@@ -1,4 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v3.4
+// Hill Country Hospitality — RIC Proxy Server v3.5
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -22,6 +22,9 @@ const QB_CLIENT_ID         = process.env.QB_CLIENT_ID;
 const QB_CLIENT_SECRET     = process.env.QB_CLIENT_SECRET;
 const QB_REDIRECT_URI      = "https://ric.up.railway.app/auth/quickbooks/callback";
 const QB_SCOPES            = "com.intuit.quickbooks.accounting";
+const MC_API_KEY           = process.env.MAILCHIMP_API_KEY;
+const MC_SERVER            = process.env.MAILCHIMP_SERVER;
+const MC_AUDIENCE_ID       = process.env.MAILCHIMP_AUDIENCE_ID;
 
 app.use(cors({ origin: "*", methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type","Authorization"] }));
 app.options("*", cors());
@@ -125,7 +128,6 @@ function parseQBRows(rows, accounts = {}) {
   return accounts;
 }
 
-// Lookup by account number prefix, then keyword fallback
 function acct(raw, ...keys) {
   for (const k of keys) {
     for (const [name, val] of Object.entries(raw)) {
@@ -156,26 +158,16 @@ async function fetchQuickBooks(startDate, endDate) {
   const raw = parseQBRows(plRes.value?.Rows?.Row);
   const cdc = cdcRes.status === "fulfilled" ? cdcRes.value : null;
 
-  // ── Income (4000) ──
   const income = {
-    food_sales:      acct(raw,"4105"),
-    liquor_sales:    acct(raw,"4110"),
-    beer_sales:      acct(raw,"4115"),
-    wine_sales:      acct(raw,"4120"),
-    na_bev_sales:    acct(raw,"4125"),
-    retail_sales:    acct(raw,"4130"),
-    misc_sales:      acct(raw,"4140"),
-    banquet_admin:   acct(raw,"4145"),
-    ticket_sales:    acct(raw,"4150"),
-    catering_food:   acct(raw,"4155"),
-    catering_na_bev: acct(raw,"4156"),
-    banquet_na_bev:  acct(raw,"4193"),
-    banquet_food:    acct(raw,"4194"),
-    banquet_liquor:  acct(raw,"4196"),
-    banquet_beer:    acct(raw,"4197"),
-    banquet_wine:    acct(raw,"4198"),
-    transport_fee:   acct(raw,"4200"),
-    discounts_comps: acct(raw,"4500"),
+    food_sales: acct(raw,"4105"), liquor_sales: acct(raw,"4110"),
+    beer_sales: acct(raw,"4115"), wine_sales: acct(raw,"4120"),
+    na_bev_sales: acct(raw,"4125"), retail_sales: acct(raw,"4130"),
+    misc_sales: acct(raw,"4140"), banquet_admin: acct(raw,"4145"),
+    ticket_sales: acct(raw,"4150"), catering_food: acct(raw,"4155"),
+    catering_na_bev: acct(raw,"4156"), banquet_na_bev: acct(raw,"4193"),
+    banquet_food: acct(raw,"4194"), banquet_liquor: acct(raw,"4196"),
+    banquet_beer: acct(raw,"4197"), banquet_wine: acct(raw,"4198"),
+    transport_fee: acct(raw,"4200"), discounts_comps: acct(raw,"4500"),
   };
   income.total_sales = sum(
     income.food_sales, income.liquor_sales, income.beer_sales, income.wine_sales,
@@ -185,103 +177,68 @@ async function fetchQuickBooks(startDate, endDate) {
     income.transport_fee, income.discounts_comps
   );
 
-  // ── COGS (5000) ──
   const cogs = {
-    meat:      acct(raw,"5101"),
-    produce:   acct(raw,"5103"),
-    grocery:   acct(raw,"5104"),
-    bakery:    acct(raw,"5105"),
-    dairy:     acct(raw,"5106"),
-    bar_grocery: acct(raw,"5111"),
-    liquor:    acct(raw,"5110"),
-    beer:      acct(raw,"5115"),
-    wine:      acct(raw,"5120"),
-    na_bev:    acct(raw,"5125"),
-    packaging: acct(raw,"5135"),
+    meat: acct(raw,"5101"), produce: acct(raw,"5103"), grocery: acct(raw,"5104"),
+    bakery: acct(raw,"5105"), dairy: acct(raw,"5106"), bar_grocery: acct(raw,"5111"),
+    liquor: acct(raw,"5110"), beer: acct(raw,"5115"), wine: acct(raw,"5120"),
+    na_bev: acct(raw,"5125"), packaging: acct(raw,"5135"),
   };
   cogs.food  = sum(cogs.meat, cogs.produce, cogs.grocery, cogs.bakery, cogs.dairy);
   cogs.total = sum(cogs.food, cogs.bar_grocery, cogs.liquor, cogs.beer, cogs.wine, cogs.na_bev, cogs.packaging);
 
-  // ── FOH Labor (5205) ──
   const foh = {
-    bartender:  acct(raw,"5205-1"),
-    bar_back:   acct(raw,"5205-2"),
-    busser:     acct(raw,"5205-3"),
-    host:       acct(raw,"5205-7"),
-    server:     acct(raw,"5205-8"),
-    training:   acct(raw,"5205-9"),
+    bartender: acct(raw,"5205-1"), bar_back: acct(raw,"5205-2"),
+    busser: acct(raw,"5205-3"), host: acct(raw,"5205-7"),
+    server: acct(raw,"5205-8"), training: acct(raw,"5205-9"),
   };
   foh.total = sum(foh.bartender, foh.bar_back, foh.busser, foh.host, foh.server, foh.training);
 
-  // ── BOH Labor (5210) ──
   const boh = {
-    prep:              acct(raw,"5210-1"),
-    dishwasher_porter: acct(raw,"5210-2"),
-    line_cook:         acct(raw,"5210-3"),
-    chef:              acct(raw,"5210-5"),
-    sous_chef:         acct(raw,"5210-6"),
+    prep: acct(raw,"5210-1"), dishwasher_porter: acct(raw,"5210-2"),
+    line_cook: acct(raw,"5210-3"), chef: acct(raw,"5210-5"), sous_chef: acct(raw,"5210-6"),
   };
   boh.total = sum(boh.prep, boh.dishwasher_porter, boh.line_cook, boh.chef, boh.sous_chef);
 
-  // ── Management & Other ──
   const mgmt = {
-    admin:          acct(raw,"5215"),
-    manager_salary: acct(raw,"5220-2"),
-    labor_other:    acct(raw,"5230"),
+    admin: acct(raw,"5215"), manager_salary: acct(raw,"5220-2"), labor_other: acct(raw,"5230"),
   };
   mgmt.total = sum(mgmt.admin, mgmt.manager_salary, mgmt.labor_other);
 
   const direct_labor = sum(foh.total, boh.total, mgmt.total);
 
-  // ── Labor Related (5300) ──
   const labor_related = {
-    commission:       acct(raw,"5310"),
-    payroll_fica:     acct(raw,"5315-1"),
-    payroll_sui:      acct(raw,"5315-2"),
-    payroll_fui:      acct(raw,"5315-3"),
-    payroll_mta:      acct(raw,"5315-4"),
-    health_insurance: acct(raw,"5320"),
-    workers_comp:     acct(raw,"5325"),
-    disability_ins:   acct(raw,"5330"),
-    epli_insurance:   acct(raw,"5350"),
+    commission: acct(raw,"5310"), payroll_fica: acct(raw,"5315-1"),
+    payroll_sui: acct(raw,"5315-2"), payroll_fui: acct(raw,"5315-3"),
+    payroll_mta: acct(raw,"5315-4"), health_insurance: acct(raw,"5320"),
+    workers_comp: acct(raw,"5325"), disability_ins: acct(raw,"5330"),
+    epli_insurance: acct(raw,"5350"),
   };
   labor_related.total = sum(
-    labor_related.commission,
-    labor_related.payroll_fica, labor_related.payroll_sui,
-    labor_related.payroll_fui,  labor_related.payroll_mta,
-    labor_related.health_insurance, labor_related.workers_comp,
-    labor_related.disability_ins, labor_related.epli_insurance
+    labor_related.commission, labor_related.payroll_fica, labor_related.payroll_sui,
+    labor_related.payroll_fui, labor_related.payroll_mta, labor_related.health_insurance,
+    labor_related.workers_comp, labor_related.disability_ins, labor_related.epli_insurance
   );
 
   const total_labor = sum(direct_labor, labor_related.total);
 
-  // ── 6100 Direct Operating ──
   const direct_ops = {
-    cash_over_under:     acct(raw,"6105"),
-    equipment_lease:     acct(raw,"6110"),
-    cleaning_supplies:   acct(raw,"6115"),
-    restaurant_supplies: acct(raw,"6125"),
-    laundry:             acct(raw,"6135"),
-    smallwares:          acct(raw,"6150"),
-    wood_supplies:       acct(raw,"6175"),
-    delivery_expense:    acct(raw,"6180"),
-    catering_rental:     acct(raw,"6185"),
-    music_dj:            acct(raw,"6305"),
+    cash_over_under: acct(raw,"6105"), equipment_lease: acct(raw,"6110"),
+    cleaning_supplies: acct(raw,"6115"), restaurant_supplies: acct(raw,"6125"),
+    laundry: acct(raw,"6135"), smallwares: acct(raw,"6150"),
+    wood_supplies: acct(raw,"6175"), delivery_expense: acct(raw,"6180"),
+    catering_rental: acct(raw,"6185"), music_dj: acct(raw,"6305"),
   };
   direct_ops.total = sum(
-    direct_ops.cash_over_under, direct_ops.equipment_lease,
-    direct_ops.cleaning_supplies, direct_ops.restaurant_supplies,
-    direct_ops.laundry, direct_ops.smallwares, direct_ops.wood_supplies,
-    direct_ops.delivery_expense, direct_ops.catering_rental, direct_ops.music_dj
+    direct_ops.cash_over_under, direct_ops.equipment_lease, direct_ops.cleaning_supplies,
+    direct_ops.restaurant_supplies, direct_ops.laundry, direct_ops.smallwares,
+    direct_ops.wood_supplies, direct_ops.delivery_expense, direct_ops.catering_rental,
+    direct_ops.music_dj
   );
 
-  // ── 6200 Transaction Related ──
   const transaction_expenses = {
-    cc_fees:             acct(raw,"6205"),
-    reservation_system:  acct(raw,"6210"),
-    third_party_commissions: acct(raw,"6215"),
-    late_fees:           acct(raw,"6220"),
-    chargeback:          acct(raw,"6615"),
+    cc_fees: acct(raw,"6205"), reservation_system: acct(raw,"6210"),
+    third_party_commissions: acct(raw,"6215"), late_fees: acct(raw,"6220"),
+    chargeback: acct(raw,"6615"),
   };
   transaction_expenses.total = sum(
     transaction_expenses.cc_fees, transaction_expenses.reservation_system,
@@ -289,34 +246,23 @@ async function fetchQuickBooks(startDate, endDate) {
     transaction_expenses.chargeback
   );
 
-  // ── 6250 Marketing ──
   const marketing = {
-    marketing_advertising:    acct(raw,"6250"),
-    marketing_pr:             acct(raw,"6255"),
-    advertising_promotions:   acct(raw,"6260"),
-    stationary_printing:      acct(raw,"6580"),
+    marketing_advertising: acct(raw,"6250"), marketing_pr: acct(raw,"6255"),
+    advertising_promotions: acct(raw,"6260"), stationary_printing: acct(raw,"6580"),
   };
   marketing.total = sum(
     marketing.marketing_advertising, marketing.marketing_pr,
     marketing.advertising_promotions, marketing.stationary_printing
   );
 
-  // ── 6500 General & Administrative ──
   const ga_expenses = {
-    research_development:  acct(raw,"6450"),
-    accounting_bookkeeping:acct(raw,"6505"),
-    recruiting:            acct(raw,"6512"),
-    legal:                 acct(raw,"6520"),
-    payroll_processing:    acct(raw,"6525"),
-    computer_software_it:  acct(raw,"6535"),
-    dues_subscriptions:    acct(raw,"6550"),
-    bank_charges:          acct(raw,"6560"),
-    license_permits:       acct(raw,"6570"),
-    office_supplies:       acct(raw,"6575"),
-    postage:               acct(raw,"6585","6603"),
-    liability_insurance:   acct(raw,"6590"),
-    penalties_settlements: acct(raw,"6600"),
-    phone_internet:        acct(raw,"6605"),
+    research_development: acct(raw,"6450"), accounting_bookkeeping: acct(raw,"6505"),
+    recruiting: acct(raw,"6512"), legal: acct(raw,"6520"),
+    payroll_processing: acct(raw,"6525"), computer_software_it: acct(raw,"6535"),
+    dues_subscriptions: acct(raw,"6550"), bank_charges: acct(raw,"6560"),
+    license_permits: acct(raw,"6570"), office_supplies: acct(raw,"6575"),
+    postage: acct(raw,"6585","6603"), liability_insurance: acct(raw,"6590"),
+    penalties_settlements: acct(raw,"6600"), phone_internet: acct(raw,"6605"),
   };
   ga_expenses.total = sum(
     ga_expenses.research_development, ga_expenses.accounting_bookkeeping,
@@ -327,22 +273,17 @@ async function fetchQuickBooks(startDate, endDate) {
     ga_expenses.penalties_settlements, ga_expenses.phone_internet
   );
 
-  // ── 6700 Travel, Meals & Entertainment ──
   const travel_meals = {
-    travel_transport: acct(raw,"6705"),
-    meals_entertainment: acct(raw,"6710"),
-    parking:          acct(raw,"6720"),
+    travel_transport: acct(raw,"6705"), meals_entertainment: acct(raw,"6710"),
+    parking: acct(raw,"6720"),
   };
   travel_meals.total = sum(
     travel_meals.travel_transport, travel_meals.meals_entertainment, travel_meals.parking
   );
 
-  // ── 6800 Repair & Maintenance ──
   const repair_maintenance = {
-    equipment:        acct(raw,"6810"),
-    pest_control:     acct(raw,"6820"),
-    fire_control:     acct(raw,"6825"),
-    facility_supplies:acct(raw,"6835"),
+    equipment: acct(raw,"6810"), pest_control: acct(raw,"6820"),
+    fire_control: acct(raw,"6825"), facility_supplies: acct(raw,"6835"),
   };
   repair_maintenance.total = sum(
     repair_maintenance.equipment, repair_maintenance.pest_control,
@@ -354,16 +295,11 @@ async function fetchQuickBooks(startDate, endDate) {
     ga_expenses.total, travel_meals.total, repair_maintenance.total
   );
 
-  // ── 7100 Property / Non-Controllable ──
   const property_expenses = {
-    rent_lease:          acct(raw,"7105"),
-    common_area_maint:   acct(raw,"7111"),
-    property_re_tax:     acct(raw,"7115"),
-    property_insurance:  acct(raw,"7120"),
-    utility_electricity: acct(raw,"7125"),
-    utility_gas:         acct(raw,"7130"),
-    utility_trash:       acct(raw,"7135"),
-    utility_water_sewage:acct(raw,"7140"),
+    rent_lease: acct(raw,"7105"), common_area_maint: acct(raw,"7111"),
+    property_re_tax: acct(raw,"7115"), property_insurance: acct(raw,"7120"),
+    utility_electricity: acct(raw,"7125"), utility_gas: acct(raw,"7130"),
+    utility_trash: acct(raw,"7135"), utility_water_sewage: acct(raw,"7140"),
   };
   property_expenses.total = sum(
     property_expenses.rent_lease, property_expenses.common_area_maint,
@@ -372,70 +308,110 @@ async function fetchQuickBooks(startDate, endDate) {
     property_expenses.utility_trash, property_expenses.utility_water_sewage
   );
 
-  // ── 8000 Other / Non-Controllable ──
   const other_expenses = {
-    other_income_expense: acct(raw,"8130"),
-    corporate_overhead:   acct(raw,"8510"),
+    other_income_expense: acct(raw,"8130"), corporate_overhead: acct(raw,"8510"),
   };
-  other_expenses.total = sum(
-    other_expenses.other_income_expense, other_expenses.corporate_overhead
-  );
+  other_expenses.total = sum(other_expenses.other_income_expense, other_expenses.corporate_overhead);
 
   const total_non_controllable = sum(property_expenses.total, other_expenses.total);
-  const total_expenses = sum(total_labor, total_controllable, total_non_controllable);
-
-  // ── Key P&L metrics ──
-  const gross_profit         = sum(income.total_sales, -cogs.total);
-  const net_operating_income = sum(income.total_sales, -cogs.total, -total_expenses);
-
+  const total_expenses         = sum(total_labor, total_controllable, total_non_controllable);
+  const gross_profit           = sum(income.total_sales, -cogs.total);
+  const net_operating_income   = sum(income.total_sales, -cogs.total, -total_expenses);
   const pct = (n) => income.total_sales > 0 ? +((n / income.total_sales) * 100).toFixed(1) : null;
 
   return {
-    // Income
-    income,
-    // COGS
-    cogs,
-    food_cost_pct:      pct(cogs.food),
-    total_cogs_pct:     pct(cogs.total),
-    liquor_cost_pct:    pct(cogs.liquor),
-    beer_cost_pct:      pct(cogs.beer),
-    wine_cost_pct:      pct(cogs.wine),
-    na_bev_cost_pct:    pct(cogs.na_bev),
-    // Gross profit
-    gross_profit,
-    gross_profit_pct:   pct(gross_profit),
-    // Labor
+    income, cogs,
+    food_cost_pct: pct(cogs.food), total_cogs_pct: pct(cogs.total),
+    liquor_cost_pct: pct(cogs.liquor), beer_cost_pct: pct(cogs.beer),
+    wine_cost_pct: pct(cogs.wine), na_bev_cost_pct: pct(cogs.na_bev),
+    gross_profit, gross_profit_pct: pct(gross_profit),
     foh, boh, mgmt, direct_labor,
-    foh_labor_pct:      pct(foh.total),
-    boh_labor_pct:      pct(boh.total),
-    mgmt_labor_pct:     pct(mgmt.total),
-    labor_related,
-    total_labor,
-    total_labor_pct:    pct(total_labor),
-    // Controllable
-    direct_ops,
-    transaction_expenses,
-    marketing,
-    ga_expenses,
-    travel_meals,
-    repair_maintenance,
-    total_controllable,
-    total_controllable_pct: pct(total_controllable),
-    // Non-controllable
-    property_expenses,
-    other_expenses,
-    total_non_controllable,
-    total_non_controllable_pct: pct(total_non_controllable),
-    // Bottom line
-    total_expenses,
-    net_operating_income,
-    net_operating_income_pct: pct(net_operating_income),
-    prime_cost:     sum(cogs.total, total_labor),
-    prime_cost_pct: pct(sum(cogs.total, total_labor)),
-    // CDC & raw
+    foh_labor_pct: pct(foh.total), boh_labor_pct: pct(boh.total), mgmt_labor_pct: pct(mgmt.total),
+    labor_related, total_labor, total_labor_pct: pct(total_labor),
+    direct_ops, transaction_expenses, marketing, ga_expenses, travel_meals, repair_maintenance,
+    total_controllable, total_controllable_pct: pct(total_controllable),
+    property_expenses, other_expenses,
+    total_non_controllable, total_non_controllable_pct: pct(total_non_controllable),
+    total_expenses, net_operating_income, net_operating_income_pct: pct(net_operating_income),
+    prime_cost: sum(cogs.total, total_labor), prime_cost_pct: pct(sum(cogs.total, total_labor)),
     cdc_entities: cdc ? Object.keys(cdc.CDCResponse?.[0]?.QueryResponse || {}) : [],
-    raw_accounts: raw,
-    data_as_of:   nowET(),
+    raw_accounts: raw, data_as_of: nowET(),
+  };
+}
+
+// ── Mailchimp ─────────────────────────────────────────────────────────────────
+async function fetchMailchimp() {
+  if (!MC_API_KEY || !MC_SERVER || !MC_AUDIENCE_ID) {
+    throw new Error("Mailchimp credentials not set in environment variables");
+  }
+
+  const base    = `https://${MC_SERVER}.api.mailchimp.com/3.0`;
+  const auth    = "Basic " + Buffer.from(`anystring:${MC_API_KEY}`).toString("base64");
+  const headers = { "Authorization": auth, "Content-Type": "application/json" };
+
+  // Fetch in parallel: audience stats, recent campaigns, recent activity
+  const [listRes, campaignsRes, activityRes] = await Promise.all([
+    fetchWithRetry(`${base}/lists/${MC_AUDIENCE_ID}?fields=id,name,stats,date_created`, { headers }),
+    fetchWithRetry(`${base}/campaigns?list_id=${MC_AUDIENCE_ID}&status=sent&count=5&sort_field=send_time&sort_dir=DESC&fields=campaigns.id,campaigns.settings.subject_line,campaigns.send_time,campaigns.emails_sent,campaigns.report_summary`, { headers }),
+    fetchWithRetry(`${base}/lists/${MC_AUDIENCE_ID}/activity?fields=activity.day,activity.emails_sent,activity.unique_opens,activity.recipient_clicks,activity.subs,activity.unsubs&count=30`, { headers }),
+  ]);
+
+  if (!listRes.ok) {
+    const body = await listRes.text();
+    throw new Error(`Mailchimp list failed: ${listRes.status} | ${body}`);
+  }
+
+  const list      = await listRes.json();
+  const campaigns = campaignsRes.ok ? await campaignsRes.json() : { campaigns: [] };
+  const activity  = activityRes.ok  ? await activityRes.json()  : { activity: [] };
+
+  // Audience stats
+  const stats = list.stats || {};
+
+  // Last 30 days activity aggregation
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  let emails_sent_30d = 0, opens_30d = 0, clicks_30d = 0, subs_30d = 0, unsubs_30d = 0;
+  for (const day of activity.activity || []) {
+    const dayDate = new Date(day.day);
+    if (dayDate >= thirtyDaysAgo) {
+      emails_sent_30d += day.emails_sent  || 0;
+      opens_30d       += day.unique_opens || 0;
+      clicks_30d      += day.recipient_clicks || 0;
+      subs_30d        += day.subs   || 0;
+      unsubs_30d      += day.unsubs || 0;
+    }
+  }
+
+  // Recent campaigns summary
+  const recent_campaigns = (campaigns.campaigns || []).map(c => ({
+    subject:     c.settings?.subject_line || "—",
+    send_time:   c.send_time,
+    emails_sent: c.emails_sent || 0,
+    open_rate:   c.report_summary?.open_rate ? +(c.report_summary.open_rate * 100).toFixed(1) : null,
+    click_rate:  c.report_summary?.click_rate ? +(c.report_summary.click_rate * 100).toFixed(1) : null,
+    opens:       c.report_summary?.unique_opens || 0,
+    clicks:      c.report_summary?.subscriber_clicks || 0,
+  }));
+
+  return {
+    // Audience
+    audience_name:     list.name,
+    total_subscribers: stats.member_count       || 0,
+    open_rate_avg:     stats.open_rate ? +(stats.open_rate * 100).toFixed(1) : null,
+    click_rate_avg:    stats.click_rate ? +(stats.click_rate * 100).toFixed(1) : null,
+    unsubscribe_rate:  stats.unsubscribe_rate ? +(stats.unsubscribe_rate * 100).toFixed(2) : null,
+    // Last 30 days
+    emails_sent_30d,
+    opens_30d,
+    clicks_30d,
+    subs_30d,
+    unsubs_30d,
+    open_rate_30d:  emails_sent_30d > 0 ? +((opens_30d  / emails_sent_30d) * 100).toFixed(1) : null,
+    click_rate_30d: emails_sent_30d > 0 ? +((clicks_30d / emails_sent_30d) * 100).toFixed(1) : null,
+    // Recent campaigns
+    recent_campaigns,
+    data_as_of: nowET(),
   };
 }
 
@@ -478,7 +454,7 @@ function normalizeGoTab(tabs) {
   for (const tab of tabs) {
     const tabTax=tab.tax||0,tabTotal=tab.total||0,tabSub=tab.subtotal||0,tabAuto=tab.autogratDue||0;
     tax_total+=tabTax;
-    const tabTip=tabTotal-tabSub-tabTax-tabAuto; if(tabTip>0) tip_total+=tabTip;
+    const tabTip=tabTotal-tabSub-tabTax-tabAuto;if(tabTip>0) tip_total+=tabTip;
     tab_count++;
     for (const item of tab.items||[]) {
       const g=item.accountingStream?.reportingGroup||"",n=item.accountingStream?.name||"",amt=item.subtotal||0;
@@ -491,11 +467,11 @@ function normalizeGoTab(tabs) {
     }
   }
   return {
-    net_sales:+(net_sales/100).toFixed(2), tab_count,
-    bar_sales:+(bar_sales/100).toFixed(2), catering_sales:+(catering_sales/100).toFixed(2),
-    voids:+(voids/100).toFixed(2), comps:+(comps/100).toFixed(2),
-    tax_total:+(tax_total/100).toFixed(2), tip_total:+(tip_total/100).toFixed(2),
-    deferred_revenue:+(deferred_revenue/100).toFixed(2), data_as_of:nowET(),
+    net_sales:+(net_sales/100).toFixed(2),tab_count,
+    bar_sales:+(bar_sales/100).toFixed(2),catering_sales:+(catering_sales/100).toFixed(2),
+    voids:+(voids/100).toFixed(2),comps:+(comps/100).toFixed(2),
+    tax_total:+(tax_total/100).toFixed(2),tip_total:+(tip_total/100).toFixed(2),
+    deferred_revenue:+(deferred_revenue/100).toFixed(2),data_as_of:nowET(),
   };
 }
 
@@ -606,7 +582,7 @@ h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bo
 .value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}
 .step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px}
 .warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head>
-<body><h1>✓ QuickBooks Connected</h1><p>Copy these into Railway → hch-ric-proxy → Variables, then redeploy.</p>
+<body><h1>✓ QuickBooks Connected</h1><p>Copy these into Railway → Variables, then redeploy.</p>
 <div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div>
 <div class="card"><div class="label">QB_REFRESH_TOKEN</div><div class="value">${tokens.refresh_token}</div></div>
 <div class="step">Once redeployed: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div>
@@ -631,6 +607,17 @@ app.get("/api/quickbooks",async(req,res)=>{
     const data=await fetchQuickBooks(start,end);
     res.json({ok:true,source:"quickbooks_live",start,end,...data});
   }catch(err){console.error("QB error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
+
+// Mailchimp only
+app.get("/api/mailchimp",async(req,res)=>{
+  try{
+    const data=await fetchMailchimp();
+    res.json({ok:true,source:"mailchimp_live",...data});
+  }catch(err){
+    console.error("Mailchimp error:",err.message);
+    res.status(500).json({ok:false,error:err.message});
+  }
 });
 
 // GoTab streams
@@ -702,12 +689,10 @@ app.get("/api/ric",async(req,res)=>{
   try{
     if(qbState.refreshToken&&qbState.realmId){
       const qb=await fetchQuickBooks(date,date);
-      // Only include QB in daily report when it has meaningful data
+      result.sources.quickbooks="live";
       const hasRevenue=(qb.income?.total_sales||0)>0;
       const hasLabor=(qb.total_labor||0)>0;
       const hasSignificantExpenses=(qb.total_controllable||0)>1000;
-      // Always mark QB as live if authorized — exclude sparse data from report payload only
-      result.sources.quickbooks="live";
       if(hasRevenue||hasLabor||hasSignificantExpenses){
         if(result.gotab?.net_sales&&qb.total_labor)
           qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
@@ -718,6 +703,11 @@ app.get("/api/ric",async(req,res)=>{
       }
     }
   }catch(e){console.error("QB failed:",e.message);result.quickbooks=null;result.sources.quickbooks=`error: ${e.message}`;}
+
+  try{
+    const mc=await fetchMailchimp();
+    result.mailchimp=mc;result.sources.mailchimp="live";
+  }catch(e){console.error("Mailchimp failed:",e.message);result.mailchimp=null;result.sources.mailchimp=`error: ${e.message}`;}
 
   res.json({ok:true,...result});
 });
@@ -736,7 +726,7 @@ app.post("/api/claude",async(req,res)=>{
 });
 
 // Health
-app.get("/health",(_req,res)=>res.json({ok:true,service:"hch-ric-proxy",version:"3.4"}));
+app.get("/health",(_req,res)=>res.json({ok:true,service:"hch-ric-proxy",version:"3.5"}));
 
 // Serve app
 app.get("/",(_req,res)=>{
@@ -744,4 +734,4 @@ app.get("/",(_req,res)=>{
   res.sendFile(join(__dirname,"index.html"));
 });
 
-app.listen(PORT,()=>console.log(`RIC proxy v3.4 running on port ${PORT}`));
+app.listen(PORT,()=>console.log(`RIC proxy v3.5 running on port ${PORT}`));
