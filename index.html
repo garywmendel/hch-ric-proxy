@@ -701,40 +701,36 @@ async function generateReport(){
     ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()} emails sent, ${mc.open_rate_30d}% open rate, ${mc.click_rate_30d}% click rate, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth. Most recent campaign: "${mc.recent_campaigns?.[0]?.subject||"—"}" — ${mc.recent_campaigns?.[0]?.open_rate}% open, ${mc.recent_campaigns?.[0]?.click_rate}% click.`
     :"Mailchimp: data unavailable.";
 
-  const prompt=`Hill Country BBQ — New York
-Date: ${now.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
-Time: ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET
-Service: ${svc}
-Live: ${live.join(", ")||"none"} · Pending: ${pending.join(", ")||"none"}
+  const prompt=`${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})} · ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET
+${svc}
+Live sources: ${live.join(", ")||"none"}
 
+GOTAB (live):
+${liveData.gotab?`Net sales: $${liveData.gotab.net_sales} across ${liveData.gotab.tab_count} tabs. Bar: $${liveData.gotab.bar_sales}, Catering: $${liveData.gotab.catering_sales}, Comps: $${liveData.gotab.comps}, Voids: $${liveData.gotab.voids}. Deferred revenue (future bookings): $${liveData.gotab.deferred_revenue}.`:"No GoTab data."}
+
+MARGINEDGE (live):
 ${meCtx}
+
+QUICKBOOKS (live):
 ${qbCtx}
+
+MAILCHIMP (live):
 ${mcCtx}
 
-Live data only:
-${JSON.stringify(liveData,null,2)}
+Write the daily briefing. Only include a section if you have live data for it. Lead with revenue. End with a single "Watch list" bullet point of the top 1-2 items needing GM attention today.
 
-GoTab: net_sales excludes deferred_revenue/PROCESSORS/EXPENSE. bar_sales and catering_sales are subsets. Before noon: revenue is catering/events only.
-
-CRITICAL: Only include sections where live data exists. Do NOT mention, estimate, or reference data for pending sources (${pending.join(", ")}). Do not use words like "mock", "demo", or "placeholder". Skip sections with no live data.
-
-## Daily Intelligence Report
-**Hill Country BBQ — New York | ${now.toLocaleDateString()}**
-
-### Revenue snapshot
-### Labor
-### Food cost
-### Events & private dining
-### Digital & marketing
-### GM narrative
-### Anomaly flags
-
-Rules: blank line between sections. Specific $ and %. GM at 7am voice.`;
+Use these sections only where data exists:
+### Revenue
+### Labor  
+### Food & beverage cost
+### Events & catering
+### Email & marketing
+### Watch list`;
 
   const timer=setInterval(()=>{elapsed++;const el=document.getElementById("report-timer");if(el) el.textContent=`${elapsed}s`;},1000);
   document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
   try{
-    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1000,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
+    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
     const data=await res.json();
     const full=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
     lastReport=full;clearInterval(timer);
