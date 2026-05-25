@@ -375,10 +375,37 @@ function renderMonthlyPL(qb,me,label){
   const hasQb=qb?.ok&&(qb?.income?.total_sales||0)>0;
   const qbInc=qb?.income||{};
   const ns=qbInc.total_sales||0;
-  const hasMeCogs=(me.cogs?.total||0)>5000;
+  // QB is always authoritative for COGS total (matches controller report, accrual basis, reconciled)
+  // MarginEdge provides category detail only — we scale ME proportions to the QB total
   const hasQbCogs=(qb?.cogs?.total||0)>0;
-  const cd=hasMeCogs?me.cogs:(qb?.cogs||{});
-  const tc=cd.total||0,fc_f=cd.food||0;
+  const hasMeDetail=(me.cogs?.total||0)>1000; // ME has enough data for proportional breakdown
+  const qbCogsTotal=qb?.cogs?.total||0;
+
+  // Scale MarginEdge category proportions to QB total
+  let cd={};
+  if(hasMeDetail&&hasQbCogs&&qbCogsTotal>0){
+    const scale=qbCogsTotal/me.cogs.total;
+    cd={
+      meat:   +(( me.cogs.meat   ||0)*scale).toFixed(2),
+      produce:+(( me.cogs.produce||0)*scale).toFixed(2),
+      grocery:+(( me.cogs.grocery||0)*scale).toFixed(2),
+      bakery: +(( me.cogs.bakery ||0)*scale).toFixed(2),
+      dairy:  +(( me.cogs.dairy  ||0)*scale).toFixed(2),
+      liquor: +(( me.cogs.liquor ||0)*scale).toFixed(2),
+      beer:   +(( me.cogs.beer   ||0)*scale).toFixed(2),
+      wine:   +(( me.cogs.wine   ||0)*scale).toFixed(2),
+      na_bev: +(( me.cogs.na_bev ||0)*scale).toFixed(2),
+      paper:  +(( me.cogs.paper  ||0)*scale).toFixed(2),
+      food:   +(( me.cogs.food   ||0)*scale).toFixed(2),
+      total:  qbCogsTotal, // always QB total
+    };
+  } else {
+    // Fall back to QB categories directly
+    cd=qb?.cogs||{};
+  }
+
+  const tc=qbCogsTotal||0; // always QB total
+  const fc_f=cd.food||0;
   const gp=ns>0&&tc>0?ns-tc:null;
   const qbFoh=qb?.foh||{},qbBoh=qb?.boh||{},qbMgmt=qb?.mgmt||{};
   const qbLR=qb?.labor_related||{},qbDOps=qb?.direct_ops||{};
@@ -395,7 +422,8 @@ function renderMonthlyPL(qb,me,label){
   const gp_pct=pct(gp,ns),foh_pct=pct(qbFoh.total,ns),boh_pct=pct(qbBoh.total,ns);
   const labor_pct=pct(totalLabor,ns),ctrl_pct=pct(totalCtrl,ns);
   const nonctrl_pct=pct(totalNonCtrl,ns),noi_pct=pct(netOpIncome,ns);
-  const qbSrc=hasQb?"live":"pend",cogsSrc=hasMeCogs?"live":(hasQbCogs?"live":"pend");
+  const qbSrc=hasQb?"live":"pend";
+  const cogsSrc=hasQbCogs?"live":"pend";
 
   let h="";
   if(!hasQb) h+=obs("info","QuickBooks has no data for this period. Try a prior completed month.");
@@ -426,11 +454,11 @@ function renderMonthlyPL(qb,me,label){
   if(food_pct&&food_pct>TARGETS.food) h+=obs("warn",`<strong>Food cost ${fp(food_pct)}</strong> is above the ${TARGETS.food}% target.`);
   if(wine_pct&&wine_pct>TARGETS.wine) h+=obs("warn",`<strong>Wine cost ${fp(wine_pct)}</strong> — target &lt;${TARGETS.wine}%.`);
   if(nabev_pct&&nabev_pct>TARGETS.na_bev) h+=obs("warn",`<strong>N/A Bev cost ${fp(nabev_pct)}</strong> — target &lt;${TARGETS.na_bev}%.`);
-  if(me.invoice_count===0&&hasQb) h+=obs("info","MarginEdge has 0 invoices for this period — QB COGS totals shown.");
+  if(me.invoice_count===0&&hasQb) h+=obs("info","MarginEdge has 0 invoices for this period — QB COGS category breakdown shown. Load a month with delivery activity for MarginEdge category detail.");
   if(primePct&&primePct<=TARGETS.prime&&totalLabor) h+=obs("ok",`✓ Prime cost ${fp(primePct)} is within the ${TARGETS.prime}% target.`);
   if(netOpIncome!=null&&netOpIncome<0) h+=obs("warn",`<strong>Net operating income is negative</strong> at ${f$(netOpIncome)} (${fp(noi_pct)}).`);
 
-  h+=`<div class="src-note">Revenue & expenses: QuickBooks (accrual basis) · COGS detail: ${hasMeCogs?"MarginEdge":"QuickBooks"} · GoTab used for real-time daily report only</div>`;
+  h+=`<div class="src-note">Revenue & expenses: QuickBooks (accrual basis, authoritative) · COGS total: QuickBooks · COGS category detail: ${hasMeDetail&&hasQbCogs?"MarginEdge (scaled to QB total)":"QuickBooks"} · GoTab used for real-time daily report only</div>`;
 
   h+=`<div class="fr-wrap"><table class="fr-table"><thead><tr><th>Account</th><th>${esc(label)}</th><th>Source</th><th>% of Sales</th></tr></thead><tbody>`;
 
