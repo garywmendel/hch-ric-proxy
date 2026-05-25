@@ -698,8 +698,7 @@ ${meCtx}
 ${qbCtx}
 ${mcCtx}
 
-Live data only:
-${JSON.stringify(liveData,null,2)}
+GoTab raw: net_sales=$${liveData.gotab?.net_sales||0}, tabs=${liveData.gotab?.tab_count||0}, bar=$${liveData.gotab?.bar_sales||0}, catering=$${liveData.gotab?.catering_sales||0}, comps=$${liveData.gotab?.comps||0}, voids=$${liveData.gotab?.voids||0}, deferred=$${liveData.gotab?.deferred_revenue||0}
 
 GoTab: net_sales excludes deferred_revenue/PROCESSORS/EXPENSE. bar_sales and catering_sales are subsets. Before noon: revenue is catering/events only.
 
@@ -721,7 +720,7 @@ Rules: blank line between sections. Specific $ and %. GM at 7am voice.`;
   const timer=setInterval(()=>{elapsed++;const el=document.getElementById("report-timer");if(el) el.textContent=`${elapsed}s`;},1000);
   document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
   try{
-    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1000,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
+    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
     const data=await res.json();
     const full=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
     lastReport=full;clearInterval(timer);
