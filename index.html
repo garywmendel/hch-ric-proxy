@@ -645,7 +645,7 @@ async function runSync(){
   for(const s of SYSTEMS){
     if(sysSt[s.id]!=="sync") updDot(s.id,"sync");
     await sleep(120+Math.random()*180);
-    const isLive=ricLive[s.id]&&ricLive.sources?.[s.id]==="live";
+    const isLive=ricLive.sources?.[s.id]==="live";
     if(isLive){fetchedData[s.id]=ricLive[s.id];sourceMap[s.id]="live";updDot(s.id,"connected");}
     else{fetchedData[s.id]=null;sourceMap[s.id]="pending";updDot(s.id,"err");}
     done++;
