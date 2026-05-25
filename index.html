@@ -804,9 +804,8 @@ const MARQII_PROMPT=`Pull live Marqii reputation data for Hill Country BBQ New Y
 
 Format the response clearly for a GM reading it at 7am. Be specific and actionable.`;
 
-ffunction pullMarqii(){
-  const prompt = encodeURIComponent(MARQII_PROMPT);
-  window.open(`https://claude.ai/new?q=${prompt}`, '_blank');
+function pullMarqii(){
+  window.open(`https://claude.ai/new?q=${encodeURIComponent(MARQII_PROMPT)}`, '_blank');
 }
 function copyReport(){navigator.clipboard.writeText(lastReport).catch(()=>{});}
 function showTab(id,el){
