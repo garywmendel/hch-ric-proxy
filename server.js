@@ -439,16 +439,16 @@ async function fetch7Shifts(date) {
 // ── MarginEdge ────────────────────────────────────────────────────────────────
 function bucketCogs(cogs,cat,amt){
   const c=(cat||"").toLowerCase();
-  if(c.includes("meat")||c.includes("protein")||c.includes("bbq")||c.includes("poultry")||c.includes("seafood")||c.includes("fish")){cogs.meat+=amt;cogs.food+=amt;}
-  else if(c.includes("produce")||c.includes("vegetable")||c.includes("fruit")){cogs.produce+=amt;cogs.food+=amt;}
-  else if(c.includes("dairy")||c.includes("egg")||c.includes("cheese")){cogs.dairy+=amt;cogs.food+=amt;}
-  else if(c.includes("grocery")||c.includes("dry")||c.includes("pantry")||c.includes("baked")||c.includes("bread")||c.includes("bakery")){cogs.grocery+=amt;cogs.food+=amt;}
-  else if(c.includes("liquor")||c.includes("spirit")||c.includes("cocktail")){cogs.liquor+=amt;}
-  else if(c.includes("beer")||c.includes("draft")||c.includes("brew")){cogs.beer+=amt;}
-  else if(c.includes("wine")){cogs.wine+=amt;}
-  else if(c.includes("non-alc")||c.includes("na bev")||c.includes("beverage")||c.includes("soda")||c.includes("juice")||c.includes("water")){cogs.na_bev+=amt;}
-  else if(c.includes("paper")||c.includes("packaging")||c.includes("to-go")||c.includes("disposable")){cogs.paper+=amt;}
-  else if(c.includes("supply")||c.includes("supplies")||c.includes("cleaning")||c.includes("chemical")){cogs.supplies+=amt;}
+  if(c.includes("meat")||c.includes("protein")||c.includes("bbq")||c.includes("poultry")||c.includes("seafood")||c.includes("fish")||c.includes("brisket")||c.includes("chicken")||c.includes("pork")||c.includes("beef")||c.includes("sausage")||c.includes("lamb")||c.includes("turkey")){cogs.meat+=amt;cogs.food+=amt;}
+  else if(c.includes("produce")||c.includes("vegetable")||c.includes("fruit")||c.includes("lettuce")||c.includes("tomato")||c.includes("onion")||c.includes("pepper")||c.includes("herb")){cogs.produce+=amt;cogs.food+=amt;}
+  else if(c.includes("dairy")||c.includes("egg")||c.includes("cheese")||c.includes("butter")||c.includes("cream")||c.includes("milk")){cogs.dairy+=amt;cogs.food+=amt;}
+  else if(c.includes("grocery")||c.includes("dry")||c.includes("pantry")||c.includes("baked")||c.includes("bread")||c.includes("bakery")||c.includes("flour")||c.includes("sugar")||c.includes("oil")||c.includes("sauce")||c.includes("spice")||c.includes("condiment")){cogs.grocery+=amt;cogs.food+=amt;}
+  else if(c.includes("vodka")||c.includes("whiskey")||c.includes("whisky")||c.includes("bourbon")||c.includes("tequila")||c.includes("gin")||c.includes("rum")||c.includes("scotch")||c.includes("brandy")||c.includes("cognac")||c.includes("triple sec")||c.includes("liqueur")||c.includes("spirit")||c.includes("liquor")||c.includes("cocktail")||c.includes("mezcal")||c.includes("pf")){cogs.liquor+=amt;}
+  else if(c.includes("beer")||c.includes("draft")||c.includes("brew")||c.includes("ale")||c.includes("lager")||c.includes("ipa")||c.includes("stout")||c.includes("porter")||c.includes("cider")){cogs.beer+=amt;}
+  else if(c.includes("wine")||c.includes("chardonnay")||c.includes("cabernet")||c.includes("merlot")||c.includes("pinot")||c.includes("sauvignon")||c.includes("riesling")||c.includes("prosecco")||c.includes("champagne")||c.includes("brut")||c.includes("rose")||c.includes("rosé")||c.includes("blanc")||c.includes("noir")){cogs.wine+=amt;}
+  else if(c.includes("non-alc")||c.includes("na bev")||c.includes("beverage")||c.includes("soda")||c.includes("juice")||c.includes("water")||c.includes("coffee")||c.includes("tea")||c.includes("energy")||c.includes("sparkling")){cogs.na_bev+=amt;}
+  else if(c.includes("paper")||c.includes("packaging")||c.includes("to-go")||c.includes("disposable")||c.includes("napkin")||c.includes("container")||c.includes("bag")||c.includes("wrap")||c.includes("foil")){cogs.paper+=amt;}
+  else if(c.includes("supply")||c.includes("supplies")||c.includes("cleaning")||c.includes("chemical")||c.includes("sanitizer")||c.includes("detergent")){cogs.supplies+=amt;}
   else{cogs.other+=amt;}
 }
 
@@ -466,7 +466,7 @@ async function fetchMarginEdge(date) {
     if (!d){const a=parseFloat(o.orderTotal||0);if(a){cogs.total+=a;cogs.other+=a;}continue;}
     const lines=d.lineItems||d.line_items||d.items||d.orderItems||[];
     if (!lines.length){const a=parseFloat(d.orderTotal||o.orderTotal||0);if(a){cogs.total+=a;bucketCogs(cogs,d.vendorName||o.vendorName||"",a);}continue;}
-    for (const l of lines){const cat=l.category||l.categoryName||l.category_name||l.categoryType||"";const a=parseFloat(l.extendedCost||l.extended_cost||l.amount||l.total||l.cost||l.lineTotal||0);if(!a) continue;cogs.total+=a;bucketCogs(cogs,cat,a);}
+    for (const l of lines){const cat=l.category||l.categoryName||l.category_name||l.categoryType||l.vendorItemName||l.vendorItemCode||"";const a=parseFloat(l.linePrice||l.extendedCost||l.extended_cost||l.amount||l.total||l.cost||l.lineTotal||0);if(!a) continue;cogs.total+=a;bucketCogs(cogs,cat,a);}
   }
   for (const k of Object.keys(cogs)) cogs[k]=+cogs[k].toFixed(2);
   return {invoice_count:orders.length,pending_invoices:0,cogs,food_cost_pct:null,total_cogs_pct:null,data_as_of:nowET()};
@@ -609,7 +609,7 @@ app.post("/api/claude",async(req,res)=>{
 });
 
 app.get("/health",(_req,res)=>res.json({
-  ok:true,service:"hch-ric-proxy",version:"3.7",
+  ok:true,service:"hch-ric-proxy",version:"3.8",
   railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
 }));
 
@@ -619,15 +619,3 @@ app.get("/",(_req,res)=>{
 });
 
 app.listen(PORT,()=>console.log(`RIC proxy v3.7 running on port ${PORT}`));
-
-app.get("/api/marginedge/debug",async(req,res)=>{
-  const date=req.query.date||today();
-  const headers={"X-Api-Key":MARGINEDGE_API_KEY,"Accept":"application/json"};
-  const base="https://api.marginedge.com/public",rid=MARGINEDGE_TENANT_ID;
-  const ordersRes=await fetch(`${base}/orders?restaurantUnitId=${rid}&startDate=${date}&endDate=${date}&orderStatus=CLOSED`,{headers});
-  const ordersJson=await ordersRes.json();
-  const orders=ordersJson.orders||ordersJson.data||(Array.isArray(ordersJson)?ordersJson:[]);
-  if(!orders.length) return res.json({orders:[]});
-  const detail=await fetch(`${base}/orders/${orders[0].orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.json());
-  res.json({first_order:orders[0],detail});
-});
