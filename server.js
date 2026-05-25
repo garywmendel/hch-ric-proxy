@@ -619,3 +619,15 @@ app.get("/",(_req,res)=>{
 });
 
 app.listen(PORT,()=>console.log(`RIC proxy v3.7 running on port ${PORT}`));
+
+app.get("/api/marginedge/debug",async(req,res)=>{
+  const date=req.query.date||today();
+  const headers={"X-Api-Key":MARGINEDGE_API_KEY,"Accept":"application/json"};
+  const base="https://api.marginedge.com/public",rid=MARGINEDGE_TENANT_ID;
+  const ordersRes=await fetch(`${base}/orders?restaurantUnitId=${rid}&startDate=${date}&endDate=${date}&orderStatus=CLOSED`,{headers});
+  const ordersJson=await ordersRes.json();
+  const orders=ordersJson.orders||ordersJson.data||(Array.isArray(ordersJson)?ordersJson:[]);
+  if(!orders.length) return res.json({orders:[]});
+  const detail=await fetch(`${base}/orders/${orders[0].orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.json());
+  res.json({first_order:orders[0],detail});
+});
