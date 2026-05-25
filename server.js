@@ -1,4 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v3.6
+// Hill Country Hospitality — RIC Proxy Server v3.7
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -25,8 +25,6 @@ const QB_SCOPES            = "com.intuit.quickbooks.accounting";
 const MC_API_KEY           = process.env.MAILCHIMP_API_KEY;
 const MC_SERVER            = process.env.MAILCHIMP_SERVER;
 const MC_AUDIENCE_ID       = process.env.MAILCHIMP_AUDIENCE_ID;
-
-// Railway API — for persisting QB refresh token
 const RAILWAY_API_TOKEN      = process.env.RAILWAY_API_TOKEN;
 const RAILWAY_PROJECT_ID     = process.env.RAILWAY_PROJECT_ID;
 const RAILWAY_SERVICE_ID     = process.env.RAILWAY_SERVICE_ID;
@@ -62,8 +60,6 @@ async function fetchWithRetry(url, options = {}, retries = 1, delayMs = 1000) {
 }
 
 // ── Railway token persistence ─────────────────────────────────────────────────
-// Writes the new QB_REFRESH_TOKEN back to Railway env vars so it survives restarts.
-// Fires asynchronously after every successful token refresh — never blocks the request.
 async function persistQBRefreshToken(newToken) {
   if (!RAILWAY_API_TOKEN || !RAILWAY_PROJECT_ID || !RAILWAY_SERVICE_ID || !RAILWAY_ENVIRONMENT_ID) {
     console.warn("Railway credentials not fully set — QB_REFRESH_TOKEN will not persist across restarts");
@@ -74,29 +70,18 @@ async function persistQBRefreshToken(newToken) {
       variableCollectionUpsert(input: $input)
     }
   `;
-  const variables = {
-    input: {
-      projectId:     RAILWAY_PROJECT_ID,
-      serviceId:     RAILWAY_SERVICE_ID,
-      environmentId: RAILWAY_ENVIRONMENT_ID,
-      variables: { QB_REFRESH_TOKEN: newToken },
-    },
-  };
   try {
     const res = await fetch("https://backboard.railway.app/graphql/v2", {
       method: "POST",
-      headers: {
-        "Content-Type":  "application/json",
-        "Authorization": `Bearer ${RAILWAY_API_TOKEN}`,
-      },
-      body: JSON.stringify({ query: mutation, variables }),
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RAILWAY_API_TOKEN}` },
+      body: JSON.stringify({ query: mutation, variables: { input: {
+        projectId: RAILWAY_PROJECT_ID, serviceId: RAILWAY_SERVICE_ID,
+        environmentId: RAILWAY_ENVIRONMENT_ID, variables: { QB_REFRESH_TOKEN: newToken },
+      }}}),
     });
     const data = await res.json();
-    if (data.errors) {
-      console.error("Railway token persist failed:", JSON.stringify(data.errors));
-    } else {
-      console.log("QB_REFRESH_TOKEN persisted to Railway successfully");
-    }
+    if (data.errors) console.error("Railway token persist failed:", JSON.stringify(data.errors));
+    else console.log("QB_REFRESH_TOKEN persisted to Railway successfully");
   } catch (err) {
     console.error("Railway token persist error:", err.message);
   }
@@ -111,17 +96,12 @@ let qbState = {
   lastSyncTime:   null,
 };
 
-// ── QuickBooks auth ───────────────────────────────────────────────────────────
 async function qbRefreshAccessToken() {
   if (!qbState.refreshToken) throw new Error("No QB refresh token — visit /auth/quickbooks");
   const creds = Buffer.from(`${QB_CLIENT_ID}:${QB_CLIENT_SECRET}`).toString("base64");
   const res = await fetchWithRetry("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
     method: "POST",
-    headers: {
-      "Authorization": `Basic ${creds}`,
-      "Content-Type":  "application/x-www-form-urlencoded",
-      "Accept":        "application/json",
-    },
+    headers: { "Authorization": `Basic ${creds}`, "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
     body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: qbState.refreshToken }),
   });
   const intuitTid = res.headers?.get("intuit_tid") || "unknown";
@@ -135,12 +115,7 @@ async function qbRefreshAccessToken() {
   qbState.refreshToken   = data.refresh_token;
   qbState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
   console.log(`QB token refreshed | intuit_tid: ${intuitTid}`);
-
-  // Persist the new refresh token to Railway asynchronously — don't await
-  persistQBRefreshToken(data.refresh_token).catch(err =>
-    console.error("Background token persist failed:", err.message)
-  );
-
+  persistQBRefreshToken(data.refresh_token).catch(err => console.error("Background token persist failed:", err.message));
   return qbState.accessToken;
 }
 
@@ -150,13 +125,10 @@ async function getQBToken() {
 }
 
 async function qbGet(endpoint) {
-  const token   = await getQBToken();
-  const realmId = qbState.realmId;
-  if (!realmId) throw new Error("QB Realm ID not set — visit /auth/quickbooks");
-  const url = `https://quickbooks.api.intuit.com/v3/company/${realmId}/${endpoint}&minorversion=65`;
-  const res = await fetchWithRetry(url, {
-    headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
-  });
+  const token = await getQBToken();
+  if (!qbState.realmId) throw new Error("QB Realm ID not set");
+  const url = `https://quickbooks.api.intuit.com/v3/company/${qbState.realmId}/${endpoint}&minorversion=65`;
+  const res = await fetchWithRetry(url, { headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" } });
   const intuitTid = res.headers?.get("intuit_tid") || "unknown";
   if (!res.ok) {
     const body = await res.text();
@@ -192,13 +164,10 @@ function acct(raw, ...keys) {
 
 function sum(...vals) { return vals.reduce((a, v) => a + (v || 0), 0); }
 
-// ── QuickBooks fetch ──────────────────────────────────────────────────────────
 async function fetchQuickBooks(startDate, endDate) {
   const [plRes, cdcRes] = await Promise.allSettled([
     qbGet(`reports/ProfitAndLoss?start_date=${startDate}&end_date=${endDate}&accounting_method=Accrual&`),
-    qbState.lastSyncTime
-      ? qbGet(`cdc?entities=Invoice,Bill,JournalEntry,Payment,Purchase&changedSince=${qbState.lastSyncTime}&`)
-      : Promise.resolve(null),
+    qbState.lastSyncTime ? qbGet(`cdc?entities=Invoice,Bill,JournalEntry,Payment,Purchase&changedSince=${qbState.lastSyncTime}&`) : Promise.resolve(null),
   ]);
   qbState.lastSyncTime = new Date().toISOString();
   if (plRes.status === "rejected") throw new Error("QB P&L unavailable: " + plRes.reason);
@@ -206,15 +175,12 @@ async function fetchQuickBooks(startDate, endDate) {
   const cdc = cdcRes.status === "fulfilled" ? cdcRes.value : null;
 
   const income = {
-    food_sales: acct(raw,"4105"), liquor_sales: acct(raw,"4110"),
-    beer_sales: acct(raw,"4115"), wine_sales: acct(raw,"4120"),
-    na_bev_sales: acct(raw,"4125"), retail_sales: acct(raw,"4130"),
-    misc_sales: acct(raw,"4140"), banquet_admin: acct(raw,"4145"),
-    ticket_sales: acct(raw,"4150"), catering_food: acct(raw,"4155"),
-    catering_na_bev: acct(raw,"4156"), banquet_na_bev: acct(raw,"4193"),
-    banquet_food: acct(raw,"4194"), banquet_liquor: acct(raw,"4196"),
-    banquet_beer: acct(raw,"4197"), banquet_wine: acct(raw,"4198"),
-    transport_fee: acct(raw,"4200"), discounts_comps: acct(raw,"4500"),
+    food_sales: acct(raw,"4105"), liquor_sales: acct(raw,"4110"), beer_sales: acct(raw,"4115"),
+    wine_sales: acct(raw,"4120"), na_bev_sales: acct(raw,"4125"), retail_sales: acct(raw,"4130"),
+    misc_sales: acct(raw,"4140"), banquet_admin: acct(raw,"4145"), ticket_sales: acct(raw,"4150"),
+    catering_food: acct(raw,"4155"), catering_na_bev: acct(raw,"4156"), banquet_na_bev: acct(raw,"4193"),
+    banquet_food: acct(raw,"4194"), banquet_liquor: acct(raw,"4196"), banquet_beer: acct(raw,"4197"),
+    banquet_wine: acct(raw,"4198"), transport_fee: acct(raw,"4200"), discounts_comps: acct(raw,"4500"),
   };
   income.total_sales = sum(
     income.food_sales, income.liquor_sales, income.beer_sales, income.wine_sales,
@@ -233,17 +199,10 @@ async function fetchQuickBooks(startDate, endDate) {
   cogs.food  = sum(cogs.meat, cogs.produce, cogs.grocery, cogs.bakery, cogs.dairy);
   cogs.total = sum(cogs.food, cogs.bar_grocery, cogs.liquor, cogs.beer, cogs.wine, cogs.na_bev, cogs.packaging);
 
-  const foh = {
-    bartender: acct(raw,"5205-1"), bar_back: acct(raw,"5205-2"),
-    busser: acct(raw,"5205-3"), host: acct(raw,"5205-7"),
-    server: acct(raw,"5205-8"), training: acct(raw,"5205-9"),
-  };
+  const foh = { bartender: acct(raw,"5205-1"), bar_back: acct(raw,"5205-2"), busser: acct(raw,"5205-3"), host: acct(raw,"5205-7"), server: acct(raw,"5205-8"), training: acct(raw,"5205-9") };
   foh.total = sum(foh.bartender, foh.bar_back, foh.busser, foh.host, foh.server, foh.training);
 
-  const boh = {
-    prep: acct(raw,"5210-1"), dishwasher_porter: acct(raw,"5210-2"),
-    line_cook: acct(raw,"5210-3"), chef: acct(raw,"5210-5"), sous_chef: acct(raw,"5210-6"),
-  };
+  const boh = { prep: acct(raw,"5210-1"), dishwasher_porter: acct(raw,"5210-2"), line_cook: acct(raw,"5210-3"), chef: acct(raw,"5210-5"), sous_chef: acct(raw,"5210-6") };
   boh.total = sum(boh.prep, boh.dishwasher_porter, boh.line_cook, boh.chef, boh.sous_chef);
 
   const mgmt = { admin: acct(raw,"5215"), manager_salary: acct(raw,"5220-2"), labor_other: acct(raw,"5230") };
@@ -251,9 +210,8 @@ async function fetchQuickBooks(startDate, endDate) {
   const direct_labor = sum(foh.total, boh.total, mgmt.total);
 
   const labor_related = {
-    commission: acct(raw,"5310"), payroll_fica: acct(raw,"5315-1"),
-    payroll_sui: acct(raw,"5315-2"), payroll_fui: acct(raw,"5315-3"),
-    payroll_mta: acct(raw,"5315-4"), health_insurance: acct(raw,"5320"),
+    commission: acct(raw,"5310"), payroll_fica: acct(raw,"5315-1"), payroll_sui: acct(raw,"5315-2"),
+    payroll_fui: acct(raw,"5315-3"), payroll_mta: acct(raw,"5315-4"), health_insurance: acct(raw,"5320"),
     workers_comp: acct(raw,"5325"), disability_ins: acct(raw,"5330"), epli_insurance: acct(raw,"5350"),
   };
   labor_related.total = sum(
@@ -264,88 +222,45 @@ async function fetchQuickBooks(startDate, endDate) {
   const total_labor = sum(direct_labor, labor_related.total);
 
   const direct_ops = {
-    cash_over_under: acct(raw,"6105"), equipment_lease: acct(raw,"6110"),
-    cleaning_supplies: acct(raw,"6115"), restaurant_supplies: acct(raw,"6125"),
-    laundry: acct(raw,"6135"), smallwares: acct(raw,"6150"),
-    wood_supplies: acct(raw,"6175"), delivery_expense: acct(raw,"6180"),
-    catering_rental: acct(raw,"6185"), music_dj: acct(raw,"6305"),
+    cash_over_under: acct(raw,"6105"), equipment_lease: acct(raw,"6110"), cleaning_supplies: acct(raw,"6115"),
+    restaurant_supplies: acct(raw,"6125"), laundry: acct(raw,"6135"), smallwares: acct(raw,"6150"),
+    wood_supplies: acct(raw,"6175"), delivery_expense: acct(raw,"6180"), catering_rental: acct(raw,"6185"), music_dj: acct(raw,"6305"),
   };
-  direct_ops.total = sum(
-    direct_ops.cash_over_under, direct_ops.equipment_lease, direct_ops.cleaning_supplies,
-    direct_ops.restaurant_supplies, direct_ops.laundry, direct_ops.smallwares,
-    direct_ops.wood_supplies, direct_ops.delivery_expense, direct_ops.catering_rental, direct_ops.music_dj
-  );
+  direct_ops.total = sum(direct_ops.cash_over_under, direct_ops.equipment_lease, direct_ops.cleaning_supplies, direct_ops.restaurant_supplies, direct_ops.laundry, direct_ops.smallwares, direct_ops.wood_supplies, direct_ops.delivery_expense, direct_ops.catering_rental, direct_ops.music_dj);
 
   const transaction_expenses = {
-    cc_fees: acct(raw,"6205"), reservation_system: acct(raw,"6210"),
-    third_party_commissions: acct(raw,"6215"), late_fees: acct(raw,"6220"), chargeback: acct(raw,"6615"),
+    cc_fees: acct(raw,"6205"), reservation_system: acct(raw,"6210"), third_party_commissions: acct(raw,"6215"), late_fees: acct(raw,"6220"), chargeback: acct(raw,"6615"),
   };
-  transaction_expenses.total = sum(
-    transaction_expenses.cc_fees, transaction_expenses.reservation_system,
-    transaction_expenses.third_party_commissions, transaction_expenses.late_fees, transaction_expenses.chargeback
-  );
+  transaction_expenses.total = sum(transaction_expenses.cc_fees, transaction_expenses.reservation_system, transaction_expenses.third_party_commissions, transaction_expenses.late_fees, transaction_expenses.chargeback);
 
-  const marketing = {
-    marketing_advertising: acct(raw,"6250"), marketing_pr: acct(raw,"6255"),
-    advertising_promotions: acct(raw,"6260"), stationary_printing: acct(raw,"6580"),
-  };
-  marketing.total = sum(
-    marketing.marketing_advertising, marketing.marketing_pr,
-    marketing.advertising_promotions, marketing.stationary_printing
-  );
+  const marketing = { marketing_advertising: acct(raw,"6250"), marketing_pr: acct(raw,"6255"), advertising_promotions: acct(raw,"6260"), stationary_printing: acct(raw,"6580") };
+  marketing.total = sum(marketing.marketing_advertising, marketing.marketing_pr, marketing.advertising_promotions, marketing.stationary_printing);
 
   const ga_expenses = {
-    research_development: acct(raw,"6450"), accounting_bookkeeping: acct(raw,"6505"),
-    recruiting: acct(raw,"6512"), legal: acct(raw,"6520"), payroll_processing: acct(raw,"6525"),
-    computer_software_it: acct(raw,"6535"), dues_subscriptions: acct(raw,"6550"),
-    bank_charges: acct(raw,"6560"), license_permits: acct(raw,"6570"),
-    office_supplies: acct(raw,"6575"), postage: acct(raw,"6585","6603"),
-    liability_insurance: acct(raw,"6590"), penalties_settlements: acct(raw,"6600"),
-    phone_internet: acct(raw,"6605"),
+    research_development: acct(raw,"6450"), accounting_bookkeeping: acct(raw,"6505"), recruiting: acct(raw,"6512"),
+    legal: acct(raw,"6520"), payroll_processing: acct(raw,"6525"), computer_software_it: acct(raw,"6535"),
+    dues_subscriptions: acct(raw,"6550"), bank_charges: acct(raw,"6560"), license_permits: acct(raw,"6570"),
+    office_supplies: acct(raw,"6575"), postage: acct(raw,"6585","6603"), liability_insurance: acct(raw,"6590"),
+    penalties_settlements: acct(raw,"6600"), phone_internet: acct(raw,"6605"),
   };
-  ga_expenses.total = sum(
-    ga_expenses.research_development, ga_expenses.accounting_bookkeeping, ga_expenses.recruiting,
-    ga_expenses.legal, ga_expenses.payroll_processing, ga_expenses.computer_software_it,
-    ga_expenses.dues_subscriptions, ga_expenses.bank_charges, ga_expenses.license_permits,
-    ga_expenses.office_supplies, ga_expenses.postage, ga_expenses.liability_insurance,
-    ga_expenses.penalties_settlements, ga_expenses.phone_internet
-  );
+  ga_expenses.total = sum(ga_expenses.research_development, ga_expenses.accounting_bookkeeping, ga_expenses.recruiting, ga_expenses.legal, ga_expenses.payroll_processing, ga_expenses.computer_software_it, ga_expenses.dues_subscriptions, ga_expenses.bank_charges, ga_expenses.license_permits, ga_expenses.office_supplies, ga_expenses.postage, ga_expenses.liability_insurance, ga_expenses.penalties_settlements, ga_expenses.phone_internet);
 
-  const travel_meals = {
-    travel_transport: acct(raw,"6705"), meals_entertainment: acct(raw,"6710"), parking: acct(raw,"6720"),
-  };
+  const travel_meals = { travel_transport: acct(raw,"6705"), meals_entertainment: acct(raw,"6710"), parking: acct(raw,"6720") };
   travel_meals.total = sum(travel_meals.travel_transport, travel_meals.meals_entertainment, travel_meals.parking);
 
-  const repair_maintenance = {
-    equipment: acct(raw,"6810"), pest_control: acct(raw,"6820"),
-    fire_control: acct(raw,"6825"), facility_supplies: acct(raw,"6835"),
-  };
-  repair_maintenance.total = sum(
-    repair_maintenance.equipment, repair_maintenance.pest_control,
-    repair_maintenance.fire_control, repair_maintenance.facility_supplies
-  );
+  const repair_maintenance = { equipment: acct(raw,"6810"), pest_control: acct(raw,"6820"), fire_control: acct(raw,"6825"), facility_supplies: acct(raw,"6835") };
+  repair_maintenance.total = sum(repair_maintenance.equipment, repair_maintenance.pest_control, repair_maintenance.fire_control, repair_maintenance.facility_supplies);
 
-  const total_controllable = sum(
-    direct_ops.total, transaction_expenses.total, marketing.total,
-    ga_expenses.total, travel_meals.total, repair_maintenance.total
-  );
+  const total_controllable  = sum(direct_ops.total, transaction_expenses.total, marketing.total, ga_expenses.total, travel_meals.total, repair_maintenance.total);
 
   const property_expenses = {
-    rent_lease: acct(raw,"7105"), common_area_maint: acct(raw,"7111"),
-    property_re_tax: acct(raw,"7115"), property_insurance: acct(raw,"7120"),
-    utility_electricity: acct(raw,"7125"), utility_gas: acct(raw,"7130"),
+    rent_lease: acct(raw,"7105"), common_area_maint: acct(raw,"7111"), property_re_tax: acct(raw,"7115"),
+    property_insurance: acct(raw,"7120"), utility_electricity: acct(raw,"7125"), utility_gas: acct(raw,"7130"),
     utility_trash: acct(raw,"7135"), utility_water_sewage: acct(raw,"7140"),
   };
-  property_expenses.total = sum(
-    property_expenses.rent_lease, property_expenses.common_area_maint,
-    property_expenses.property_re_tax, property_expenses.property_insurance,
-    property_expenses.utility_electricity, property_expenses.utility_gas,
-    property_expenses.utility_trash, property_expenses.utility_water_sewage
-  );
+  property_expenses.total = sum(property_expenses.rent_lease, property_expenses.common_area_maint, property_expenses.property_re_tax, property_expenses.property_insurance, property_expenses.utility_electricity, property_expenses.utility_gas, property_expenses.utility_trash, property_expenses.utility_water_sewage);
 
-  const other_expenses = {
-    other_income_expense: acct(raw,"8130"), corporate_overhead: acct(raw,"8510"),
-  };
+  const other_expenses = { other_income_expense: acct(raw,"8130"), corporate_overhead: acct(raw,"8510") };
   other_expenses.total = sum(other_expenses.other_income_expense, other_expenses.corporate_overhead);
 
   const total_non_controllable = sum(property_expenses.total, other_expenses.total);
@@ -397,37 +312,125 @@ async function fetchMailchimp() {
   let emails_sent_30d=0,opens_30d=0,clicks_30d=0,subs_30d=0,unsubs_30d=0;
   for (const day of activity.activity || []) {
     if (new Date(day.day) >= thirtyDaysAgo) {
-      emails_sent_30d += day.emails_sent      || 0;
-      opens_30d       += day.unique_opens     || 0;
-      clicks_30d      += day.recipient_clicks || 0;
-      subs_30d        += day.subs             || 0;
-      unsubs_30d      += day.unsubs           || 0;
+      emails_sent_30d += day.emails_sent || 0; opens_30d += day.unique_opens || 0;
+      clicks_30d += day.recipient_clicks || 0; subs_30d += day.subs || 0; unsubs_30d += day.unsubs || 0;
     }
   }
-
   const toPercent = (v) => v != null ? +(v * 100).toFixed(1) : null;
-
   return {
-    audience_name:      list.name,
-    total_subscribers:  stats.member_count        || 0,
-    open_rate_avg:      toPercent(stats.open_rate),
-    click_rate_avg:     toPercent(stats.click_rate),
-    unsubscribe_rate:   toPercent(stats.unsubscribe_rate),
+    audience_name: list.name, total_subscribers: stats.member_count || 0,
+    open_rate_avg: toPercent(stats.open_rate), click_rate_avg: toPercent(stats.click_rate),
+    unsubscribe_rate: toPercent(stats.unsubscribe_rate),
     emails_sent_30d, opens_30d, clicks_30d, subs_30d, unsubs_30d,
-    open_rate_30d:      emails_sent_30d > 0 ? +((opens_30d  / emails_sent_30d) * 100).toFixed(1) : null,
-    click_rate_30d:     emails_sent_30d > 0 ? +((clicks_30d / emails_sent_30d) * 100).toFixed(1) : null,
+    open_rate_30d: emails_sent_30d > 0 ? +((opens_30d/emails_sent_30d)*100).toFixed(1) : null,
+    click_rate_30d: emails_sent_30d > 0 ? +((clicks_30d/emails_sent_30d)*100).toFixed(1) : null,
     net_list_growth_30d: subs_30d - unsubs_30d,
     recent_campaigns: (campaigns.campaigns || []).map(c => ({
-      subject:     c.settings?.subject_line || "—",
-      send_time:   c.send_time,
-      emails_sent: c.emails_sent || 0,
-      open_rate:   c.report_summary?.open_rate  != null ? +(c.report_summary.open_rate  * 100).toFixed(1) : null,
-      click_rate:  c.report_summary?.click_rate != null ? +(c.report_summary.click_rate * 100).toFixed(1) : null,
-      opens:       c.report_summary?.unique_opens        || 0,
-      clicks:      c.report_summary?.subscriber_clicks   || 0,
+      subject: c.settings?.subject_line || "—", send_time: c.send_time, emails_sent: c.emails_sent || 0,
+      open_rate: c.report_summary?.open_rate != null ? +(c.report_summary.open_rate*100).toFixed(1) : null,
+      click_rate: c.report_summary?.click_rate != null ? +(c.report_summary.click_rate*100).toFixed(1) : null,
+      opens: c.report_summary?.unique_opens || 0, clicks: c.report_summary?.subscriber_clicks || 0,
     })),
     data_as_of: nowET(),
   };
+}
+
+// ── Marqii via Anthropic MCP ──────────────────────────────────────────────────
+// Daily cache to avoid repeated MCP calls
+let marqiiCache = { data: null, date: null };
+
+async function fetchMarqii() {
+  const todayStr = today();
+
+  // Return cached data if already fetched today
+  if (marqiiCache.date === todayStr && marqiiCache.data) {
+    console.log("Marqii: returning cached data for", todayStr);
+    return marqiiCache.data;
+  }
+
+  const MARQII_MCP_URL = "https://mcp.marqii.com/mcp";
+  const STORE_ID = "26e60efb-a499-4c6c-9cc0-fed312468e0b";
+
+  const prompt = `You are a data extraction assistant. Use the Marqii MCP tools to fetch reputation data for Hill Country Barbecue Market (store ID: ${STORE_ID}) and return ONLY a JSON object with no preamble, no markdown, no backticks.
+
+Call these tools in order:
+1. marqii_get_review_insights_store_performances_by_rating with period="last_30d" and storeIds=["${STORE_ID}"]
+2. marqii_list_reviews with storeIds=["${STORE_ID}"], sortByDate="desc", pageSize=10, withComment=true
+
+Return this exact JSON structure:
+{
+  "avg_rating": <number>,
+  "previous_avg_rating": <number>,
+  "total_reviews_30d": <number>,
+  "reply_rate": <number>,
+  "reply_time_hours": <number>,
+  "reviews_by_rating": {
+    "1": <count>, "2": <count>, "3": <count>, "4": <count>, "5": <count>
+  },
+  "recent_negative_reviews": [
+    {
+      "rating": <number>,
+      "reviewer": "<name>",
+      "date": "<YYYY-MM-DD>",
+      "comment": "<full text>",
+      "replied": <boolean>,
+      "provider": "<Google|Yelp|OpenTable>"
+    }
+  ],
+  "sentiment": {
+    "food": <score>,
+    "service": <score>,
+    "experience": <score>
+  },
+  "unanswered_count": <number>
+}
+
+For recent_negative_reviews include only reviews rated 1-3 stars from the last 30 days, up to 5 most recent.
+Return ONLY the JSON. No other text.`;
+
+  const res = await fetchWithRetry("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type":  "application/json",
+      "x-api-key":     process.env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model:      "claude-sonnet-4-5",
+      max_tokens: 2000,
+      messages:   [{ role: "user", content: prompt }],
+      mcp_servers: [{
+        type: "url",
+        url:  MARQII_MCP_URL,
+        name: "marqii",
+      }],
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Marqii MCP call failed: ${res.status} | ${body}`);
+  }
+
+  const apiData = await res.json();
+
+  // Extract text from response content blocks
+  const textBlocks = (apiData.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+
+  if (!textBlocks) throw new Error("Marqii: no text content in response");
+
+  // Clean and parse JSON
+  const cleaned = textBlocks.replace(/```json|```/g, "").trim();
+  const parsed  = JSON.parse(cleaned);
+
+  // Add metadata
+  parsed.data_as_of = nowET();
+
+  // Cache for today
+  marqiiCache = { data: parsed, date: todayStr };
+  console.log(`Marqii: fetched live data, avg_rating=${parsed.avg_rating}, reviews=${parsed.total_reviews_30d}`);
+
+  return parsed;
 }
 
 // ── GoTab auth ────────────────────────────────────────────────────────────────
@@ -488,23 +491,23 @@ function normalizeGoTab(tabs) {
 
 // ── 7Shifts ───────────────────────────────────────────────────────────────────
 async function fetch7Shifts(date) {
-  const headers={
-    "Authorization":`Bearer ${SHIFTS_TOKEN}`,"Content-Type":"application/json",
-    ...(SHIFTS_COMPANY_GUID?{"x-company-guid":SHIFTS_COMPANY_GUID}:{}),
+  const headers = {
+    "Authorization": `Bearer ${SHIFTS_TOKEN}`, "Content-Type": "application/json",
+    ...(SHIFTS_COMPANY_GUID ? {"x-company-guid": SHIFTS_COMPANY_GUID} : {}),
   };
-  const base=`https://api.7shifts.com/v2/company/${SHIFTS_COMPANY_ID}`;
-  const [sRes,pRes]=await Promise.all([
-    fetchWithRetry(`${base}/shifts?location_id=${SHIFTS_LOCATION_ID}&start=${date}T00:00:00&end=${date}T23:59:59&limit=200`,{headers}),
-    fetchWithRetry(`${base}/time_punches?location_id=${SHIFTS_LOCATION_ID}&clocked_in_gte=${date}T00:00:00&clocked_in_lte=${date}T23:59:59&limit=200`,{headers}),
+  const base = `https://api.7shifts.com/v2/company/${SHIFTS_COMPANY_ID}`;
+  const [sRes,pRes] = await Promise.all([
+    fetchWithRetry(`${base}/shifts?location_id=${SHIFTS_LOCATION_ID}&start=${date}T00:00:00&end=${date}T23:59:59&limit=200`, {headers}),
+    fetchWithRetry(`${base}/time_punches?location_id=${SHIFTS_LOCATION_ID}&clocked_in_gte=${date}T00:00:00&clocked_in_lte=${date}T23:59:59&limit=200`, {headers}),
   ]);
-  if(!sRes.ok) throw new Error(`7Shifts shifts failed: ${sRes.status}`);
-  if(!pRes.ok) throw new Error(`7Shifts punches failed: ${pRes.status}`);
+  if (!sRes.ok) throw new Error(`7Shifts shifts failed: ${sRes.status}`);
+  if (!pRes.ok) throw new Error(`7Shifts punches failed: ${pRes.status}`);
   const shifts=(await sRes.json()).data||[],punches=(await pRes.json()).data||[];
   let sh=0,ah=0,lc=0,oh=0,ns=0;
-  for(const s of shifts) sh+=(new Date(s.end)-new Date(s.start))/3600000;
-  for(const p of punches){if(p.clocked_in&&p.clocked_out){const h=(new Date(p.clocked_out)-new Date(p.clocked_in))/3600000;ah+=h;if(p.wage_cents) lc+=(h*p.wage_cents)/100;if(h>8) oh+=h-8;}}
+  for (const s of shifts) sh+=(new Date(s.end)-new Date(s.start))/3600000;
+  for (const p of punches) { if(p.clocked_in&&p.clocked_out){const h=(new Date(p.clocked_out)-new Date(p.clocked_in))/3600000;ah+=h;if(p.wage_cents) lc+=(h*p.wage_cents)/100;if(h>8) oh+=h-8;}}
   const pi=new Set(punches.map(p=>p.user_id));
-  for(const s of shifts) if(s.user_id&&!pi.has(s.user_id)) ns++;
+  for (const s of shifts) if(s.user_id&&!pi.has(s.user_id)) ns++;
   return {scheduled_hours:+sh.toFixed(1),actual_hours:+ah.toFixed(1),labor_cost:+lc.toFixed(2),labor_pct:null,overtime_hours:+oh.toFixed(1),no_shows:ns,shift_count:shifts.length,punch_count:punches.length,data_as_of:nowET()};
 }
 
@@ -525,30 +528,30 @@ function bucketCogs(cogs,cat,amt){
 }
 
 async function fetchMarginEdge(date) {
-  const headers={"X-Api-Key":MARGINEDGE_API_KEY,"Accept":"application/json"};
-  const base="https://api.marginedge.com/public",rid=MARGINEDGE_TENANT_ID;
-  const ordersRes=await fetchWithRetry(`${base}/orders?restaurantUnitId=${rid}&startDate=${date}&endDate=${date}&orderStatus=CLOSED`,{headers});
-  if(!ordersRes.ok) throw new Error(`MarginEdge orders failed: ${ordersRes.status}`);
-  const ordersJson=await ordersRes.json();
-  const orders=ordersJson.orders||ordersJson.data||(Array.isArray(ordersJson)?ordersJson:[]);
-  const cogs={food:0,meat:0,produce:0,dairy:0,grocery:0,liquor:0,beer:0,wine:0,na_bev:0,paper:0,supplies:0,other:0,total:0};
-  const details=await Promise.all(orders.slice(0,20).map(o=>fetchWithRetry(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.ok?r.json():null).catch(()=>null)));
-  for(let i=0;i<details.length;i++){
+  const headers = {"X-Api-Key": MARGINEDGE_API_KEY, "Accept": "application/json"};
+  const base = "https://api.marginedge.com/public", rid = MARGINEDGE_TENANT_ID;
+  const ordersRes = await fetchWithRetry(`${base}/orders?restaurantUnitId=${rid}&startDate=${date}&endDate=${date}&orderStatus=CLOSED`, {headers});
+  if (!ordersRes.ok) throw new Error(`MarginEdge orders failed: ${ordersRes.status}`);
+  const ordersJson = await ordersRes.json();
+  const orders = ordersJson.orders||ordersJson.data||(Array.isArray(ordersJson)?ordersJson:[]);
+  const cogs = {food:0,meat:0,produce:0,dairy:0,grocery:0,liquor:0,beer:0,wine:0,na_bev:0,paper:0,supplies:0,other:0,total:0};
+  const details = await Promise.all(orders.slice(0,20).map(o=>fetchWithRetry(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.ok?r.json():null).catch(()=>null)));
+  for (let i=0;i<details.length;i++) {
     const d=details[i],o=orders[i];
-    if(!d){const a=parseFloat(o.orderTotal||0);if(a){cogs.total+=a;cogs.other+=a;}continue;}
+    if (!d){const a=parseFloat(o.orderTotal||0);if(a){cogs.total+=a;cogs.other+=a;}continue;}
     const lines=d.lineItems||d.line_items||d.items||d.orderItems||[];
-    if(!lines.length){const a=parseFloat(d.orderTotal||o.orderTotal||0);if(a){cogs.total+=a;bucketCogs(cogs,d.vendorName||o.vendorName||"",a);}continue;}
-    for(const l of lines){const cat=l.category||l.categoryName||l.category_name||l.categoryType||"";const a=parseFloat(l.extendedCost||l.extended_cost||l.amount||l.total||l.cost||l.lineTotal||0);if(!a) continue;cogs.total+=a;bucketCogs(cogs,cat,a);}
+    if (!lines.length){const a=parseFloat(d.orderTotal||o.orderTotal||0);if(a){cogs.total+=a;bucketCogs(cogs,d.vendorName||o.vendorName||"",a);}continue;}
+    for (const l of lines){const cat=l.category||l.categoryName||l.category_name||l.categoryType||"";const a=parseFloat(l.extendedCost||l.extended_cost||l.amount||l.total||l.cost||l.lineTotal||0);if(!a) continue;cogs.total+=a;bucketCogs(cogs,cat,a);}
   }
-  for(const k of Object.keys(cogs)) cogs[k]=+cogs[k].toFixed(2);
+  for (const k of Object.keys(cogs)) cogs[k]=+cogs[k].toFixed(2);
   return {invoice_count:orders.length,pending_invoices:0,cogs,food_cost_pct:null,total_cogs_pct:null,data_as_of:nowET()};
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 app.get("/auth/quickbooks",(req,res)=>{
-  if(!QB_CLIENT_ID) return res.status(500).send("QB_CLIENT_ID not set.");
-  const url=new URL("https://appcenter.intuit.com/connect/oauth2");
+  if (!QB_CLIENT_ID) return res.status(500).send("QB_CLIENT_ID not set.");
+  const url = new URL("https://appcenter.intuit.com/connect/oauth2");
   url.searchParams.set("client_id",QB_CLIENT_ID);url.searchParams.set("redirect_uri",QB_REDIRECT_URI);
   url.searchParams.set("response_type","code");url.searchParams.set("scope",QB_SCOPES);
   url.searchParams.set("state",Math.random().toString(36).slice(2));
@@ -557,38 +560,31 @@ app.get("/auth/quickbooks",(req,res)=>{
 
 app.get("/auth/quickbooks/callback",async(req,res)=>{
   const{code,realmId,error}=req.query;
-  if(error) return res.send(`<h2>QB Auth Failed</h2><p>${error}</p>`);
-  if(!code||!realmId) return res.status(400).send("<h2>Missing code or realmId</h2>");
-  try{
-    const creds=Buffer.from(`${QB_CLIENT_ID}:${QB_CLIENT_SECRET}`).toString("base64");
-    const tokenRes=await fetchWithRetry("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",{method:"POST",headers:{"Authorization":`Basic ${creds}`,"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},body:new URLSearchParams({grant_type:"authorization_code",code,redirect_uri:QB_REDIRECT_URI})});
-    const intuitTid=tokenRes.headers?.get("intuit_tid")||"unknown";
-    if(!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>Token exchange failed</h2><p>${tokenRes.status}</p><pre>${body}</pre>`);}
-    const tokens=await tokenRes.json();
+  if (error) return res.send(`<h2>QB Auth Failed</h2><p>${error}</p>`);
+  if (!code||!realmId) return res.status(400).send("<h2>Missing code or realmId</h2>");
+  try {
+    const creds = Buffer.from(`${QB_CLIENT_ID}:${QB_CLIENT_SECRET}`).toString("base64");
+    const tokenRes = await fetchWithRetry("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",{method:"POST",headers:{"Authorization":`Basic ${creds}`,"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},body:new URLSearchParams({grant_type:"authorization_code",code,redirect_uri:QB_REDIRECT_URI})});
+    const intuitTid = tokenRes.headers?.get("intuit_tid")||"unknown";
+    if (!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>Token exchange failed</h2><p>${tokenRes.status}</p><pre>${body}</pre>`);}
+    const tokens = await tokenRes.json();
     qbState.accessToken=tokens.access_token;qbState.refreshToken=tokens.refresh_token;
     qbState.realmId=realmId;qbState.tokenExpiresAt=Date.now()+(tokens.expires_in-60)*1000;
-    // Persist immediately on fresh OAuth
     await persistQBRefreshToken(tokens.refresh_token);
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Token has been automatically saved to Railway. No manual copy needed.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN (saved automatically)</div><div class="value">${tokens.refresh_token}</div></div><div class="step">✓ Token persisted to Railway. Verify: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div><div class="warn">⚠️ Close this tab. The token rotates automatically going forward.</div></body></html>`);
-  }catch(err){res.status(500).send(`<h2>Callback error</h2><pre>${err.message}</pre>`);}
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Token automatically saved to Railway.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN (saved automatically)</div><div class="value">${tokens.refresh_token}</div></div><div class="step">✓ Token persisted. Verify: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div><div class="warn">⚠️ Close this tab. Token rotates automatically going forward.</div></body></html>`);
+  } catch(err){res.status(500).send(`<h2>Callback error</h2><pre>${err.message}</pre>`);}
 });
 
 app.get("/api/quickbooks/status",(_req,res)=>{
-  res.json({
-    ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,
-    tokenValid:Date.now()<qbState.tokenExpiresAt,
-    tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,
-    lastSyncTime:qbState.lastSyncTime,
-    railwayPersistenceEnabled:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
-  });
+  res.json({ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,tokenValid:Date.now()<qbState.tokenExpiresAt,tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,lastSyncTime:qbState.lastSyncTime,railwayPersistenceEnabled:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID)});
 });
 
 app.get("/api/quickbooks",async(req,res)=>{
-  try{
-    if(!qbState.refreshToken) return res.status(401).json({ok:false,error:"Not authorized — visit /auth/quickbooks"});
+  try {
+    if (!qbState.refreshToken) return res.status(401).json({ok:false,error:"Not authorized — visit /auth/quickbooks"});
     const start=req.query.start||today(),end=req.query.end||today();
     res.json({ok:true,source:"quickbooks_live",start,end,...await fetchQuickBooks(start,end)});
-  }catch(err){console.error("QB error:",err.message);res.status(500).json({ok:false,error:err.message});}
+  } catch(err){console.error("QB error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
 app.get("/api/mailchimp",async(req,res)=>{
@@ -596,25 +592,37 @@ app.get("/api/mailchimp",async(req,res)=>{
   catch(err){console.error("Mailchimp error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
+app.get("/api/marqii",async(req,res)=>{
+  try {
+    // Allow cache bust via ?refresh=1
+    if (req.query.refresh) marqiiCache = { data: null, date: null };
+    const data = await fetchMarqii();
+    res.json({ok:true,source:"marqii_live",...data});
+  } catch(err){
+    console.error("Marqii error:",err.message);
+    res.status(500).json({ok:false,error:err.message});
+  }
+});
+
 app.get("/api/gotab/streams",async(req,res)=>{
-  try{
+  try {
     const date=req.query.date||today(),token=await getGoTabToken();
     const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
     const gqlData=await gqlRes.json(),tabs=gqlData?.data?.locations?.[0]?.tabs||[],streams={};
-    for(const tab of tabs) for(const item of tab.items||[]){const g=item.accountingStream?.reportingGroup||"NONE",n=item.accountingStream?.name||"NONE",key=`${g} | ${n}`;if(!streams[key]) streams[key]={reportingGroup:g,name:n,count:0,subtotal_cents:0};streams[key].count++;streams[key].subtotal_cents+=item.subtotal||0;}
+    for (const tab of tabs) for (const item of tab.items||[]){const g=item.accountingStream?.reportingGroup||"NONE",n=item.accountingStream?.name||"NONE",key=`${g} | ${n}`;if(!streams[key]) streams[key]={reportingGroup:g,name:n,count:0,subtotal_cents:0};streams[key].count++;streams[key].subtotal_cents+=item.subtotal||0;}
     res.json({total_tabs:tabs.length,streams:Object.values(streams).sort((a,b)=>b.subtotal_cents-a.subtotal_cents)});
-  }catch(err){res.status(500).json({ok:false,error:err.message});}
+  } catch(err){res.status(500).json({ok:false,error:err.message});}
 });
 
 app.get("/api/gotab",async(req,res)=>{
-  try{
+  try {
     const date=req.query.date||today(),token=await getGoTabToken();
     const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
-    if(!gqlRes.ok) throw new Error(`GoTab GraphQL error: ${gqlRes.status}`);
+    if (!gqlRes.ok) throw new Error(`GoTab GraphQL error: ${gqlRes.status}`);
     const gqlData=await gqlRes.json();
-    if(gqlData.errors) throw new Error(gqlData.errors[0]?.message||"GraphQL error");
+    if (gqlData.errors) throw new Error(gqlData.errors[0]?.message||"GraphQL error");
     res.json({ok:true,source:"gotab_live",date,...normalizeGoTab(gqlData?.data?.locations?.[0]?.tabs||[])});
-  }catch(err){console.error("GoTab error:",err.message);res.status(500).json({ok:false,error:err.message});}
+  } catch(err){console.error("GoTab error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
 app.get("/api/7shifts",async(req,res)=>{
@@ -630,29 +638,29 @@ app.get("/api/marginedge",async(req,res)=>{
 app.get("/api/ric",async(req,res)=>{
   const date=req.query.date||today(),result={date,sources:{}};
 
-  try{
+  try {
     const token=await getGoTabToken();
     const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
     const tabs=(await gqlRes.json())?.data?.locations?.[0]?.tabs||[];
     result.gotab=normalizeGoTab(tabs);result.sources.gotab="live";
-  }catch(e){console.error("GoTab failed:",e.message);result.gotab=null;result.sources.gotab=`error: ${e.message}`;}
+  } catch(e){console.error("GoTab failed:",e.message);result.gotab=null;result.sources.gotab=`error: ${e.message}`;}
 
-  try{
+  try {
     const shifts=await fetch7Shifts(date);
     if(result.gotab?.net_sales&&shifts.labor_cost) shifts.labor_pct=+((shifts.labor_cost/result.gotab.net_sales)*100).toFixed(1);
     result["7shifts"]=shifts;result.sources["7shifts"]="live";
-  }catch(e){console.error("7Shifts failed:",e.message);result["7shifts"]=null;result.sources["7shifts"]=`error: ${e.message}`;}
+  } catch(e){console.error("7Shifts failed:",e.message);result["7shifts"]=null;result.sources["7shifts"]=`error: ${e.message}`;}
 
-  try{
+  try {
     const me=await fetchMarginEdge(date);
     if(result.gotab?.net_sales){
-      if(me.cogs?.food)  me.food_cost_pct =+((me.cogs.food/result.gotab.net_sales)*100).toFixed(1);
+      if(me.cogs?.food)  me.food_cost_pct=+((me.cogs.food/result.gotab.net_sales)*100).toFixed(1);
       if(me.cogs?.total) me.total_cogs_pct=+((me.cogs.total/result.gotab.net_sales)*100).toFixed(1);
     }
     result.marginedge=me;result.sources.marginedge="live";
-  }catch(e){console.error("MarginEdge failed:",e.message);result.marginedge=null;result.sources.marginedge=`error: ${e.message}`;}
+  } catch(e){console.error("MarginEdge failed:",e.message);result.marginedge=null;result.sources.marginedge=`error: ${e.message}`;}
 
-  try{
+  try {
     if(qbState.refreshToken&&qbState.realmId){
       const qb=await fetchQuickBooks(date,date);
       result.sources.quickbooks="live";
@@ -662,32 +670,33 @@ app.get("/api/ric",async(req,res)=>{
       if(hasRevenue||hasLabor||hasSignificantExpenses){
         if(result.gotab?.net_sales&&qb.total_labor) qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
         result.quickbooks=qb;
-      }else{result.quickbooks=null;console.log("QB excluded from daily report — sparse data");}
+      } else {result.quickbooks=null;console.log("QB excluded from daily report — sparse data");}
     }
-  }catch(e){console.error("QB failed:",e.message);result.quickbooks=null;result.sources.quickbooks=`error: ${e.message}`;}
+  } catch(e){console.error("QB failed:",e.message);result.quickbooks=null;result.sources.quickbooks=`error: ${e.message}`;}
 
-  try{
+  try {
     result.mailchimp=await fetchMailchimp();result.sources.mailchimp="live";
-  }catch(e){console.error("Mailchimp failed:",e.message);result.mailchimp=null;result.sources.mailchimp=`error: ${e.message}`;}
+  } catch(e){console.error("Mailchimp failed:",e.message);result.mailchimp=null;result.sources.mailchimp=`error: ${e.message}`;}
+
+  try {
+    result.marqii=await fetchMarqii();result.sources.marqii="live";
+  } catch(e){console.error("Marqii failed:",e.message);result.marqii=null;result.sources.marqii=`error: ${e.message}`;}
 
   res.json({ok:true,...result});
 });
 
 app.post("/api/claude",async(req,res)=>{
-  try{
+  try {
     const upstream=await fetchWithRetry("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({...req.body,stream:false})});
     res.json(await upstream.json());
-  }catch(err){console.error("Claude proxy error:",err.message);res.status(500).json({ok:false,error:err.message});}
+  } catch(err){console.error("Claude proxy error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-app.get("/health",(_req,res)=>res.json({
-  ok:true,service:"hch-ric-proxy",version:"3.6",
-  railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
-}));
+app.get("/health",(_req,res)=>res.json({ok:true,service:"hch-ric-proxy",version:"3.7",railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID)}));
 
 app.get("/",(_req,res)=>{
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate");
   res.sendFile(join(__dirname,"index.html"));
 });
 
-app.listen(PORT,()=>console.log(`RIC proxy v3.6 running on port ${PORT}`));
+app.listen(PORT,()=>console.log(`RIC proxy v3.7 running on port ${PORT}`));
