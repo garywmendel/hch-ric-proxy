@@ -99,7 +99,6 @@ h3.s-gm{color:#1D9E75!important}h3.s-anomaly{color:#cc0000!important}h3.s-market
 .disclaimer{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .chip{padding:6px 11px;border-radius:100px;font-size:12px;border:0.5px solid var(--b1);color:var(--t1);background:none;cursor:pointer;font-family:var(--font);min-height:34px;display:flex;align-items:center}
-.chip-marqii{border-color:var(--amber);color:var(--amber-t);background:var(--amber-bg);font-weight:500}
 .inp{width:100%;padding:10px 11px;font-size:14px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;min-height:44px}
 .inp:focus{outline:none;border-color:var(--b0)}
 textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
@@ -277,7 +276,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <button class="chip" onclick="setQ('How is our email marketing performing and what campaigns drive the most traffic?')">Email performance</button>
     <button class="chip" onclick="setQ('Where are our biggest hidden profit opportunities?')">Hidden opportunities</button>
     <button class="chip" onclick="setQ('What anomalies in today\'s data need immediate attention?')">Anomaly review</button>
-    <button class="chip chip-marqii" onclick="pullMarqii()">⭐ Marqii Reviews</button>
   </div>
   <div style="margin-bottom:14px">
     <textarea class="inp" id="qa-inp" placeholder="Ask any financial, operational, or strategic question..." style="margin-bottom:8px"></textarea>
@@ -792,21 +790,6 @@ async function askQ(){
 }
 
 function setQ(q){document.getElementById("qa-inp").value=q;document.getElementById("qa-inp").focus();}
-
-const MARQII_PROMPT=`Pull live Marqii reputation data for Hill Country BBQ New York (store ID: 26e60efb-a499-4c6c-9cc0-fed312468e0b) and return a structured summary covering:
-
-1. Last 30 days overview: avg rating, total reviews, vs prior period avg rating, reply rate, avg reply time
-2. Reviews by platform (Google, Yelp, OpenTable) and star rating breakdown
-3. The 5 most recent negative reviews (1-3 stars) with: reviewer name, date, platform, rating, full comment text, and whether it was replied to
-4. Sentiment scores by category: food, service, experience
-5. Any unanswered reviews that need a response
-6. Top 2-3 operational themes emerging from the negative reviews
-
-Format the response clearly for a GM reading it at 7am. Be specific and actionable.`;
-
-function pullMarqii(){
-  window.open(`https://claude.ai/new?q=${encodeURIComponent(MARQII_PROMPT)}`, '_blank');
-}
 function copyReport(){navigator.clipboard.writeText(lastReport).catch(()=>{});}
 function showTab(id,el){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
