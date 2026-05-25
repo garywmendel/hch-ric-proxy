@@ -1,4 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v3.5
+// Hill Country Hospitality — RIC Proxy Server v3.6
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -26,6 +26,12 @@ const MC_API_KEY           = process.env.MAILCHIMP_API_KEY;
 const MC_SERVER            = process.env.MAILCHIMP_SERVER;
 const MC_AUDIENCE_ID       = process.env.MAILCHIMP_AUDIENCE_ID;
 
+// Railway API — for persisting QB refresh token
+const RAILWAY_API_TOKEN      = process.env.RAILWAY_API_TOKEN;
+const RAILWAY_PROJECT_ID     = process.env.RAILWAY_PROJECT_ID;
+const RAILWAY_SERVICE_ID     = process.env.RAILWAY_SERVICE_ID;
+const RAILWAY_ENVIRONMENT_ID = process.env.RAILWAY_ENVIRONMENT_ID;
+
 app.use(cors({ origin: "*", methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type","Authorization"] }));
 app.options("*", cors());
 app.use(express.json());
@@ -52,6 +58,47 @@ async function fetchWithRetry(url, options = {}, retries = 1, delayMs = 1000) {
       console.warn(`Retrying ${url} after error: ${err.message}`);
       await new Promise(r => setTimeout(r, delayMs));
     }
+  }
+}
+
+// ── Railway token persistence ─────────────────────────────────────────────────
+// Writes the new QB_REFRESH_TOKEN back to Railway env vars so it survives restarts.
+// Fires asynchronously after every successful token refresh — never blocks the request.
+async function persistQBRefreshToken(newToken) {
+  if (!RAILWAY_API_TOKEN || !RAILWAY_PROJECT_ID || !RAILWAY_SERVICE_ID || !RAILWAY_ENVIRONMENT_ID) {
+    console.warn("Railway credentials not fully set — QB_REFRESH_TOKEN will not persist across restarts");
+    return;
+  }
+  const mutation = `
+    mutation upsertVariables($input: VariableCollectionUpsertInput!) {
+      variableCollectionUpsert(input: $input)
+    }
+  `;
+  const variables = {
+    input: {
+      projectId:     RAILWAY_PROJECT_ID,
+      serviceId:     RAILWAY_SERVICE_ID,
+      environmentId: RAILWAY_ENVIRONMENT_ID,
+      variables: { QB_REFRESH_TOKEN: newToken },
+    },
+  };
+  try {
+    const res = await fetch("https://backboard.railway.app/graphql/v2", {
+      method: "POST",
+      headers: {
+        "Content-Type":  "application/json",
+        "Authorization": `Bearer ${RAILWAY_API_TOKEN}`,
+      },
+      body: JSON.stringify({ query: mutation, variables }),
+    });
+    const data = await res.json();
+    if (data.errors) {
+      console.error("Railway token persist failed:", JSON.stringify(data.errors));
+    } else {
+      console.log("QB_REFRESH_TOKEN persisted to Railway successfully");
+    }
+  } catch (err) {
+    console.error("Railway token persist error:", err.message);
   }
 }
 
@@ -88,6 +135,12 @@ async function qbRefreshAccessToken() {
   qbState.refreshToken   = data.refresh_token;
   qbState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
   console.log(`QB token refreshed | intuit_tid: ${intuitTid}`);
+
+  // Persist the new refresh token to Railway asynchronously — don't await
+  persistQBRefreshToken(data.refresh_token).catch(err =>
+    console.error("Background token persist failed:", err.message)
+  );
+
   return qbState.accessToken;
 }
 
@@ -99,7 +152,7 @@ async function getQBToken() {
 async function qbGet(endpoint) {
   const token   = await getQBToken();
   const realmId = qbState.realmId;
-  if (!realmId) throw new Error("QB Realm ID not set");
+  if (!realmId) throw new Error("QB Realm ID not set — visit /auth/quickbooks");
   const url = `https://quickbooks.api.intuit.com/v3/company/${realmId}/${endpoint}&minorversion=65`;
   const res = await fetchWithRetry(url, {
     headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" },
@@ -340,7 +393,6 @@ async function fetchMailchimp() {
   const activity  = activityRes.ok  ? await activityRes.json()  : { activity: [] };
   const stats     = list.stats || {};
 
-  // Last 30 days aggregation
   const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   let emails_sent_30d=0,opens_30d=0,clicks_30d=0,subs_30d=0,unsubs_30d=0;
   for (const day of activity.activity || []) {
@@ -353,30 +405,26 @@ async function fetchMailchimp() {
     }
   }
 
-  // Mailchimp stores audience-level rates as raw decimals (0.2142 = 21.42%)
-  // Campaign-level rates come back already as percentages from our calculation
   const toPercent = (v) => v != null ? +(v * 100).toFixed(1) : null;
 
   return {
-    audience_name:     list.name,
-    total_subscribers: stats.member_count        || 0,
-    open_rate_avg:     toPercent(stats.open_rate),
-    click_rate_avg:    toPercent(stats.click_rate),
-    unsubscribe_rate:  toPercent(stats.unsubscribe_rate),
-    // Last 30 days
+    audience_name:      list.name,
+    total_subscribers:  stats.member_count        || 0,
+    open_rate_avg:      toPercent(stats.open_rate),
+    click_rate_avg:     toPercent(stats.click_rate),
+    unsubscribe_rate:   toPercent(stats.unsubscribe_rate),
     emails_sent_30d, opens_30d, clicks_30d, subs_30d, unsubs_30d,
-    open_rate_30d:  emails_sent_30d > 0 ? +((opens_30d  / emails_sent_30d) * 100).toFixed(1) : null,
-    click_rate_30d: emails_sent_30d > 0 ? +((clicks_30d / emails_sent_30d) * 100).toFixed(1) : null,
+    open_rate_30d:      emails_sent_30d > 0 ? +((opens_30d  / emails_sent_30d) * 100).toFixed(1) : null,
+    click_rate_30d:     emails_sent_30d > 0 ? +((clicks_30d / emails_sent_30d) * 100).toFixed(1) : null,
     net_list_growth_30d: subs_30d - unsubs_30d,
-    // Recent campaigns
     recent_campaigns: (campaigns.campaigns || []).map(c => ({
       subject:     c.settings?.subject_line || "—",
       send_time:   c.send_time,
       emails_sent: c.emails_sent || 0,
-      open_rate:   c.report_summary?.open_rate   != null ? +(c.report_summary.open_rate   * 100).toFixed(1) : null,
-      click_rate:  c.report_summary?.click_rate  != null ? +(c.report_summary.click_rate  * 100).toFixed(1) : null,
-      opens:       c.report_summary?.unique_opens           || 0,
-      clicks:      c.report_summary?.subscriber_clicks      || 0,
+      open_rate:   c.report_summary?.open_rate  != null ? +(c.report_summary.open_rate  * 100).toFixed(1) : null,
+      click_rate:  c.report_summary?.click_rate != null ? +(c.report_summary.click_rate * 100).toFixed(1) : null,
+      opens:       c.report_summary?.unique_opens        || 0,
+      clicks:      c.report_summary?.subscriber_clicks   || 0,
     })),
     data_as_of: nowET(),
   };
@@ -418,7 +466,7 @@ function normalizeGoTab(tabs) {
   const EX=["DEFERRED_REVENUE","PROCESSORS","EXPENSE"];
   for (const tab of tabs) {
     const tt=tab.tax||0,tto=tab.total||0,ts=tab.subtotal||0,ta=tab.autogratDue||0;
-    tax_total+=tt; const tip=tto-ts-tt-ta; if(tip>0) tip_total+=tip; tab_count++;
+    tax_total+=tt;const tip=tto-ts-tt-ta;if(tip>0) tip_total+=tip;tab_count++;
     for (const item of tab.items||[]) {
       const g=item.accountingStream?.reportingGroup||"",n=item.accountingStream?.name||"",a=item.subtotal||0;
       if(EX.includes(g)){if(g==="DEFERRED_REVENUE") deferred_revenue+=a;continue;}
@@ -430,11 +478,11 @@ function normalizeGoTab(tabs) {
     }
   }
   return {
-    net_sales:+(net_sales/100).toFixed(2), tab_count,
-    bar_sales:+(bar_sales/100).toFixed(2), catering_sales:+(catering_sales/100).toFixed(2),
-    voids:+(voids/100).toFixed(2), comps:+(comps/100).toFixed(2),
-    tax_total:+(tax_total/100).toFixed(2), tip_total:+(tip_total/100).toFixed(2),
-    deferred_revenue:+(deferred_revenue/100).toFixed(2), data_as_of:nowET(),
+    net_sales:+(net_sales/100).toFixed(2),tab_count,
+    bar_sales:+(bar_sales/100).toFixed(2),catering_sales:+(catering_sales/100).toFixed(2),
+    voids:+(voids/100).toFixed(2),comps:+(comps/100).toFixed(2),
+    tax_total:+(tax_total/100).toFixed(2),tip_total:+(tip_total/100).toFixed(2),
+    deferred_revenue:+(deferred_revenue/100).toFixed(2),data_as_of:nowET(),
   };
 }
 
@@ -519,12 +567,20 @@ app.get("/auth/quickbooks/callback",async(req,res)=>{
     const tokens=await tokenRes.json();
     qbState.accessToken=tokens.access_token;qbState.refreshToken=tokens.refresh_token;
     qbState.realmId=realmId;qbState.tokenExpiresAt=Date.now()+(tokens.expires_in-60)*1000;
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Copy these into Railway → Variables, then redeploy.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN</div><div class="value">${tokens.refresh_token}</div></div><div class="step">Once redeployed: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div><div class="warn">⚠️ Close this tab after copying. Rotate your Client Secret after setup.</div></body></html>`);
+    // Persist immediately on fresh OAuth
+    await persistQBRefreshToken(tokens.refresh_token);
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Token has been automatically saved to Railway. No manual copy needed.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN (saved automatically)</div><div class="value">${tokens.refresh_token}</div></div><div class="step">✓ Token persisted to Railway. Verify: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div><div class="warn">⚠️ Close this tab. The token rotates automatically going forward.</div></body></html>`);
   }catch(err){res.status(500).send(`<h2>Callback error</h2><pre>${err.message}</pre>`);}
 });
 
 app.get("/api/quickbooks/status",(_req,res)=>{
-  res.json({ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,tokenValid:Date.now()<qbState.tokenExpiresAt,tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,lastSyncTime:qbState.lastSyncTime});
+  res.json({
+    ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,
+    tokenValid:Date.now()<qbState.tokenExpiresAt,
+    tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,
+    lastSyncTime:qbState.lastSyncTime,
+    railwayPersistenceEnabled:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
+  });
 });
 
 app.get("/api/quickbooks",async(req,res)=>{
@@ -577,7 +633,7 @@ app.get("/api/ric",async(req,res)=>{
   try{
     const token=await getGoTabToken();
     const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
-    const tabs=( await gqlRes.json())?.data?.locations?.[0]?.tabs||[];
+    const tabs=(await gqlRes.json())?.data?.locations?.[0]?.tabs||[];
     result.gotab=normalizeGoTab(tabs);result.sources.gotab="live";
   }catch(e){console.error("GoTab failed:",e.message);result.gotab=null;result.sources.gotab=`error: ${e.message}`;}
 
@@ -624,11 +680,14 @@ app.post("/api/claude",async(req,res)=>{
   }catch(err){console.error("Claude proxy error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-app.get("/health",(_req,res)=>res.json({ok:true,service:"hch-ric-proxy",version:"3.5"}));
+app.get("/health",(_req,res)=>res.json({
+  ok:true,service:"hch-ric-proxy",version:"3.6",
+  railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
+}));
 
 app.get("/",(_req,res)=>{
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate");
   res.sendFile(join(__dirname,"index.html"));
 });
 
-app.listen(PORT,()=>console.log(`RIC proxy v3.5 running on port ${PORT}`));
+app.listen(PORT,()=>console.log(`RIC proxy v3.6 running on port ${PORT}`));
