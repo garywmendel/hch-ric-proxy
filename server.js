@@ -222,28 +222,47 @@ async function fetchQuickBooks(startDate, endDate) {
   const total_labor = sum(direct_labor, labor_related.total);
 
   const direct_ops = {
-    cash_over_under: acct(raw,"6105"), equipment_lease: acct(raw,"6110"), cleaning_supplies: acct(raw,"6115"),
-    restaurant_supplies: acct(raw,"6125"), laundry: acct(raw,"6135"), smallwares: acct(raw,"6150"),
-    wood_supplies: acct(raw,"6175"), delivery_expense: acct(raw,"6180"), catering_rental: acct(raw,"6185"), music_dj: acct(raw,"6305"),
+    cash_over_under: acct(raw,"6105"), equipment_lease: acct(raw,"6110"),
+    cleaning_supplies: acct(raw,"6115"), restaurant_supplies: acct(raw,"6125"),
+    laundry: acct(raw,"6135"), smallwares: acct(raw,"6150"), wood_supplies: acct(raw,"6175"),
+    delivery_expense: acct(raw,"6180"), catering_rental: acct(raw,"6185"), music_dj: acct(raw,"6305"),
   };
-  direct_ops.total = sum(direct_ops.cash_over_under, direct_ops.equipment_lease, direct_ops.cleaning_supplies, direct_ops.restaurant_supplies, direct_ops.laundry, direct_ops.smallwares, direct_ops.wood_supplies, direct_ops.delivery_expense, direct_ops.catering_rental, direct_ops.music_dj);
+  direct_ops.total = sum(
+    direct_ops.cash_over_under, direct_ops.equipment_lease, direct_ops.cleaning_supplies,
+    direct_ops.restaurant_supplies, direct_ops.laundry, direct_ops.smallwares,
+    direct_ops.wood_supplies, direct_ops.delivery_expense, direct_ops.catering_rental, direct_ops.music_dj
+  );
 
   const transaction_expenses = {
-    cc_fees: acct(raw,"6205"), reservation_system: acct(raw,"6210"), third_party_commissions: acct(raw,"6215"), late_fees: acct(raw,"6220"), chargeback: acct(raw,"6615"),
+    cc_fees: acct(raw,"6205"), reservation_system: acct(raw,"6210"),
+    third_party_commissions: acct(raw,"6215"), late_fees: acct(raw,"6220"), chargeback: acct(raw,"6615"),
   };
-  transaction_expenses.total = sum(transaction_expenses.cc_fees, transaction_expenses.reservation_system, transaction_expenses.third_party_commissions, transaction_expenses.late_fees, transaction_expenses.chargeback);
+  transaction_expenses.total = sum(
+    transaction_expenses.cc_fees, transaction_expenses.reservation_system,
+    transaction_expenses.third_party_commissions, transaction_expenses.late_fees, transaction_expenses.chargeback
+  );
 
-  const marketing = { marketing_advertising: acct(raw,"6250"), marketing_pr: acct(raw,"6255"), advertising_promotions: acct(raw,"6260"), stationary_printing: acct(raw,"6580") };
+  const marketing = {
+    marketing_advertising: acct(raw,"6250"), marketing_pr: acct(raw,"6255"),
+    advertising_promotions: acct(raw,"6260"), stationary_printing: acct(raw,"6580"),
+  };
   marketing.total = sum(marketing.marketing_advertising, marketing.marketing_pr, marketing.advertising_promotions, marketing.stationary_printing);
 
   const ga_expenses = {
-    research_development: acct(raw,"6450"), accounting_bookkeeping: acct(raw,"6505"), recruiting: acct(raw,"6512"),
-    legal: acct(raw,"6520"), payroll_processing: acct(raw,"6525"), computer_software_it: acct(raw,"6535"),
-    dues_subscriptions: acct(raw,"6550"), bank_charges: acct(raw,"6560"), license_permits: acct(raw,"6570"),
-    office_supplies: acct(raw,"6575"), postage: acct(raw,"6585","6603"), liability_insurance: acct(raw,"6590"),
+    research_development: acct(raw,"6450"), accounting_bookkeeping: acct(raw,"6505"),
+    recruiting: acct(raw,"6512"), legal: acct(raw,"6520"), payroll_processing: acct(raw,"6525"),
+    computer_software_it: acct(raw,"6535"), dues_subscriptions: acct(raw,"6550"),
+    bank_charges: acct(raw,"6560"), license_permits: acct(raw,"6570"), office_supplies: acct(raw,"6575"),
+    postage: acct(raw,"6585","6603"), liability_insurance: acct(raw,"6590"),
     penalties_settlements: acct(raw,"6600"), phone_internet: acct(raw,"6605"),
   };
-  ga_expenses.total = sum(ga_expenses.research_development, ga_expenses.accounting_bookkeeping, ga_expenses.recruiting, ga_expenses.legal, ga_expenses.payroll_processing, ga_expenses.computer_software_it, ga_expenses.dues_subscriptions, ga_expenses.bank_charges, ga_expenses.license_permits, ga_expenses.office_supplies, ga_expenses.postage, ga_expenses.liability_insurance, ga_expenses.penalties_settlements, ga_expenses.phone_internet);
+  ga_expenses.total = sum(
+    ga_expenses.research_development, ga_expenses.accounting_bookkeeping, ga_expenses.recruiting,
+    ga_expenses.legal, ga_expenses.payroll_processing, ga_expenses.computer_software_it,
+    ga_expenses.dues_subscriptions, ga_expenses.bank_charges, ga_expenses.license_permits,
+    ga_expenses.office_supplies, ga_expenses.postage, ga_expenses.liability_insurance,
+    ga_expenses.penalties_settlements, ga_expenses.phone_internet
+  );
 
   const travel_meals = { travel_transport: acct(raw,"6705"), meals_entertainment: acct(raw,"6710"), parking: acct(raw,"6720") };
   travel_meals.total = sum(travel_meals.travel_transport, travel_meals.meals_entertainment, travel_meals.parking);
@@ -258,7 +277,11 @@ async function fetchQuickBooks(startDate, endDate) {
     property_insurance: acct(raw,"7120"), utility_electricity: acct(raw,"7125"), utility_gas: acct(raw,"7130"),
     utility_trash: acct(raw,"7135"), utility_water_sewage: acct(raw,"7140"),
   };
-  property_expenses.total = sum(property_expenses.rent_lease, property_expenses.common_area_maint, property_expenses.property_re_tax, property_expenses.property_insurance, property_expenses.utility_electricity, property_expenses.utility_gas, property_expenses.utility_trash, property_expenses.utility_water_sewage);
+  property_expenses.total = sum(
+    property_expenses.rent_lease, property_expenses.common_area_maint, property_expenses.property_re_tax,
+    property_expenses.property_insurance, property_expenses.utility_electricity, property_expenses.utility_gas,
+    property_expenses.utility_trash, property_expenses.utility_water_sewage
+  );
 
   const other_expenses = { other_income_expense: acct(raw,"8130"), corporate_overhead: acct(raw,"8510") };
   other_expenses.total = sum(other_expenses.other_income_expense, other_expenses.corporate_overhead);
@@ -335,105 +358,7 @@ async function fetchMailchimp() {
   };
 }
 
-// ── Marqii via Anthropic MCP ──────────────────────────────────────────────────
-// Daily cache to avoid repeated MCP calls
-let marqiiCache = { data: null, date: null };
-
-async function fetchMarqii() {
-  const todayStr = today();
-
-  // Return cached data if already fetched today
-  if (marqiiCache.date === todayStr && marqiiCache.data) {
-    console.log("Marqii: returning cached data for", todayStr);
-    return marqiiCache.data;
-  }
-
-  const MARQII_MCP_URL = "https://mcp.marqii.com/mcp";
-  const STORE_ID = "26e60efb-a499-4c6c-9cc0-fed312468e0b";
-
-  const prompt = `You are a data extraction assistant. Use the Marqii MCP tools to fetch reputation data for Hill Country Barbecue Market (store ID: ${STORE_ID}) and return ONLY a JSON object with no preamble, no markdown, no backticks.
-
-Call these tools in order:
-1. marqii_get_review_insights_store_performances_by_rating with period="last_30d" and storeIds=["${STORE_ID}"]
-2. marqii_list_reviews with storeIds=["${STORE_ID}"], sortByDate="desc", pageSize=10, withComment=true
-
-Return this exact JSON structure:
-{
-  "avg_rating": <number>,
-  "previous_avg_rating": <number>,
-  "total_reviews_30d": <number>,
-  "reply_rate": <number>,
-  "reply_time_hours": <number>,
-  "reviews_by_rating": {
-    "1": <count>, "2": <count>, "3": <count>, "4": <count>, "5": <count>
-  },
-  "recent_negative_reviews": [
-    {
-      "rating": <number>,
-      "reviewer": "<name>",
-      "date": "<YYYY-MM-DD>",
-      "comment": "<full text>",
-      "replied": <boolean>,
-      "provider": "<Google|Yelp|OpenTable>"
-    }
-  ],
-  "sentiment": {
-    "food": <score>,
-    "service": <score>,
-    "experience": <score>
-  },
-  "unanswered_count": <number>
-}
-
-For recent_negative_reviews include only reviews rated 1-3 stars from the last 30 days, up to 5 most recent.
-Return ONLY the JSON. No other text.`;
-
-  const res = await fetchWithRetry("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type":  "application/json",
-      "x-api-key":     process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model:      "claude-sonnet-4-5",
-      max_tokens: 2000,
-      messages:   [{ role: "user", content: prompt }],
-      mcp_servers: [{
-        type: "url",
-        url:  MARQII_MCP_URL,
-        name: "marqii",
-      }],
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Marqii MCP call failed: ${res.status} | ${body}`);
-  }
-
-  const apiData = await res.json();
-
-  // Extract text from response content blocks
-  const textBlocks = (apiData.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-
-  if (!textBlocks) throw new Error("Marqii: no text content in response");
-
-  // Clean and parse JSON
-  const cleaned = textBlocks.replace(/```json|```/g, "").trim();
-  const parsed  = JSON.parse(cleaned);
-
-  // Add metadata
-  parsed.data_as_of = nowET();
-
-  // Cache for today
-  marqiiCache = { data: parsed, date: todayStr };
-  console.log(`Marqii: fetched live data, avg_rating=${parsed.avg_rating}, reviews=${parsed.total_reviews_30d}`);
-
-  return parsed;
-}
-
-// ── GoTab auth ────────────────────────────────────────────────────────────────
+// ── GoTab ─────────────────────────────────────────────────────────────────────
 async function getGoTabToken() {
   const res = await fetchWithRetry("https://gotab.io/api/oauth/token", {
     method: "POST", headers: { "Content-Type": "application/json" },
@@ -469,7 +394,7 @@ function normalizeGoTab(tabs) {
   const EX=["DEFERRED_REVENUE","PROCESSORS","EXPENSE"];
   for (const tab of tabs) {
     const tt=tab.tax||0,tto=tab.total||0,ts=tab.subtotal||0,ta=tab.autogratDue||0;
-    tax_total+=tt;const tip=tto-ts-tt-ta;if(tip>0) tip_total+=tip;tab_count++;
+    tax_total+=tt; const tip=tto-ts-tt-ta; if(tip>0) tip_total+=tip; tab_count++;
     for (const item of tab.items||[]) {
       const g=item.accountingStream?.reportingGroup||"",n=item.accountingStream?.name||"",a=item.subtotal||0;
       if(EX.includes(g)){if(g==="DEFERRED_REVENUE") deferred_revenue+=a;continue;}
@@ -481,11 +406,11 @@ function normalizeGoTab(tabs) {
     }
   }
   return {
-    net_sales:+(net_sales/100).toFixed(2),tab_count,
-    bar_sales:+(bar_sales/100).toFixed(2),catering_sales:+(catering_sales/100).toFixed(2),
-    voids:+(voids/100).toFixed(2),comps:+(comps/100).toFixed(2),
-    tax_total:+(tax_total/100).toFixed(2),tip_total:+(tip_total/100).toFixed(2),
-    deferred_revenue:+(deferred_revenue/100).toFixed(2),data_as_of:nowET(),
+    net_sales:+(net_sales/100).toFixed(2), tab_count,
+    bar_sales:+(bar_sales/100).toFixed(2), catering_sales:+(catering_sales/100).toFixed(2),
+    voids:+(voids/100).toFixed(2), comps:+(comps/100).toFixed(2),
+    tax_total:+(tax_total/100).toFixed(2), tip_total:+(tip_total/100).toFixed(2),
+    deferred_revenue:+(deferred_revenue/100).toFixed(2), data_as_of:nowET(),
   };
 }
 
@@ -502,7 +427,7 @@ async function fetch7Shifts(date) {
   ]);
   if (!sRes.ok) throw new Error(`7Shifts shifts failed: ${sRes.status}`);
   if (!pRes.ok) throw new Error(`7Shifts punches failed: ${pRes.status}`);
-  const shifts=(await sRes.json()).data||[],punches=(await pRes.json()).data||[];
+  const shifts=(await sRes.json()).data||[], punches=(await pRes.json()).data||[];
   let sh=0,ah=0,lc=0,oh=0,ns=0;
   for (const s of shifts) sh+=(new Date(s.end)-new Date(s.start))/3600000;
   for (const p of punches) { if(p.clocked_in&&p.clocked_out){const h=(new Date(p.clocked_out)-new Date(p.clocked_in))/3600000;ah+=h;if(p.wage_cents) lc+=(h*p.wage_cents)/100;if(h>8) oh+=h-8;}}
@@ -552,8 +477,8 @@ async function fetchMarginEdge(date) {
 app.get("/auth/quickbooks",(req,res)=>{
   if (!QB_CLIENT_ID) return res.status(500).send("QB_CLIENT_ID not set.");
   const url = new URL("https://appcenter.intuit.com/connect/oauth2");
-  url.searchParams.set("client_id",QB_CLIENT_ID);url.searchParams.set("redirect_uri",QB_REDIRECT_URI);
-  url.searchParams.set("response_type","code");url.searchParams.set("scope",QB_SCOPES);
+  url.searchParams.set("client_id",QB_CLIENT_ID); url.searchParams.set("redirect_uri",QB_REDIRECT_URI);
+  url.searchParams.set("response_type","code"); url.searchParams.set("scope",QB_SCOPES);
   url.searchParams.set("state",Math.random().toString(36).slice(2));
   res.redirect(url.toString());
 });
@@ -565,24 +490,27 @@ app.get("/auth/quickbooks/callback",async(req,res)=>{
   try {
     const creds = Buffer.from(`${QB_CLIENT_ID}:${QB_CLIENT_SECRET}`).toString("base64");
     const tokenRes = await fetchWithRetry("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",{method:"POST",headers:{"Authorization":`Basic ${creds}`,"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},body:new URLSearchParams({grant_type:"authorization_code",code,redirect_uri:QB_REDIRECT_URI})});
-    const intuitTid = tokenRes.headers?.get("intuit_tid")||"unknown";
-    if (!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>Token exchange failed</h2><p>${tokenRes.status}</p><pre>${body}</pre>`);}
+    if (!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>Token exchange failed</h2><pre>${body}</pre>`);}
     const tokens = await tokenRes.json();
-    qbState.accessToken=tokens.access_token;qbState.refreshToken=tokens.refresh_token;
-    qbState.realmId=realmId;qbState.tokenExpiresAt=Date.now()+(tokens.expires_in-60)*1000;
+    qbState.accessToken=tokens.access_token; qbState.refreshToken=tokens.refresh_token;
+    qbState.realmId=realmId; qbState.tokenExpiresAt=Date.now()+(tokens.expires_in-60)*1000;
     await persistQBRefreshToken(tokens.refresh_token);
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Token automatically saved to Railway.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN (saved automatically)</div><div class="value">${tokens.refresh_token}</div></div><div class="step">✓ Token persisted. Verify: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div><div class="warn">⚠️ Close this tab. Token rotates automatically going forward.</div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Token automatically saved to Railway.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN</div><div class="value">${tokens.refresh_token}</div></div><div class="step">✓ Token persisted. Verify: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div><div class="warn">⚠️ Close this tab. Token rotates automatically.</div></body></html>`);
   } catch(err){res.status(500).send(`<h2>Callback error</h2><pre>${err.message}</pre>`);}
 });
 
 app.get("/api/quickbooks/status",(_req,res)=>{
-  res.json({ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,tokenValid:Date.now()<qbState.tokenExpiresAt,tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,lastSyncTime:qbState.lastSyncTime,railwayPersistenceEnabled:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID)});
+  res.json({ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,
+    tokenValid:Date.now()<qbState.tokenExpiresAt,
+    tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,
+    lastSyncTime:qbState.lastSyncTime,
+    railwayPersistenceEnabled:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID)});
 });
 
 app.get("/api/quickbooks",async(req,res)=>{
   try {
     if (!qbState.refreshToken) return res.status(401).json({ok:false,error:"Not authorized — visit /auth/quickbooks"});
-    const start=req.query.start||today(),end=req.query.end||today();
+    const start=req.query.start||today(), end=req.query.end||today();
     res.json({ok:true,source:"quickbooks_live",start,end,...await fetchQuickBooks(start,end)});
   } catch(err){console.error("QB error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
@@ -592,31 +520,23 @@ app.get("/api/mailchimp",async(req,res)=>{
   catch(err){console.error("Mailchimp error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-app.get("/api/marqii",async(req,res)=>{
-  try {
-    // Allow cache bust via ?refresh=1
-    if (req.query.refresh) marqiiCache = { data: null, date: null };
-    const data = await fetchMarqii();
-    res.json({ok:true,source:"marqii_live",...data});
-  } catch(err){
-    console.error("Marqii error:",err.message);
-    res.status(500).json({ok:false,error:err.message});
-  }
-});
-
 app.get("/api/gotab/streams",async(req,res)=>{
   try {
-    const date=req.query.date||today(),token=await getGoTabToken();
+    const date=req.query.date||today(), token=await getGoTabToken();
     const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
-    const gqlData=await gqlRes.json(),tabs=gqlData?.data?.locations?.[0]?.tabs||[],streams={};
-    for (const tab of tabs) for (const item of tab.items||[]){const g=item.accountingStream?.reportingGroup||"NONE",n=item.accountingStream?.name||"NONE",key=`${g} | ${n}`;if(!streams[key]) streams[key]={reportingGroup:g,name:n,count:0,subtotal_cents:0};streams[key].count++;streams[key].subtotal_cents+=item.subtotal||0;}
+    const gqlData=await gqlRes.json(), tabs=gqlData?.data?.locations?.[0]?.tabs||[], streams={};
+    for (const tab of tabs) for (const item of tab.items||[]){
+      const g=item.accountingStream?.reportingGroup||"NONE",n=item.accountingStream?.name||"NONE",key=`${g} | ${n}`;
+      if(!streams[key]) streams[key]={reportingGroup:g,name:n,count:0,subtotal_cents:0};
+      streams[key].count++; streams[key].subtotal_cents+=item.subtotal||0;
+    }
     res.json({total_tabs:tabs.length,streams:Object.values(streams).sort((a,b)=>b.subtotal_cents-a.subtotal_cents)});
   } catch(err){res.status(500).json({ok:false,error:err.message});}
 });
 
 app.get("/api/gotab",async(req,res)=>{
   try {
-    const date=req.query.date||today(),token=await getGoTabToken();
+    const date=req.query.date||today(), token=await getGoTabToken();
     const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
     if (!gqlRes.ok) throw new Error(`GoTab GraphQL error: ${gqlRes.status}`);
     const gqlData=await gqlRes.json();
@@ -636,19 +556,19 @@ app.get("/api/marginedge",async(req,res)=>{
 });
 
 app.get("/api/ric",async(req,res)=>{
-  const date=req.query.date||today(),result={date,sources:{}};
+  const date=req.query.date||today(), result={date,sources:{}};
 
   try {
     const token=await getGoTabToken();
     const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
     const tabs=(await gqlRes.json())?.data?.locations?.[0]?.tabs||[];
-    result.gotab=normalizeGoTab(tabs);result.sources.gotab="live";
+    result.gotab=normalizeGoTab(tabs); result.sources.gotab="live";
   } catch(e){console.error("GoTab failed:",e.message);result.gotab=null;result.sources.gotab=`error: ${e.message}`;}
 
   try {
     const shifts=await fetch7Shifts(date);
     if(result.gotab?.net_sales&&shifts.labor_cost) shifts.labor_pct=+((shifts.labor_cost/result.gotab.net_sales)*100).toFixed(1);
-    result["7shifts"]=shifts;result.sources["7shifts"]="live";
+    result["7shifts"]=shifts; result.sources["7shifts"]="live";
   } catch(e){console.error("7Shifts failed:",e.message);result["7shifts"]=null;result.sources["7shifts"]=`error: ${e.message}`;}
 
   try {
@@ -657,7 +577,7 @@ app.get("/api/ric",async(req,res)=>{
       if(me.cogs?.food)  me.food_cost_pct=+((me.cogs.food/result.gotab.net_sales)*100).toFixed(1);
       if(me.cogs?.total) me.total_cogs_pct=+((me.cogs.total/result.gotab.net_sales)*100).toFixed(1);
     }
-    result.marginedge=me;result.sources.marginedge="live";
+    result.marginedge=me; result.sources.marginedge="live";
   } catch(e){console.error("MarginEdge failed:",e.message);result.marginedge=null;result.sources.marginedge=`error: ${e.message}`;}
 
   try {
@@ -675,12 +595,8 @@ app.get("/api/ric",async(req,res)=>{
   } catch(e){console.error("QB failed:",e.message);result.quickbooks=null;result.sources.quickbooks=`error: ${e.message}`;}
 
   try {
-    result.mailchimp=await fetchMailchimp();result.sources.mailchimp="live";
+    result.mailchimp=await fetchMailchimp(); result.sources.mailchimp="live";
   } catch(e){console.error("Mailchimp failed:",e.message);result.mailchimp=null;result.sources.mailchimp=`error: ${e.message}`;}
-
-  try {
-    result.marqii=await fetchMarqii();result.sources.marqii="live";
-  } catch(e){console.error("Marqii failed:",e.message);result.marqii=null;result.sources.marqii=`error: ${e.message}`;}
 
   res.json({ok:true,...result});
 });
@@ -692,7 +608,10 @@ app.post("/api/claude",async(req,res)=>{
   } catch(err){console.error("Claude proxy error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
-app.get("/health",(_req,res)=>res.json({ok:true,service:"hch-ric-proxy",version:"3.7",railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID)}));
+app.get("/health",(_req,res)=>res.json({
+  ok:true,service:"hch-ric-proxy",version:"3.7",
+  railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
+}));
 
 app.get("/",(_req,res)=>{
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate");
