@@ -58,7 +58,8 @@ async function fetchWithRetry(url, options = {}, retries = 1, delayMs = 1000) {
     }
   }
 }
-
+// In bucketCogs, at the else{} line, add:
+else{ console.log("ME uncat:", cat.slice(0,60), amt); cogs.other+=amt; }
 // ── Railway token persistence ─────────────────────────────────────────────────
 async function persistQBRefreshToken(newToken) {
   if (!RAILWAY_API_TOKEN || !RAILWAY_PROJECT_ID || !RAILWAY_SERVICE_ID || !RAILWAY_ENVIRONMENT_ID) {
