@@ -442,9 +442,20 @@ async function fetchTripleSeat() {
   const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : {};
 
   // TripleSeat wraps all responses in {total_pages, results: [...]}
-  const events   = (eventsJson.results   || []);
-  const bookings = (bookingsJson.results || []);
-  const leads    = (leadsJson.results    || []);
+  const allEvents   = (eventsJson.results   || []);
+  const bookings    = (bookingsJson.results  || []);
+  const leads       = (leadsJson.results     || []);
+
+  // Filter events to Hill Country NY only and sort by date ascending
+  const NY_LOCATION_ID = 2216; // Hill Country Barbecue Market NY
+  const todayISO = today();
+  const events = allEvents
+    .filter(e => {
+      const locId = typeof e.location === "object" ? e.location?.id : null;
+      const dateStr = e.event_date_iso8601 || e.start_date || "";
+      return (!locId || locId === NY_LOCATION_ID) && dateStr >= todayISO;
+    })
+    .sort((a,b) => (a.event_date_iso8601||a.start_date||"").localeCompare(b.event_date_iso8601||b.start_date||""));
 
   // Upcoming events summary
   const upcomingEvents = events.slice(0, 10).map(e => ({
@@ -453,7 +464,7 @@ async function fetchTripleSeat() {
     guest_count:   e.guest_count || e.guests || 0,
     total_revenue: parseFloat(e.total_revenue || e.actual_revenue || 0),
     status:        e.status || "—",
-    location:      e.location_name || e.location || "—",
+    location:      typeof e.location === "object" ? (e.location?.name || "—") : (e.location || "—"),
   }));
 
   // Revenue pipeline from bookings — TripleSeat statuses: DEFINITE, TENTATIVE, CLOSED, CLOSED-LOST
@@ -478,7 +489,7 @@ async function fetchTripleSeat() {
 
   return {
     upcoming_events:    upcomingEvents,
-    event_count_30d:    events.length,
+    event_count_upcoming: events.length,
     booking_count:      bookings.length,
     confirmed_revenue:  +confirmed_revenue.toFixed(2),
     tentative_revenue:  +tentative_revenue.toFixed(2),
