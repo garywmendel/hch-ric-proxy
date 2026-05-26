@@ -393,10 +393,16 @@ async function tsRefreshAccessToken() {
     throw new Error(`TripleSeat token refresh failed: ${res.status} | ${body}`);
   }
   const data = await res.json();
+  const newRefreshToken = data.refresh_token || tsState.refreshToken;
   tsState.accessToken    = data.access_token;
-  tsState.refreshToken   = data.refresh_token || tsState.refreshToken;
   tsState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
-  console.log("TripleSeat token refreshed — stored in memory only");
+  // Persist new refresh token to Railway before updating in-memory state
+  if(data.refresh_token && data.refresh_token !== tsState.refreshToken){
+    persistRailwayVars({ TRIPLESEAT_REFRESH_TOKEN: data.refresh_token })
+      .catch(e=>console.error("TS refresh token persist failed:",e.message));
+  }
+  tsState.refreshToken = newRefreshToken;
+  console.log("TripleSeat token refreshed");
   return tsState.accessToken;
 }
 
