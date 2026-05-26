@@ -872,7 +872,13 @@ app.get("/",(_req,res)=>{
 
 app.listen(PORT,()=>{
   console.log(`RIC proxy v3.9 running on port ${PORT}`);
-  // Warm TripleSeat cache on startup so /api/ric never shows "warming"
+  // Validate QB token on startup — triggers refresh + persistence if expired
+  if(qbState.refreshToken){
+    getQBToken()
+      .then(()=>console.log("QB token validated on startup"))
+      .catch(e=>console.error("QB startup token validation failed:",e.message));
+  }
+  // Warm TripleSeat cache on startup — triggers token refresh + persistence if needed
   if(process.env.TRIPLESEAT_ACCESS_TOKEN||process.env.TRIPLESEAT_REFRESH_TOKEN){
     console.log("Warming TripleSeat cache on startup...");
     fetchTripleSeat()
