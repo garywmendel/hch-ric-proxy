@@ -428,18 +428,29 @@ async function fetchTripleSeat() {
   const endFmt    = fmtDate(futureDate);
   const pastFmt   = fmtDate(pastDate);
 
-  const [eventsRes, bookingsRes, leadsRes] = await Promise.all([
-    fetchWithRetry(`${base}/events.json?per_page=50&location_id=${2191}&sort_direction=desc&order=event_date`, { headers }),
+  // Events: fetch last page (most recent/future) — TripleSeat sorts oldest first
+  const firstEventsRes = await fetchWithRetry(`${base}/events.json?per_page=50`, { headers });
+  if (!firstEventsRes.ok) throw new Error(`TripleSeat events failed: ${firstEventsRes.status}`);
+  const firstEventsJson = await firstEventsRes.json();
+  const totalPages = firstEventsJson.total_pages || 1;
+
+  // Fetch last page to get upcoming events
+  const lastEventsRes = totalPages > 1
+    ? await fetchWithRetry(`${base}/events.json?per_page=50&page=${totalPages}`, { headers })
+    : firstEventsRes;
+  const lastEventsJson = totalPages > 1 ? await lastEventsRes.json() : firstEventsJson;
+
+  const [bookingsRes, leadsRes] = await Promise.all([
     fetchWithRetry(`${base}/bookings.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
     fetchWithRetry(`${base}/leads.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
   ]);
 
-  if (!eventsRes.ok) throw new Error(`TripleSeat events failed: ${eventsRes.status}`);
-  console.log("TripleSeat events keys:", Object.keys(await eventsRes.clone().json()).slice(0,5));
+  if (!lastEventsRes.ok) throw new Error(`TripleSeat events failed: ${lastEventsRes.status}`);
+  console.log("TripleSeat events keys:", Object.keys(lastEventsJson).slice(0,5));
 
-  const eventsJson   = await eventsRes.json();
   const bookingsJson = bookingsRes.ok ? await bookingsRes.json() : {};
   const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : {};
+  const eventsJson   = lastEventsJson;
 
   // TripleSeat wraps all responses in {total_pages, results: [...]}
   const allEvents   = (eventsJson.results   || []);
@@ -685,26 +696,6 @@ h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bo
 <div class="step">Test: <strong>curl https://ric.up.railway.app/api/tripleseat</strong></div>
 </body></html>`);
   } catch(err){res.status(500).send(`<h2>TS Callback error</h2><pre>${err.message}</pre>`);}
-});
-
-app.get("/api/tripleseat/debug",async(req,res)=>{
-  try{
-    const token=await getTSToken();
-    const headers={"Authorization":`Bearer ${token}`,"Content-Type":"application/json"};
-    const base="https://api.tripleseat.com/v1";
-    // Get total pages first
-    const r1=await fetchWithRetry(`${base}/events.json?per_page=50`,{headers});
-    const d1=r1.ok?await r1.json():{};
-    const totalPages=d1.total_pages||1;
-    // Fetch last page to get most recent events
-    const r2=await fetchWithRetry(`${base}/events.json?per_page=50&page=${totalPages}`,{headers});
-    const d2=r2.ok?await r2.json():{};
-    res.json({
-      total_pages:totalPages,
-      last_page_count:d2.results?.length,
-      last_page_sample:d2.results?.slice(-10).map(e=>({name:e.name,date:e.event_date_iso8601,status:e.status,loc_id:e.location?.id,loc_name:e.location?.name})),
-    });
-  }catch(err){res.status(500).json({error:err.message});}
 });
 
 app.get("/api/tripleseat",async(req,res)=>{
