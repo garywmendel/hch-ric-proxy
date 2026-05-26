@@ -257,7 +257,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <div class="future-grid">
       <div class="future-item"><div class="future-src">7Shifts</div><div class="future-metrics">FOH/BOH labor by role<br>Scheduled vs actual hrs<br>Overtime & no-shows</div></div>
       <div class="future-item"><div class="future-src">OpenTable</div><div class="future-metrics">Revenue per cover<br>Table turn time<br>No-show rate</div></div>
-      <div class="future-item"><div class="future-src">TripleSeat</div><div class="future-metrics">Event revenue / month<br>Private dining margin<br>Deposit pipeline</div></div>
       <div class="future-item"><div class="future-src">GA4</div><div class="future-metrics">Online order conversion<br>Digital revenue attribution<br>Search visibility</div></div>
       <div class="future-item"><div class="future-src">Marqii</div><div class="future-metrics">Rating trend<br>Review sentiment score<br>Competitor delta</div></div>
       <div class="future-item"><div class="future-src">DoorDash</div><div class="future-metrics">Delivery margin after fees<br>Avg order value trend<br>Cancellation rate</div></div>
@@ -309,8 +308,9 @@ LIVE sources currently connected:
 - MarginEdge: COGS by category (meat, produce, dairy, grocery, liquor, beer, wine, packaging) — 24-48hr lag
 - QuickBooks Online: full monthly P&L — all income, COGS, labor, controllable + non-controllable expenses
 - Mailchimp: email audience (27,317 subscribers), campaign performance, open/click rates, list growth
+- TripleSeat: private dining & events — upcoming events, confirmed/tentative revenue pipeline, open leads
 
-PENDING sources (integrations in progress): 7Shifts, OpenTable, TripleSeat, GA4, Microsoft 365, Marqii, DoorDash.
+PENDING sources (integrations in progress): 7Shifts, OpenTable, GA4, Microsoft 365, Marqii, DoorDash.
 
 Only data from live sources is included in reports. Do not fabricate or estimate data for pending sources.
 
@@ -703,6 +703,7 @@ async function generateReport(){
   const me=liveData.marginedge||{};
   const qb=liveData.quickbooks||{};
   const mc=liveData.mailchimp||{};
+  const ts=liveData.tripleseat||{};
 
   const meCtx=me.invoice_count>0
     ?`MarginEdge (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)} (${me.total_cogs_pct||"—"}% of sales). Food $${(me.cogs?.food||0).toFixed(2)} (${me.food_cost_pct||"—"}%). Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
@@ -716,6 +717,10 @@ async function generateReport(){
     ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()} emails sent, ${mc.open_rate_30d}% open rate, ${mc.click_rate_30d}% click rate, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth. Most recent campaign: "${mc.recent_campaigns?.[0]?.subject||"—"}" — ${mc.recent_campaigns?.[0]?.open_rate}% open, ${mc.recent_campaigns?.[0]?.click_rate}% click.`
     :"Mailchimp: data unavailable.";
 
+  const tsCtx=ts.total_pipeline>0
+    ?`TripleSeat (live): ${ts.confirmed_count} confirmed events ($${ts.confirmed_revenue?.toLocaleString("en-US",{minimumFractionDigits:2})}), ${ts.tentative_count} tentative ($${ts.tentative_revenue?.toLocaleString("en-US",{minimumFractionDigits:2})}). Total pipeline $${ts.total_pipeline?.toLocaleString("en-US",{minimumFractionDigits:2})}. Open leads: ${ts.open_leads} ($${ts.total_lead_value?.toLocaleString("en-US",{minimumFractionDigits:2})} value). Next event: ${ts.upcoming_events?.[0]?.name||"—"} on ${ts.upcoming_events?.[0]?.date||"—"} (${ts.upcoming_events?.[0]?.guest_count||0} guests, $${ts.upcoming_events?.[0]?.total_revenue||0} revenue).`
+    :(ts.data_as_of?"TripleSeat (live): No upcoming events or bookings in current window.":"TripleSeat: data unavailable.");
+
   const prompt=`Hill Country BBQ — New York
 Date: ${now.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
 Time: ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET
@@ -725,6 +730,7 @@ Live: ${live.join(", ")||"none"} · Pending: ${pending.join(", ")||"none"}
 ${meCtx}
 ${qbCtx}
 ${mcCtx}
+${tsCtx}
 
 GoTab raw: net_sales=$${liveData.gotab?.net_sales||0}, tabs=${liveData.gotab?.tab_count||0}, bar=$${liveData.gotab?.bar_sales||0}, catering=$${liveData.gotab?.catering_sales||0}, comps=$${liveData.gotab?.comps||0}, voids=$${liveData.gotab?.voids||0}, deferred=$${liveData.gotab?.deferred_revenue||0}
 
