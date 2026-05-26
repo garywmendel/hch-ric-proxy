@@ -426,14 +426,16 @@ async function fetchTripleSeat() {
   ]);
 
   if (!eventsRes.ok) throw new Error(`TripleSeat events failed: ${eventsRes.status}`);
+  console.log("TripleSeat events keys:", Object.keys(await eventsRes.clone().json()).slice(0,5));
 
   const eventsJson   = await eventsRes.json();
-  const bookingsJson = bookingsRes.ok ? await bookingsRes.json() : { bookings: [] };
-  const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : { leads: [] };
+  const bookingsJson = bookingsRes.ok ? await bookingsRes.json() : {};
+  const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : {};
 
-  const events   = eventsJson.events   || eventsJson  || [];
-  const bookings = bookingsJson.bookings || bookingsJson || [];
-  const leads    = leadsJson.leads     || leadsJson   || [];
+  // TripleSeat wraps responses in a root key — handle all formats
+  const events   = Array.isArray(eventsJson)   ? eventsJson   : (eventsJson.events   || eventsJson.data   || []);
+  const bookings = Array.isArray(bookingsJson) ? bookingsJson : (bookingsJson.bookings || bookingsJson.data || []);
+  const leads    = Array.isArray(leadsJson)    ? leadsJson    : (leadsJson.leads     || leadsJson.data    || []);
 
   // Upcoming events summary
   const upcomingEvents = events.slice(0, 10).map(e => ({
