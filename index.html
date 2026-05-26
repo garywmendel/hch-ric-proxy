@@ -676,7 +676,6 @@ async function runSync(){
   const tsLive = tsRes.status==="fulfilled"&&tsRes.value ? tsRes.value : null;
   // Merge TripleSeat into ricLive
   if(tsLive&&tsLive.ok!==false){ricLive.tripleseat=tsLive;if(!ricLive.sources) ricLive.sources={};ricLive.sources.tripleseat="live";}
-  console.log("TS merge: tsLive ok=",tsLive?.ok,"pipeline=",tsLive?.total_pipeline,"sources.ts=",ricLive.sources?.tripleseat);
   let done=0;
   for(const s of SYSTEMS){
     if(sysSt[s.id]!=="sync") updDot(s.id,"sync");
