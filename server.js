@@ -372,6 +372,10 @@ let tsState = {
   tokenExpiresAt: 0,
 };
 
+// Cache TripleSeat data — refresh once per hour max (events don't change minute to minute)
+let tsCache = { data: null, fetchedAt: 0 };
+const TS_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
 async function tsRefreshAccessToken() {
   if (!tsState.refreshToken) throw new Error("No TripleSeat refresh token — visit /auth/tripleseat");
   const res = await fetchWithRetry("https://api.tripleseat.com/oauth2/token", {
@@ -408,42 +412,47 @@ async function getTSToken() {
 }
 
 async function fetchTripleSeat() {
+  // Return cached data if fresh
+  if (tsCache.data && (Date.now() - tsCache.fetchedAt) < TS_CACHE_TTL) {
+    console.log("TripleSeat: returning cached data");
+    return tsCache.data;
+  }
+
   const token = await getTSToken();
   const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
   const base = "https://api.tripleseat.com/v1";
 
-  // TripleSeat requires MM/DD/YYYY date format
   const fmtDate = (d) => {
     const dt = new Date(d+"T12:00:00");
     return `${String(dt.getMonth()+1).padStart(2,"0")}/${String(dt.getDate()).padStart(2,"0")}/${dt.getFullYear()}`;
   };
 
-  const today_str = today();
   const thirtyDaysOut = new Date(); thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
-  const futureDate = thirtyDaysOut.toISOString().slice(0,10);
   const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const pastDate = thirtyDaysAgo.toISOString().slice(0,10);
+  const endFmt  = fmtDate(thirtyDaysOut.toISOString().slice(0,10));
+  const pastFmt = fmtDate(thirtyDaysAgo.toISOString().slice(0,10));
 
-  const startFmt  = fmtDate(today_str);
-  const endFmt    = fmtDate(futureDate);
-  const pastFmt   = fmtDate(pastDate);
+  // Fetch page 1 to get total_pages, bookings, and leads all in parallel
+  const [firstEventsRes, bookingsRes, leadsRes] = await Promise.all([
+    fetchWithRetry(`${base}/events.json?per_page=50`, { headers }),
+    fetchWithRetry(`${base}/bookings.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
+    fetchWithRetry(`${base}/leads.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
+  ]);
 
-  // Events: fetch last page (most recent/future) — TripleSeat sorts oldest first
-  const firstEventsRes = await fetchWithRetry(`${base}/events.json?per_page=50`, { headers });
   if (!firstEventsRes.ok) throw new Error(`TripleSeat events failed: ${firstEventsRes.status}`);
   const firstEventsJson = await firstEventsRes.json();
   const totalPages = firstEventsJson.total_pages || 1;
 
-  // Fetch last page to get upcoming events
-  const lastEventsRes = totalPages > 1
-    ? await fetchWithRetry(`${base}/events.json?per_page=50&page=${totalPages}`, { headers })
-    : firstEventsRes;
-  const lastEventsJson = totalPages > 1 ? await lastEventsRes.json() : firstEventsJson;
+  // Fetch last page for upcoming events (in parallel with nothing — already have bookings/leads)
+  let lastEventsJson = firstEventsJson;
+  if (totalPages > 1) {
+    const lastEventsRes = await fetchWithRetry(`${base}/events.json?per_page=50&page=${totalPages}`, { headers });
+    if (lastEventsRes.ok) lastEventsJson = await lastEventsRes.json();
+  }
 
-  const [bookingsRes, leadsRes] = await Promise.all([
-    fetchWithRetry(`${base}/bookings.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
-    fetchWithRetry(`${base}/leads.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
-  ]);
+  const bookingsJson = bookingsRes.ok ? await bookingsRes.json() : {};
+  const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : {};
+  const eventsJson   = lastEventsJson;
 
   if (!lastEventsRes.ok) throw new Error(`TripleSeat events failed: ${lastEventsRes.status}`);
   console.log("TripleSeat events keys:", Object.keys(lastEventsJson).slice(0,5));
@@ -496,19 +505,23 @@ async function fetchTripleSeat() {
   const total_lead_value = leads.filter(l => !l.converted_at && !l.deleted_at)
     .reduce((s,l) => s + parseFloat(l.estimated_revenue || l.total_revenue || 0), 0);
 
-  return {
-    upcoming_events:    upcomingEvents,
+  const result = {
+    upcoming_events:      upcomingEvents,
     event_count_upcoming: events.length,
-    booking_count:      bookings.length,
-    confirmed_revenue:  +confirmed_revenue.toFixed(2),
-    tentative_revenue:  +tentative_revenue.toFixed(2),
-    total_pipeline:     +total_pipeline.toFixed(2),
+    booking_count:        bookings.length,
+    confirmed_revenue:    +confirmed_revenue.toFixed(2),
+    tentative_revenue:    +tentative_revenue.toFixed(2),
+    total_pipeline:       +total_pipeline.toFixed(2),
     confirmed_count,
     tentative_count,
     open_leads,
-    total_lead_value:   +total_lead_value.toFixed(2),
-    data_as_of:         nowET(),
+    total_lead_value:     +total_lead_value.toFixed(2),
+    data_as_of:           nowET(),
   };
+
+  tsCache = { data: result, fetchedAt: Date.now() };
+  console.log(`TripleSeat: fetched live data, pipeline=$${result.total_pipeline}, events=${result.event_count_upcoming}`);
+  return result;
 }
 async function getGoTabToken() {
   const res = await fetchWithRetry("https://gotab.io/api/oauth/token", {
