@@ -25,6 +25,9 @@ const QB_SCOPES            = "com.intuit.quickbooks.accounting";
 const MC_API_KEY           = process.env.MAILCHIMP_API_KEY;
 const MC_SERVER            = process.env.MAILCHIMP_SERVER;
 const MC_AUDIENCE_ID       = process.env.MAILCHIMP_AUDIENCE_ID;
+const TS_CLIENT_ID         = process.env.TRIPLESEAT_CLIENT_ID;
+const TS_CLIENT_SECRET     = process.env.TRIPLESEAT_CLIENT_SECRET;
+const TS_REDIRECT_URI      = "https://ric.up.railway.app/auth/tripleseat/callback";
 const RAILWAY_API_TOKEN      = process.env.RAILWAY_API_TOKEN;
 const RAILWAY_PROJECT_ID     = process.env.RAILWAY_PROJECT_ID;
 const RAILWAY_SERVICE_ID     = process.env.RAILWAY_SERVICE_ID;
@@ -59,10 +62,10 @@ async function fetchWithRetry(url, options = {}, retries = 1, delayMs = 1000) {
   }
 }
 
-// ── Railway token persistence ─────────────────────────────────────────────────
-async function persistQBRefreshToken(newToken) {
+// ── Railway variable persistence ──────────────────────────────────────────────
+async function persistRailwayVars(variables) {
   if (!RAILWAY_API_TOKEN || !RAILWAY_PROJECT_ID || !RAILWAY_SERVICE_ID || !RAILWAY_ENVIRONMENT_ID) {
-    console.warn("Railway credentials not fully set — QB_REFRESH_TOKEN will not persist across restarts");
+    console.warn("Railway credentials not fully set — variables will not persist across restarts");
     return;
   }
   const mutation = `
@@ -76,15 +79,19 @@ async function persistQBRefreshToken(newToken) {
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RAILWAY_API_TOKEN}` },
       body: JSON.stringify({ query: mutation, variables: { input: {
         projectId: RAILWAY_PROJECT_ID, serviceId: RAILWAY_SERVICE_ID,
-        environmentId: RAILWAY_ENVIRONMENT_ID, variables: { QB_REFRESH_TOKEN: newToken },
+        environmentId: RAILWAY_ENVIRONMENT_ID, variables,
       }}}),
     });
     const data = await res.json();
-    if (data.errors) console.error("Railway token persist failed:", JSON.stringify(data.errors));
-    else console.log("QB_REFRESH_TOKEN persisted to Railway successfully");
+    if (data.errors) console.error("Railway persist failed:", JSON.stringify(data.errors));
+    else console.log("Railway vars persisted:", Object.keys(variables).join(", "));
   } catch (err) {
-    console.error("Railway token persist error:", err.message);
+    console.error("Railway persist error:", err.message);
   }
+}
+
+async function persistQBRefreshToken(newToken) {
+  return persistRailwayVars({ QB_REFRESH_TOKEN: newToken });
 }
 
 // ── QuickBooks token state ────────────────────────────────────────────────────
@@ -358,7 +365,116 @@ async function fetchMailchimp() {
   };
 }
 
-// ── GoTab ─────────────────────────────────────────────────────────────────────
+// ── TripleSeat ────────────────────────────────────────────────────────────────
+let tsState = {
+  accessToken:    process.env.TRIPLESEAT_ACCESS_TOKEN  || null,
+  refreshToken:   process.env.TRIPLESEAT_REFRESH_TOKEN || null,
+  tokenExpiresAt: 0,
+};
+
+async function tsRefreshAccessToken() {
+  if (!tsState.refreshToken) throw new Error("No TripleSeat refresh token — visit /auth/tripleseat");
+  const res = await fetchWithRetry("https://api.tripleseat.com/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type:    "refresh_token",
+      refresh_token: tsState.refreshToken,
+      client_id:     TS_CLIENT_ID,
+      client_secret: TS_CLIENT_SECRET,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`TripleSeat token refresh failed: ${res.status} | ${body}`);
+  }
+  const data = await res.json();
+  tsState.accessToken    = data.access_token;
+  tsState.refreshToken   = data.refresh_token || tsState.refreshToken;
+  tsState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
+  console.log("TripleSeat token refreshed");
+  // Persist to Railway
+  await persistRailwayVars({
+    TRIPLESEAT_ACCESS_TOKEN:  data.access_token,
+    TRIPLESEAT_REFRESH_TOKEN: data.refresh_token || tsState.refreshToken,
+  });
+  return tsState.accessToken;
+}
+
+async function getTSToken() {
+  if (tsState.accessToken && Date.now() < tsState.tokenExpiresAt) return tsState.accessToken;
+  return tsRefreshAccessToken();
+}
+
+async function fetchTripleSeat() {
+  const token = await getTSToken();
+  const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+  const base = "https://api.tripleseat.com/v1";
+
+  // Fetch events, bookings, and leads in parallel
+  const today_str = today();
+  const thirtyDaysOut = new Date(); thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+  const futureDate = thirtyDaysOut.toISOString().slice(0,10);
+  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const pastDate = thirtyDaysAgo.toISOString().slice(0,10);
+
+  const [eventsRes, bookingsRes, leadsRes] = await Promise.all([
+    fetchWithRetry(`${base}/events?start_date=${today_str}&end_date=${futureDate}&limit=50`, { headers }),
+    fetchWithRetry(`${base}/bookings?start_date=${pastDate}&end_date=${futureDate}&limit=50`, { headers }),
+    fetchWithRetry(`${base}/leads?start_date=${pastDate}&end_date=${futureDate}&limit=50`, { headers }),
+  ]);
+
+  if (!eventsRes.ok) throw new Error(`TripleSeat events failed: ${eventsRes.status}`);
+
+  const eventsJson   = await eventsRes.json();
+  const bookingsJson = bookingsRes.ok ? await bookingsRes.json() : { bookings: [] };
+  const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : { leads: [] };
+
+  const events   = eventsJson.events   || eventsJson  || [];
+  const bookings = bookingsJson.bookings || bookingsJson || [];
+  const leads    = leadsJson.leads     || leadsJson   || [];
+
+  // Upcoming events summary
+  const upcomingEvents = events.slice(0, 10).map(e => ({
+    name:          e.name || e.event_name || "—",
+    date:          e.start_date || e.date || "—",
+    guest_count:   e.guest_count || e.guests || 0,
+    total_revenue: parseFloat(e.total_revenue || e.revenue || 0),
+    status:        e.status || "—",
+    location:      e.location_name || "—",
+  }));
+
+  // Revenue pipeline from bookings
+  let confirmed_revenue=0, tentative_revenue=0, total_pipeline=0;
+  let confirmed_count=0, tentative_count=0;
+  for (const b of bookings) {
+    const rev = parseFloat(b.total_revenue || b.revenue || 0);
+    total_pipeline += rev;
+    if ((b.status||"").toLowerCase().includes("confirm")) {
+      confirmed_revenue += rev; confirmed_count++;
+    } else {
+      tentative_revenue += rev; tentative_count++;
+    }
+  }
+
+  // Leads summary
+  const open_leads = leads.filter(l => !(l.status||"").toLowerCase().includes("close")).length;
+  const total_lead_value = leads.reduce((s,l) => s + parseFloat(l.total_revenue||l.revenue||0), 0);
+
+  return {
+    upcoming_events:    upcomingEvents,
+    event_count_30d:    events.length,
+    booking_count:      bookings.length,
+    confirmed_revenue:  +confirmed_revenue.toFixed(2),
+    tentative_revenue:  +tentative_revenue.toFixed(2),
+    total_pipeline:     +total_pipeline.toFixed(2),
+    confirmed_count,
+    tentative_count,
+    open_leads,
+    total_lead_value:   +total_lead_value.toFixed(2),
+    data_as_of:         nowET(),
+  };
+}
 async function getGoTabToken() {
   const res = await fetchWithRetry("https://gotab.io/api/oauth/token", {
     method: "POST", headers: { "Content-Type": "application/json" },
@@ -499,7 +615,60 @@ app.get("/auth/quickbooks/callback",async(req,res)=>{
   } catch(err){res.status(500).send(`<h2>Callback error</h2><pre>${err.message}</pre>`);}
 });
 
-app.get("/api/quickbooks/status",(_req,res)=>{
+app.get("/auth/tripleseat",(req,res)=>{
+  if (!TS_CLIENT_ID) return res.status(500).send("TRIPLESEAT_CLIENT_ID not set.");
+  const url = new URL("https://api.tripleseat.com/oauth2/authorize");
+  url.searchParams.set("client_id",    TS_CLIENT_ID);
+  url.searchParams.set("redirect_uri", TS_REDIRECT_URI);
+  url.searchParams.set("response_type","code");
+  url.searchParams.set("scope",        "read");
+  url.searchParams.set("state",        Math.random().toString(36).slice(2));
+  res.redirect(url.toString());
+});
+
+app.get("/auth/tripleseat/callback",async(req,res)=>{
+  const{code,error}=req.query;
+  if (error) return res.send(`<h2>TripleSeat Auth Failed</h2><p>${error}</p>`);
+  if (!code) return res.status(400).send("<h2>Missing code</h2>");
+  try {
+    const tokenRes = await fetchWithRetry("https://api.tripleseat.com/oauth2/token",{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:new URLSearchParams({
+        grant_type:"authorization_code", code,
+        client_id:TS_CLIENT_ID, client_secret:TS_CLIENT_SECRET,
+        redirect_uri:TS_REDIRECT_URI,
+      }),
+    });
+    if (!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>TS Token exchange failed</h2><pre>${body}</pre>`);}
+    const tokens = await tokenRes.json();
+    tsState.accessToken    = tokens.access_token;
+    tsState.refreshToken   = tokens.refresh_token;
+    tsState.tokenExpiresAt = Date.now() + (tokens.expires_in - 60) * 1000;
+    await persistRailwayVars({
+      TRIPLESEAT_ACCESS_TOKEN:  tokens.access_token,
+      TRIPLESEAT_REFRESH_TOKEN: tokens.refresh_token,
+    });
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>TripleSeat Connected</title>
+<style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}
+h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}
+.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}
+.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}
+.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px}</style></head>
+<body><h1>✓ TripleSeat Connected</h1><p>Tokens saved automatically to Railway.</p>
+<div class="card"><div class="label">Access Token</div><div class="value">${tokens.access_token}</div></div>
+<div class="card"><div class="label">Refresh Token</div><div class="value">${tokens.refresh_token}</div></div>
+<div class="step">Test: <strong>curl https://ric.up.railway.app/api/tripleseat</strong></div>
+</body></html>`);
+  } catch(err){res.status(500).send(`<h2>TS Callback error</h2><pre>${err.message}</pre>`);}
+});
+
+app.get("/api/tripleseat",async(req,res)=>{
+  try {
+    if (!tsState.accessToken&&!tsState.refreshToken) return res.status(401).json({ok:false,error:"Not authorized — visit /auth/tripleseat"});
+    res.json({ok:true,source:"tripleseat_live",...await fetchTripleSeat()});
+  } catch(err){console.error("TripleSeat error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
   res.json({ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,
     tokenValid:Date.now()<qbState.tokenExpiresAt,
     tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,
@@ -598,6 +767,12 @@ app.get("/api/ric",async(req,res)=>{
     result.mailchimp=await fetchMailchimp(); result.sources.mailchimp="live";
   } catch(e){console.error("Mailchimp failed:",e.message);result.mailchimp=null;result.sources.mailchimp=`error: ${e.message}`;}
 
+  try {
+    if(tsState.accessToken||tsState.refreshToken){
+      result.tripleseat=await fetchTripleSeat(); result.sources.tripleseat="live";
+    }
+  } catch(e){console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
+
   res.json({ok:true,...result});
 });
 
@@ -609,7 +784,7 @@ app.post("/api/claude",async(req,res)=>{
 });
 
 app.get("/health",(_req,res)=>res.json({
-  ok:true,service:"hch-ric-proxy",version:"3.8",
+  ok:true,service:"hch-ric-proxy",version:"3.9",
   railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
 }));
 
