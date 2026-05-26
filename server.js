@@ -446,8 +446,8 @@ async function fetchTripleSeat() {
   const bookings    = (bookingsJson.results  || []);
   const leads       = (leadsJson.results     || []);
 
-  // Filter events to Hill Country NY only and sort by date ascending
-  const NY_LOCATION_ID = 2216; // Hill Country Barbecue Market NY
+  // Filter events to Hill Country NY only (location ID 2191 = Hill Country Barbecue Market NY, 30 W 26th St)
+  const NY_LOCATION_ID = 2191;
   const todayISO = today();
   const events = allEvents
     .filter(e => {
