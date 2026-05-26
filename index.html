@@ -761,7 +761,14 @@ Write a tight GM briefing. ### headers only. Max 3 sentences per section. Skip s
   const timer=setInterval(()=>{elapsed++;const el=document.getElementById("report-timer");if(el) el.textContent=`${elapsed}s`;},1000);
   document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
   try{
-    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
+    let res,attempts=0;
+    while(attempts<3){
+      attempts++;
+      res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
+      if(res.ok) break;
+      if((res.status===502||res.status===504)&&attempts<3){console.log(`Claude ${res.status} — retry ${attempts}/3`);await new Promise(r=>setTimeout(r,3000));continue;}
+      break;
+    }
     if(!res.ok){const errText=await res.text();throw new Error(`Claude API ${res.status}: ${errText.slice(0,200)}`);}
     const data=await res.json();
     if(data.error) throw new Error(`Claude error: ${data.error.message||JSON.stringify(data.error)}`);
