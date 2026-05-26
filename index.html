@@ -308,7 +308,7 @@ LIVE sources currently connected:
 - MarginEdge: COGS by category (meat, produce, dairy, grocery, liquor, beer, wine, packaging) — 24-48hr lag
 - QuickBooks Online: full monthly P&L — all income, COGS, labor, controllable + non-controllable expenses
 - Mailchimp: email audience (27,317 subscribers), campaign performance, open/click rates, list growth
-- TripleSeat: private dining & events — upcoming events, confirmed/tentative revenue pipeline, open leads
+- TripleSeat: private dining & events — today's events, this week's events, confirmed/tentative pipeline, open leads. Flag if any events are happening today. Note guest counts for staffing awareness.
 
 PENDING sources (integrations in progress): 7Shifts, OpenTable, GA4, Microsoft 365, Marqii, DoorDash.
 
@@ -724,11 +724,21 @@ async function generateReport(){
     ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()} emails sent, ${mc.open_rate_30d}% open rate, ${mc.click_rate_30d}% click rate, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth. Most recent campaign: "${mc.recent_campaigns?.[0]?.subject||"—"}" — ${mc.recent_campaigns?.[0]?.open_rate}% open, ${mc.recent_campaigns?.[0]?.click_rate}% click.`
     :"Mailchimp: data unavailable.";
 
+  const todayISO=now.toISOString().slice(0,10);
+  const weekOut=new Date(now); weekOut.setDate(weekOut.getDate()+7);
+  const weekISO=weekOut.toISOString().slice(0,10);
+  const tsEvents=ts.upcoming_events||[];
+  const todayEvents=tsEvents.filter(e=>e.date===todayISO);
+  const weekEvents=tsEvents.filter(e=>e.date>todayISO&&e.date<=weekISO);
+  const nextBig=tsEvents.filter(e=>e.guest_count>0).sort((a,b)=>b.guest_count-a.guest_count)[0];
   const fmt$=v=>v!=null?(+v).toLocaleString("en-US",{minimumFractionDigits:2}):"0.00";
   const tsCtx=ts.data_as_of
-    ?(ts.total_pipeline>0
-      ?`TripleSeat (live): ${ts.confirmed_count||0} confirmed events ($${fmt$(ts.confirmed_revenue)}), ${ts.tentative_count||0} tentative ($${fmt$(ts.tentative_revenue)}). Total pipeline $${fmt$(ts.total_pipeline)}. Open leads: ${ts.open_leads||0}. Next event: ${ts.upcoming_events?.[0]?.name||"—"} on ${ts.upcoming_events?.[0]?.date||"—"} (${ts.upcoming_events?.[0]?.guest_count||0} guests).`
-      :"TripleSeat (live): No active pipeline in current window.")
+    ?[
+        `TripleSeat (live): Pipeline $${fmt$(ts.total_pipeline)} total — ${ts.confirmed_count||0} confirmed ($${fmt$(ts.confirmed_revenue)}), ${ts.tentative_count||0} tentative ($${fmt$(ts.tentative_revenue)}). Open leads: ${ts.open_leads||0}.`,
+        todayEvents.length?`TODAY'S EVENTS (${todayEvents.length}): ${todayEvents.map(e=>`${e.name} (${e.guest_count||"?"} guests, ${e.status})`).join("; ")}.`:"No events at HC NY today.",
+        weekEvents.length?`THIS WEEK: ${weekEvents.map(e=>`${e.name} on ${e.date} (${e.guest_count||"?"} guests)`).join("; ")}.`:"No events this week.",
+        nextBig?`Largest upcoming: ${nextBig.name} on ${nextBig.date} — ${nextBig.guest_count} guests.`:"",
+      ].filter(Boolean).join(" ")
     :"TripleSeat: data unavailable.";
 
   const prompt=`Hill Country BBQ — New York
@@ -752,12 +762,11 @@ CRITICAL: Only include sections where live data exists. Do NOT mention, estimate
 **Hill Country BBQ — New York | ${now.toLocaleDateString()}**
 
 ### Revenue snapshot
-### Labor
 ### Food cost
 ### Events & private dining
 ### Digital & marketing
 ### GM narrative
-### Anomaly flags
+### Watch list
 
 Rules: blank line between sections. Specific $ and %. GM at 7am voice.`;
 
