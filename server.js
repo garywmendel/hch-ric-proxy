@@ -679,6 +679,28 @@ h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bo
   } catch(err){res.status(500).send(`<h2>TS Callback error</h2><pre>${err.message}</pre>`);}
 });
 
+app.get("/api/tripleseat/debug",async(req,res)=>{
+  try {
+    const token=await getTSToken();
+    const headers={"Authorization":`Bearer ${token}`,"Content-Type":"application/json"};
+    // Try simplest possible call — just get all bookings no filters
+    const r1=await fetchWithRetry("https://api.tripleseat.com/v1/bookings.json?per_page=3",{headers});
+    const r2=await fetchWithRetry("https://api.tripleseat.com/v1/events.json?per_page=3",{headers});
+    const r3=await fetchWithRetry("https://api.tripleseat.com/v1/leads.json?per_page=3",{headers});
+    const bookings=r1.ok?await r1.json():{status:r1.status};
+    const events=r2.ok?await r2.json():{status:r2.status};
+    const leads=r3.ok?await r3.json():{status:r3.status};
+    res.json({
+      bookings_status:r1.status, bookings_keys:bookings?Object.keys(bookings).slice(0,5):[],
+      bookings_sample:JSON.stringify(bookings).slice(0,500),
+      events_status:r2.status, events_keys:events?Object.keys(events).slice(0,5):[],
+      events_sample:JSON.stringify(events).slice(0,500),
+      leads_status:r3.status, leads_keys:leads?Object.keys(leads).slice(0,5):[],
+      leads_sample:JSON.stringify(leads).slice(0,500),
+    });
+  } catch(err){res.status(500).json({error:err.message});}
+});
+
 app.get("/api/tripleseat",async(req,res)=>{
   try {
     if (!tsState.accessToken&&!tsState.refreshToken) return res.status(401).json({ok:false,error:"Not authorized — visit /auth/tripleseat"});
