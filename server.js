@@ -832,21 +832,21 @@ app.get("/api/ric",async(req,res)=>{
 
 app.post("/api/claude",async(req,res)=>{
   try{
-    res.setHeader("Connection","keep-alive");
+    const body={...req.body,stream:false};
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),25000);
     const upstream=await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
       headers:{"Content-Type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},
-      body:JSON.stringify({...req.body,stream:false}),
-      signal:AbortSignal.timeout(55000), // 55s timeout — just under Railway's 60s limit
+      body:JSON.stringify(body),
+      signal:controller.signal,
     });
-    if(!upstream.ok){
-      const err=await upstream.text();
-      return res.status(upstream.status).json({ok:false,error:err});
-    }
+    clearTimeout(timeout);
     const data=await upstream.json();
     res.json(data);
   }catch(err){
     console.error("Claude proxy error:",err.message);
+    if(err.name==="AbortError") return res.status(504).json({ok:false,error:"Claude API timeout after 25s"});
     res.status(500).json({ok:false,error:err.message});
   }
 });
