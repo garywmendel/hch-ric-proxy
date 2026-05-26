@@ -429,9 +429,9 @@ async function fetchTripleSeat() {
   const pastFmt   = fmtDate(pastDate);
 
   const [eventsRes, bookingsRes, leadsRes] = await Promise.all([
-    fetchWithRetry(`${base}/events/search.json?start_date=${startFmt}&end_date=${endFmt}&per_page=50`, { headers }),
-    fetchWithRetry(`${base}/bookings/search.json?start_date=${pastFmt}&end_date=${endFmt}&per_page=50&show_financial=true`, { headers }),
-    fetchWithRetry(`${base}/leads/search.json?start_date=${pastFmt}&end_date=${endFmt}&per_page=50`, { headers }),
+    fetchWithRetry(`${base}/events.json?per_page=50&start_date=${startFmt}&end_date=${endFmt}`, { headers }),
+    fetchWithRetry(`${base}/bookings.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
+    fetchWithRetry(`${base}/leads.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
   ]);
 
   if (!eventsRes.ok) throw new Error(`TripleSeat events failed: ${eventsRes.status}`);
@@ -441,41 +441,40 @@ async function fetchTripleSeat() {
   const bookingsJson = bookingsRes.ok ? await bookingsRes.json() : {};
   const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : {};
 
-  // TripleSeat wraps responses in a root key — handle all formats
-  const events   = Array.isArray(eventsJson)   ? eventsJson   : (eventsJson.events   || eventsJson.data   || []);
-  const bookings = Array.isArray(bookingsJson) ? bookingsJson : (bookingsJson.bookings || bookingsJson.data || []);
-  const leads    = Array.isArray(leadsJson)    ? leadsJson    : (leadsJson.leads     || leadsJson.data    || []);
+  // TripleSeat wraps all responses in {total_pages, results: [...]}
+  const events   = (eventsJson.results   || []);
+  const bookings = (bookingsJson.results || []);
+  const leads    = (leadsJson.results    || []);
 
   // Upcoming events summary
   const upcomingEvents = events.slice(0, 10).map(e => ({
-    name:          e.name || e.event_name || "—",
-    date:          e.start_date || e.date || "—",
+    name:          e.name || "—",
+    date:          e.event_date_iso8601 || e.start_date || "—",
     guest_count:   e.guest_count || e.guests || 0,
-    total_revenue: parseFloat(e.total_revenue || e.revenue || 0),
+    total_revenue: parseFloat(e.total_revenue || e.actual_revenue || 0),
     status:        e.status || "—",
     location:      e.location_name || e.location || "—",
   }));
 
-  // Revenue pipeline from bookings
+  // Revenue pipeline from bookings — TripleSeat statuses: DEFINITE, TENTATIVE, CLOSED, CLOSED-LOST
   let confirmed_revenue=0, tentative_revenue=0, total_pipeline=0;
   let confirmed_count=0, tentative_count=0;
   for (const b of bookings) {
-    const rev = parseFloat(b.total_revenue || b.revenue || b.subtotal || 0);
+    const rev = parseFloat(b.total_grand_total || b.total_actual_amount || b.total_event_grand_total || 0);
+    const status = (b.status || "").toUpperCase();
+    if (status === "CLOSED-LOST" || status === "CLOSED") continue; // exclude closed/lost
     total_pipeline += rev;
-    const status = (b.status || b.booking_status || "").toLowerCase();
-    if (status.includes("confirm")) {
+    if (status === "DEFINITE") {
       confirmed_revenue += rev; confirmed_count++;
     } else {
       tentative_revenue += rev; tentative_count++;
     }
   }
 
-  // Leads summary
-  const open_leads = leads.filter(l => {
-    const s = (l.status || l.lead_status || "").toLowerCase();
-    return !s.includes("close") && !s.includes("cancel");
-  }).length;
-  const total_lead_value = leads.reduce((s,l) => s + parseFloat(l.total_revenue||l.revenue||l.estimated_revenue||0), 0);
+  // Leads summary — exclude converted leads
+  const open_leads = leads.filter(l => !l.converted_at && !l.deleted_at).length;
+  const total_lead_value = leads.filter(l => !l.converted_at && !l.deleted_at)
+    .reduce((s,l) => s + parseFloat(l.estimated_revenue || l.total_revenue || 0), 0);
 
   return {
     upcoming_events:    upcomingEvents,
@@ -677,28 +676,6 @@ h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bo
 <div class="step">Test: <strong>curl https://ric.up.railway.app/api/tripleseat</strong></div>
 </body></html>`);
   } catch(err){res.status(500).send(`<h2>TS Callback error</h2><pre>${err.message}</pre>`);}
-});
-
-app.get("/api/tripleseat/debug",async(req,res)=>{
-  try {
-    const token=await getTSToken();
-    const headers={"Authorization":`Bearer ${token}`,"Content-Type":"application/json"};
-    // Try simplest possible call — just get all bookings no filters
-    const r1=await fetchWithRetry("https://api.tripleseat.com/v1/bookings.json?per_page=3",{headers});
-    const r2=await fetchWithRetry("https://api.tripleseat.com/v1/events.json?per_page=3",{headers});
-    const r3=await fetchWithRetry("https://api.tripleseat.com/v1/leads.json?per_page=3",{headers});
-    const bookings=r1.ok?await r1.json():{status:r1.status};
-    const events=r2.ok?await r2.json():{status:r2.status};
-    const leads=r3.ok?await r3.json():{status:r3.status};
-    res.json({
-      bookings_status:r1.status, bookings_keys:bookings?Object.keys(bookings).slice(0,5):[],
-      bookings_sample:JSON.stringify(bookings).slice(0,500),
-      events_status:r2.status, events_keys:events?Object.keys(events).slice(0,5):[],
-      events_sample:JSON.stringify(events).slice(0,500),
-      leads_status:r3.status, leads_keys:leads?Object.keys(leads).slice(0,5):[],
-      leads_sample:JSON.stringify(leads).slice(0,500),
-    });
-  } catch(err){res.status(500).json({error:err.message});}
 });
 
 app.get("/api/tripleseat",async(req,res)=>{
