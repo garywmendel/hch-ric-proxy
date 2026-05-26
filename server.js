@@ -692,17 +692,17 @@ app.get("/api/tripleseat/debug",async(req,res)=>{
     const token=await getTSToken();
     const headers={"Authorization":`Bearer ${token}`,"Content-Type":"application/json"};
     const base="https://api.tripleseat.com/v1";
-    // Try search endpoint with location
-    const r1=await fetchWithRetry(`${base}/events/search.json?location_id=2191&per_page=5`,{headers});
-    const d1=r1.ok?await r1.json():{status:r1.status,text:await r1.text()};
-    // Try without location filter but with high page to get recent
-    const r2=await fetchWithRetry(`${base}/events.json?location_id=2191&per_page=5`,{headers});
-    const d2=r2.ok?await r2.json():{status:r2.status};
+    // Get total pages first
+    const r1=await fetchWithRetry(`${base}/events.json?per_page=50`,{headers});
+    const d1=r1.ok?await r1.json():{};
+    const totalPages=d1.total_pages||1;
+    // Fetch last page to get most recent events
+    const r2=await fetchWithRetry(`${base}/events.json?per_page=50&page=${totalPages}`,{headers});
+    const d2=r2.ok?await r2.json():{};
     res.json({
-      search_total_pages:d1.total_pages,search_count:d1.results?.length,
-      search_sample:d1.results?.slice(0,2).map(e=>({name:e.name,date:e.event_date_iso8601,status:e.status,loc:e.location?.id})),
-      base_total_pages:d2.total_pages,base_count:d2.results?.length,
-      base_sample:d2.results?.slice(0,2).map(e=>({name:e.name,date:e.event_date_iso8601,status:e.status,loc:e.location?.id})),
+      total_pages:totalPages,
+      last_page_count:d2.results?.length,
+      last_page_sample:d2.results?.slice(-10).map(e=>({name:e.name,date:e.event_date_iso8601,status:e.status,loc_id:e.location?.id,loc_name:e.location?.name})),
     });
   }catch(err){res.status(500).json({error:err.message});}
 });
