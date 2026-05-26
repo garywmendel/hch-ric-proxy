@@ -821,10 +821,18 @@ app.get("/api/ric",async(req,res)=>{
   if(mcResult.status==="fulfilled"){result.mailchimp=mcResult.value;result.sources.mailchimp="live";}
   else{console.error("Mailchimp failed:",mcResult.reason?.message);result.mailchimp=null;result.sources.mailchimp=`error: ${mcResult.reason?.message}`;}
 
-  // TripleSeat — use cache only, never block /api/ric
+  // TripleSeat — use cache if warm, otherwise fetch with 12s timeout
   if(tsState.accessToken||tsState.refreshToken){
-    if(tsCache.data){result.tripleseat=tsCache.data;result.sources.tripleseat="live";}
-    else{fetchTripleSeat().catch(e=>console.error("TS background warm failed:",e.message));result.tripleseat=null;result.sources.tripleseat="warming";}
+    try{
+      const ts=await Promise.race([
+        fetchTripleSeat(),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error("TripleSeat timeout")),12000)),
+      ]);
+      result.tripleseat=ts; result.sources.tripleseat="live";
+    }catch(e){
+      if(tsCache.data){result.tripleseat=tsCache.data;result.sources.tripleseat="live";console.log("TS timeout — using stale cache");}
+      else{console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
+    }
   }
 
   res.json({ok:true,...result});
@@ -861,4 +869,13 @@ app.get("/",(_req,res)=>{
   res.sendFile(join(__dirname,"index.html"));
 });
 
-app.listen(PORT,()=>console.log(`RIC proxy v3.7 running on port ${PORT}`));
+app.listen(PORT,()=>{
+  console.log(`RIC proxy v3.9 running on port ${PORT}`);
+  // Warm TripleSeat cache on startup so /api/ric never shows "warming"
+  if(process.env.TRIPLESEAT_ACCESS_TOKEN||process.env.TRIPLESEAT_REFRESH_TOKEN){
+    console.log("Warming TripleSeat cache on startup...");
+    fetchTripleSeat()
+      .then(d=>console.log(`TripleSeat cache warmed: pipeline=$${d.total_pipeline}, events=${d.event_count_upcoming}`))
+      .catch(e=>console.error("TripleSeat startup warm failed:",e.message));
+  }
+});
