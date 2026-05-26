@@ -741,34 +741,22 @@ async function generateReport(){
       ].filter(Boolean).join(" ")
     :"TripleSeat: data unavailable.";
 
-  const prompt=`Hill Country BBQ — New York
-Date: ${now.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
-Time: ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET
-Service: ${svc}
-Live: ${live.join(", ")||"none"} · Pending: ${pending.join(", ")||"none"}
+  const prompt=`${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})} · ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET · ${svc}
+Live sources: ${live.join(", ")||"none"}
 
+GoTab: $${liveData.gotab?.net_sales||0} net sales, ${liveData.gotab?.tab_count||0} tabs, bar $${liveData.gotab?.bar_sales||0}, catering $${liveData.gotab?.catering_sales||0}, comps $${liveData.gotab?.comps||0}, deferred $${liveData.gotab?.deferred_revenue||0}
 ${meCtx}
 ${qbCtx}
 ${mcCtx}
 ${tsCtx}
 
-GoTab raw: net_sales=$${liveData.gotab?.net_sales||0}, tabs=${liveData.gotab?.tab_count||0}, bar=$${liveData.gotab?.bar_sales||0}, catering=$${liveData.gotab?.catering_sales||0}, comps=$${liveData.gotab?.comps||0}, voids=$${liveData.gotab?.voids||0}, deferred=$${liveData.gotab?.deferred_revenue||0}
-
-GoTab: net_sales excludes deferred_revenue/PROCESSORS/EXPENSE. bar_sales and catering_sales are subsets. Before noon: revenue is catering/events only.
-
-CRITICAL: Only include sections where live data exists. Do NOT mention, estimate, or reference data for pending sources (${pending.join(", ")}). Do not use words like "mock", "demo", or "placeholder". Skip sections with no live data.
-
-## Daily Intelligence Report
-**Hill Country BBQ — New York | ${now.toLocaleDateString()}**
+Write a tight GM briefing. ### headers only. Max 3 sentences per section. Skip sections with no data. Use exact $ and %.
 
 ### Revenue snapshot
 ### Food cost
 ### Events & private dining
 ### Digital & marketing
-### GM narrative
-### Watch list
-
-Rules: blank line between sections. Specific $ and %. GM at 7am voice.`;
+### Watch list`;
 
   const timer=setInterval(()=>{elapsed++;const el=document.getElementById("report-timer");if(el) el.textContent=`${elapsed}s`;},1000);
   document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
