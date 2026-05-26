@@ -402,6 +402,7 @@ async function tsRefreshAccessToken() {
 }
 
 async function getTSToken() {
+  if (!tsState.accessToken && !tsState.refreshToken) throw new Error("TripleSeat not authorized — visit /auth/tripleseat");
   if (tsState.accessToken && Date.now() < tsState.tokenExpiresAt) return tsState.accessToken;
   return tsRefreshAccessToken();
 }
