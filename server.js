@@ -687,6 +687,26 @@ h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bo
   } catch(err){res.status(500).send(`<h2>TS Callback error</h2><pre>${err.message}</pre>`);}
 });
 
+app.get("/api/tripleseat/debug",async(req,res)=>{
+  try{
+    const token=await getTSToken();
+    const headers={"Authorization":`Bearer ${token}`,"Content-Type":"application/json"};
+    const base="https://api.tripleseat.com/v1";
+    // Try search endpoint with location
+    const r1=await fetchWithRetry(`${base}/events/search.json?location_id=2191&per_page=5`,{headers});
+    const d1=r1.ok?await r1.json():{status:r1.status,text:await r1.text()};
+    // Try without location filter but with high page to get recent
+    const r2=await fetchWithRetry(`${base}/events.json?location_id=2191&per_page=5`,{headers});
+    const d2=r2.ok?await r2.json():{status:r2.status};
+    res.json({
+      search_total_pages:d1.total_pages,search_count:d1.results?.length,
+      search_sample:d1.results?.slice(0,2).map(e=>({name:e.name,date:e.event_date_iso8601,status:e.status,loc:e.location?.id})),
+      base_total_pages:d2.total_pages,base_count:d2.results?.length,
+      base_sample:d2.results?.slice(0,2).map(e=>({name:e.name,date:e.event_date_iso8601,status:e.status,loc:e.location?.id})),
+    });
+  }catch(err){res.status(500).json({error:err.message});}
+});
+
 app.get("/api/tripleseat",async(req,res)=>{
   try {
     if (!tsState.accessToken&&!tsState.refreshToken) return res.status(401).json({ok:false,error:"Not authorized — visit /auth/tripleseat"});
