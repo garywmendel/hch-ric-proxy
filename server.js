@@ -810,15 +810,18 @@ app.get("/api/ric",async(req,res)=>{
     result.mailchimp=await fetchMailchimp(); result.sources.mailchimp="live";
   } catch(e){console.error("Mailchimp failed:",e.message);result.mailchimp=null;result.sources.mailchimp=`error: ${e.message}`;}
 
+  // TripleSeat is fetched separately via /api/tripleseat due to slow two-page fetch
+  // It is cached for 1 hour after first fetch
   try {
     if(tsState.accessToken||tsState.refreshToken){
-      const ts=await fetchTripleSeat();
-      // Strip verbose location objects from upcoming_events to keep payload small
-      if(ts.upcoming_events) ts.upcoming_events=ts.upcoming_events.map(e=>({
-        name:e.name,date:e.date,guest_count:e.guest_count,
-        total_revenue:e.total_revenue,status:e.status,location:e.location,
-      }));
-      result.tripleseat=ts; result.sources.tripleseat="live";
+      // Only include if already cached — don't block /api/ric on a cold TripleSeat fetch
+      if(tsCache.data){
+        result.tripleseat=tsCache.data; result.sources.tripleseat="live";
+      } else {
+        // Warm cache in background — don't await
+        fetchTripleSeat().catch(e=>console.error("TripleSeat background fetch failed:",e.message));
+        result.tripleseat=null; result.sources.tripleseat="warming";
+      }
     }
   } catch(e){console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
 
