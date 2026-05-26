@@ -1,865 +1,894 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>Hill Country Intelligence Controller</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20134%20258%22%3E%3Cpath%20fill%3D%22%231a1a18%22%20d%3D%22M74.6%2C113.7v-34.4c1-.3%2C1.8-1.2%2C1.8-2.4l.5-32.5c0-1.7%2C1.7-3.8%2C2-5.6h0c0-.3%2C0-.5%2C0-.7h0s.7-7.3.7-7.3h1c.1.9.4%2C1.4%2C1.3%2C1.5%2C1%2C0%2C2-.7%2C2.2-1.6.3-1.4-.8-2.6-2.1-2.6s-1.3.6-1.4%2C1.4h-.8c0%2C0%2C.5-5.3.5-5.3h1c.1.9.5%2C1.4%2C1.3%2C1.4.9%2C0%2C1.7-.5%2C2-1.4.5-1.5-.6-2.8-2-2.8s-1.2.5-1.4%2C1.3h-.9c0%2C0%2C.5-5.2.5-5.2h1.1c.1.8.5%2C1.4%2C1.4%2C1.4.9%2C0%2C1.7-.5%2C2-1.4.5-1.5-.6-2.8-2-2.8s-1.2.5-1.4%2C1.3h-.9c0%2C0%2C.4-3.8.4-3.8.1-1.5-1-2.7-2.5-2.7h-13.6c-1.5%2C0-2.6%2C1.3-2.5%2C2.7l.4%2C3.9h-.9c-.1-.8-.5-1.4-1.4-1.4-.9%2C0-1.7.5-2%2C1.4-.5%2C1.5.6%2C2.8%2C2%2C2.8s1.2-.5%2C1.4-1.3h1.1c0%2C0%2C.5%2C5.2.5%2C5.2h-.9c-.1-.9-.5-1.4-1.3-1.4-.9%2C0-1.7.5-2%2C1.4-.5%2C1.5.6%2C2.8%2C2%2C2.8s1.2-.5%2C1.4-1.3h1c0%2C0%2C.5%2C5.3.5%2C5.3h-.8c-.1-.8-.4-1.4-1.3-1.4-1%2C0-2%2C.7-2.2%2C1.6-.3%2C1.4.8%2C2.6%2C2.1%2C2.6s1.3-.6%2C1.4-1.4h1c0%2C0%2C.7%2C7.2.7%2C7.2h0c0%2C.2%2C0%2C.4%2C0%2C.7h0c.4%2C1.8%2C2%2C3.9%2C2%2C5.6l.5%2C32.5c0%2C1.1.8%2C2.1%2C1.8%2C2.4v34.4c-6.6.3-10.5%2C5.8-10.5%2C12.4l-2.7%2C37.4%2C12.3-40.4c1.4-2.4%2C4.8-2.4%2C6.2%2C0l12.3%2C40.4-2.7-37.4c0-6.6-3.8-12.1-10.3-12.4z%22%2F%3E%3Cpolygon%20fill%3D%22red%22%20points%3D%2272.2%20131.6%2086.8%20176.4%20134%20176.4%2095.8%20204.2%20110.4%20249%2072.2%20221.3%2034.1%20249%2048.6%20204.2%2010.5%20176.4%2057.6%20176.4%2072.2%20131.6%22%2F%3E%3C%2Fsvg%3E"/>
-<link rel="apple-touch-icon" href="/apple-touch-icon.png"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="RIC"/>
-<meta name="theme-color" content="#1a1a18"/>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg0:#fff;--bg1:#f5f5f3;--bg2:#eeede8;
-  --t0:#1a1a18;--t1:#6b6b67;--t2:#9a9992;
-  --b0:rgba(0,0,0,0.35);--b1:rgba(0,0,0,0.22);--b2:rgba(0,0,0,0.1);
-  --green:#1D9E75;--green-bg:#e1f5ee;--green-t:#085041;
-  --amber:#BA7517;--amber-bg:#faeeda;--amber-t:#633806;
-  --blue:#185FA5;--blue-bg:#e6f1fb;--blue-t:#0C447C;
-  --red:#E24B4A;--red-bg:#fff0f0;--red-t:#7a0000;
-  --r-md:8px;--r-lg:12px;
-  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
-  --mono:"SF Mono","Fira Code",monospace;
-}
-@media(prefers-color-scheme:dark){
-  :root{
-    --bg0:#1c1c1a;--bg1:#252522;--bg2:#2e2e2b;
-    --t0:#f0efe8;--t1:#9a9992;--t2:#6b6b67;
-    --b0:rgba(255,255,255,0.3);--b1:rgba(255,255,255,0.18);--b2:rgba(255,255,255,0.08);
-    --green-bg:#04342c;--green-t:#9FE1CB;
-    --amber-bg:#412402;--amber-t:#FAC775;
-    --blue-bg:#042C53;--blue-t:#85B7EB;
-    --red-bg:#2a1010;--red-t:#f09595;
-  }
-}
-html,body{height:100%;-webkit-text-size-adjust:100%}
-body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
-#shell{max-width:820px;margin:0 auto;background:var(--bg0);min-height:100vh;border-left:0.5px solid var(--b2);border-right:0.5px solid var(--b2)}
-.hdr{padding:14px 16px 0;border-bottom:0.5px solid var(--b2)}
-.hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.logo-wrap{flex-shrink:0;line-height:0}
-.logo-wrap svg{height:28px;width:auto;display:block}
-.hdr-meta{flex:1;min-width:0;overflow:hidden}
-.hdr-meta h1{font-size:14px;font-weight:500;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
-.hdr-meta p{font-size:11px;color:var(--t1);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tabs{display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 16px}
-.tabs::-webkit-scrollbar{display:none}
-.tab{padding:10px 13px;font-size:13px;font-weight:400;color:var(--t1);cursor:pointer;border:none;background:none;font-family:var(--font);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent}
-.tab.active{color:var(--t0);font-weight:500;border-bottom-color:var(--t0)}
-.tab:hover:not(.active){color:var(--t0)}
-.panel{display:none;padding:16px}
-.panel.active{display:block}
-.sys-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
-@media(min-width:480px){.sys-grid{grid-template-columns:repeat(3,1fr)}}
-@media(min-width:640px){.sys-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}}
-.sys-card{background:var(--bg1);border:0.5px solid var(--b2);border-radius:var(--r-md);padding:8px 10px;display:flex;align-items:center;gap:7px}
-.sys-card.on{border-color:var(--green);background:var(--green-bg)}
-.sys-card.err{border-color:var(--red);background:var(--red-bg)}
-.sys-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;flex-shrink:0}
-.sys-info{flex:1;min-width:0}
-.sys-name{font-size:11px;font-weight:500;color:var(--t0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sys-domain{font-size:10px;color:var(--t1)}
-.sys-dot{width:7px;height:7px;border-radius:50%;background:var(--b1);flex-shrink:0;transition:background 0.3s}
-.sys-dot.live{background:var(--green)}
-.sys-dot.sync{background:var(--amber);animation:blink 0.8s infinite}
-.sys-dot.err{background:var(--red)}
-.prog-bar{height:3px;background:var(--b2);border-radius:2px;margin-bottom:14px;overflow:hidden}
-.prog-fill{height:100%;background:var(--blue);border-radius:2px;transition:width 0.4s}
-.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.stat{background:var(--bg1);border-radius:var(--r-md);padding:9px 10px}
-.stat-label{font-size:10px;color:var(--t1);margin-bottom:2px}
-.stat-val{font-size:15px;font-weight:500;color:var(--t0);line-height:1.2}
-.flags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.flag{padding:4px 10px;border-radius:100px;font-size:11px;font-weight:500}
-.flag.warn{background:var(--amber-bg);color:var(--amber-t)}
-.flag.crit{background:var(--red-bg);color:var(--red-t)}
-.flag.ok{background:var(--green-bg);color:var(--green-t)}
-.flag.info{background:var(--blue-bg);color:var(--blue-t)}
-.btn-primary{width:100%;padding:13px;background:var(--t0);color:var(--bg0);font-size:14px;font-weight:500;border:none;border-radius:var(--r-md);cursor:pointer;font-family:var(--font);transition:opacity 0.15s;-webkit-tap-highlight-color:transparent;min-height:48px}
-.btn-primary:active{opacity:0.75}
-.btn-primary:disabled{opacity:0.35;cursor:not-allowed}
-.btn-sec{padding:9px 14px;font-size:12px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:none;color:var(--t1);cursor:pointer;font-family:var(--font);min-height:40px}
-.status{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg1);border-radius:var(--r-md);margin-bottom:12px;font-size:12px;color:var(--t1)}
-.sdot{width:7px;height:7px;border-radius:50%;background:var(--b1);flex-shrink:0}
-.sdot.thinking{background:var(--amber);animation:blink 0.8s infinite}
-.sdot.done{background:var(--green)}
-.sdot.err{background:var(--red)}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.report-wrap{background:var(--bg0);border:0.5px solid var(--b2);border-radius:var(--r-lg);padding:1rem 1.1rem}
-.report-body{font-size:13px;line-height:1.8;color:var(--t0)}
-.report-body p{margin-bottom:0.75em}
-.report-body ul{margin:0.5em 0 0.75em 1.2em}
-.report-body li{margin-bottom:0.2em}
-.report-body h2{font-size:15px;font-weight:600;color:#185FA5;margin:1em 0 0.5em}
-.report-body h3{font-size:13px;font-weight:600;margin:1.2em 0 0.4em;padding-bottom:3px;border-bottom:1.5px solid currentColor}
-h3.s-revenue{color:#1D9E75!important}h3.s-labor{color:#1a1a18!important}h3.s-food{color:#D85A30!important}
-h3.s-covers{color:#534AB7!important}h3.s-delivery{color:#993C1D!important}h3.s-events{color:#854F0B!important}
-h3.s-digital{color:#185FA5!important}h3.s-reputation{color:#A32D2D!important}h3.s-ops{color:#3B6D11!important}
-h3.s-gm{color:#1D9E75!important}h3.s-anomaly{color:#cc0000!important}h3.s-marketing{color:#3B6D11!important}
-.report-body strong{font-weight:600}
-.report-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--b2);flex-wrap:wrap}
-.disclaimer{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.chip{padding:6px 11px;border-radius:100px;font-size:12px;border:0.5px solid var(--b1);color:var(--t1);background:none;cursor:pointer;font-family:var(--font);min-height:34px;display:flex;align-items:center}
-.inp{width:100%;padding:10px 11px;font-size:14px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;min-height:44px}
-.inp:focus{outline:none;border-color:var(--b0)}
-textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
-/* P&L */
-.pl-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.pl-date-inp{padding:7px 10px;font-size:13px;border:0.5px solid var(--b1);border-radius:var(--r-md);background:var(--bg0);color:var(--t0);font-family:var(--font);-webkit-appearance:none;min-width:130px}
-.pl-date-inp:focus{outline:none;border-color:var(--b0)}
-.btn-pl{padding:8px 16px;font-size:12px;font-weight:500;background:var(--t0);color:var(--bg0);border:none;border-radius:var(--r-md);cursor:pointer;font-family:var(--font);white-space:nowrap;min-height:36px}
-.btn-pl:disabled{opacity:0.35;cursor:not-allowed}
-.pl-meta{font-size:11px;color:var(--t1);display:flex;align-items:center;gap:5px}
-.pl-dot{width:6px;height:6px;border-radius:50%;background:var(--b1);flex-shrink:0}
-.pl-dot.live{background:var(--green)}.pl-dot.load{background:var(--amber);animation:blink 0.8s infinite}.pl-dot.err{background:var(--red)}
-.prime-banner{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:var(--r-md);margin-bottom:14px;flex-wrap:wrap;gap:8px}
-.prime-banner.ok{background:var(--green-bg);border:1px solid var(--green)}
-.prime-banner.warn{background:var(--amber-bg);border:1px solid var(--amber)}
-.prime-banner.crit{background:var(--red-bg);border:1px solid var(--red)}
-.prime-label{font-size:12px;font-weight:600}
-.prime-label.ok{color:var(--green-t)}.prime-label.warn{color:var(--amber-t)}.prime-label.crit{color:var(--red-t)}
-.prime-val{font-size:24px;font-weight:700}
-.prime-val.ok{color:var(--green)}.prime-val.warn{color:var(--amber)}.prime-val.crit{color:var(--red)}
-.prime-detail{font-size:11px;color:var(--t1);margin-top:2px}
-.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px}
-@media(min-width:480px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
-.kpi{background:var(--bg1);border-radius:var(--r-md);padding:10px 12px}
-.kpi-l{font-size:10px;color:var(--t1);margin-bottom:3px}
-.kpi-v{font-size:16px;font-weight:600;color:var(--t0)}
-.kpi-s{font-size:10px;color:var(--t1);margin-top:2px}
-.kpi-v.ok{color:var(--green)}.kpi-v.warn{color:var(--amber)}.kpi-v.crit{color:var(--red)}
-.metric-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:14px}
-@media(min-width:480px){.metric-strip{grid-template-columns:repeat(3,1fr)}}
-.metric-card{background:var(--bg1);border-radius:var(--r-md);padding:10px 12px;border-left:3px solid var(--b1)}
-.metric-card.ok{border-left-color:var(--green)}.metric-card.warn{border-left-color:var(--amber)}
-.metric-card.crit{border-left-color:var(--red)}.metric-card.info{border-left-color:var(--blue)}
-.metric-l{font-size:10px;color:var(--t1);margin-bottom:2px}
-.metric-v{font-size:14px;font-weight:600;color:var(--t0)}
-.metric-s{font-size:10px;color:var(--t1);margin-top:2px;line-height:1.4}
-.obs{border-radius:var(--r-md);padding:9px 12px;margin-bottom:7px;font-size:12px;line-height:1.5}
-.obs.warn{background:var(--amber-bg);color:var(--amber-t)}
-.obs.ok{background:var(--green-bg);color:var(--green-t)}
-.obs.info{background:var(--blue-bg);color:var(--blue-t)}
-.obs.crit{background:var(--red-bg);color:var(--red-t)}
-.obs strong{font-weight:600}
-.fr-wrap{overflow-x:auto}
-.fr-table{width:100%;border-collapse:collapse;font-size:11px;min-width:360px}
-.fr-table th{text-align:right;padding:5px 8px;background:var(--bg1);color:var(--t1);font-weight:500;border-bottom:0.5px solid var(--b2);white-space:nowrap}
-.fr-table th:first-child{text-align:left}
-.fr-table th:nth-child(3){text-align:left}
-.fr-table td{padding:4px 8px;border-bottom:0.5px solid var(--b2);color:var(--t0);text-align:right;white-space:nowrap;vertical-align:middle}
-.fr-table td:first-child{text-align:left;white-space:normal;max-width:200px}
-.fr-table td:nth-child(3){text-align:left}
-.fr-section td{background:var(--bg1);font-weight:600;font-size:10px;color:var(--t1);text-transform:uppercase;letter-spacing:0.05em;padding:6px 8px;border-top:0.5px solid var(--b1)}
-.fr-section-nc td{background:var(--bg2);font-weight:600;font-size:10px;color:var(--t1);text-transform:uppercase;letter-spacing:0.05em;padding:6px 8px;border-top:1px solid var(--b0)}
-.fr-total td{font-weight:600;background:var(--bg1);border-top:1px solid var(--b1)}
-.fr-grand td{font-weight:700;background:var(--bg2);border-top:1.5px solid var(--b0);font-size:12px}
-.fr-net td{font-weight:700;background:#1a1a18;color:#f0efe8;border-top:2px solid var(--b0);font-size:12px}
-@media(prefers-color-scheme:dark){.fr-net td{background:var(--green);color:#fff}}
-.fr-sub td:first-child{padding-left:16px;color:var(--t1)}
-.fr-sub2 td:first-child{padding-left:28px;color:var(--t2)}
-.v-ok{color:var(--green)!important;font-weight:500}
-.v-warn{color:var(--amber)!important;font-weight:500}
-.v-crit{color:var(--red)!important;font-weight:500}
-.pend-val{color:var(--t2)!important;font-style:italic}
-.badge{display:inline-block;padding:1px 5px;border-radius:100px;font-size:9px;font-weight:600;vertical-align:middle;margin-left:3px}
-.badge.live{background:var(--green-bg);color:var(--green-t)}
-.badge.pend{background:var(--amber-bg);color:var(--amber-t)}
-.future-panel{background:var(--bg1);border-radius:var(--r-lg);padding:14px 16px;margin-top:16px;border:0.5px solid var(--b2)}
-.future-title{font-size:12px;font-weight:600;color:var(--t0);margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.future-title::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0}
-.future-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
-@media(min-width:480px){.future-grid{grid-template-columns:repeat(4,1fr)}}
-.future-item{background:var(--bg0);border-radius:var(--r-md);padding:8px 10px;border:0.5px solid var(--b2)}
-.future-src{font-size:10px;font-weight:600;color:var(--t1)}
-.future-metrics{font-size:10px;color:var(--t2);margin-top:3px;line-height:1.5}
-.pl-empty{text-align:center;padding:32px 16px;color:var(--t1);font-size:13px;line-height:1.8}
-.as-of{font-size:10px;color:var(--t2);margin-top:10px}
-.src-note{font-size:10px;color:var(--t2);margin-bottom:10px;padding:6px 10px;background:var(--bg1);border-radius:var(--r-md)}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-</style>
-</head>
-<body>
-<div id="shell">
-<div class="hdr">
-  <div class="hdr-top">
-    <div class="logo-wrap">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 258">
-        <defs><style>.hr{fill:red}.hd{fill:#1a1a18}@media(prefers-color-scheme:dark){.hd{fill:#f0efe8}}</style></defs>
-        <polygon class="hr" points="72.2 131.6 86.8 176.4 134 176.4 95.8 204.2 110.4 249 72.2 221.3 34.1 249 48.6 204.2 10.5 176.4 57.6 176.4 72.2 131.6"/>
-        <path class="hd" d="M74.6,113.7v-34.4c1-.3,1.8-1.2,1.8-2.4l.5-32.5c0-1.7,1.7-3.8,2-5.6h0c0-.3,0-.5,0-.7h0s.7-7.3.7-7.3h1c.1.9.4,1.4,1.3,1.5,1,0,2-.7,2.2-1.6.3-1.4-.8-2.6-2.1-2.6s-1.3.6-1.4,1.4h-.8c0,0,.5-5.3.5-5.3h1c.1.9.5,1.4,1.3,1.4.9,0,1.7-.5,2-1.4.5-1.5-.6-2.8-2-2.8s-1.2.5-1.4,1.3h-.9c0,0,.5-5.2.5-5.2h1.1c.1.8.5,1.4,1.4,1.4.9,0,1.7-.5,2-1.4.5-1.5-.6-2.8-2-2.8s-1.2.5-1.4,1.3h-.9c0,0,.4-3.8.4-3.8.1-1.5-1-2.7-2.5-2.7h-13.6c-1.5,0-2.6,1.3-2.5,2.7l.4,3.9h-.9c-.1-.8-.5-1.4-1.4-1.4-.9,0-1.7.5-2,1.4-.5,1.5.6,2.8,2,2.8s1.2-.5,1.4-1.3h1.1c0,0,.5,5.2.5,5.2h-.9c-.1-.9-.5-1.4-1.3-1.4-.9,0-1.7.5-2,1.4-.5,1.5.6,2.8,2,2.8s1.2-.5,1.4-1.3h1c0,0,.5,5.3.5,5.3h-.8c-.1-.8-.4-1.4-1.3-1.4-1,0-2,.7-2.2,1.6-.3,1.4.8,2.6,2.1,2.6s1.3-.6,1.4-1.4h1c0,0,.7,7.2.7,7.2h0c0,.2,0,.4,0,.7h0c.4,1.8,2,3.9,2,5.6l.5,32.5c0,1.1.8,2.1,1.8,2.4v34.4c-6.6.3-10.5,5.8-10.5,12.4l-2.7,37.4,12.3-40.4c1.4-2.4,4.8-2.4,6.2,0l12.3,40.4-2.7-37.4c0-6.6-3.8-12.1-10.3-12.4z"/>
-        <path class="hd" d="M261.7,114.8v-26.4h13.6v-21.1h-33v21.1h13.8v26.4h-66.5v-26.4h17.6v-52.7h-17.6V9.4h66.5v26.3h-13.8v15.9h33v-15.9h-13.6V9.4h66.3v26.3h-17.6v52.7h17.6v26.4h-66.3z"/>
-        <path class="hd" d="M339.9,114.8v-26.4h17.6v-52.7h-17.6V9.4h70.3v26.3h-17.6v52.7h17.6v26.4h-70.3z"/>
-        <path class="hd" d="M421.8,114.8v-26.4h17.6v-52.7h-17.6V9.4h70.3v26.3h-17.6v52.7h28.1v-21.1h29.9v47.5h-110.8z"/>
-        <path class="hd" d="M541.7,114.8v-26.4h17.6v-52.7h-17.6V9.4h70.3v26.3h-17.6v52.7h28.1v-21.1h29.9v47.5h-110.8z"/>
-        <path class="hd" d="M246.6,249c-36.8,0-56.9-24.7-56.9-55.2s21.8-53.8,51.7-53.8,26.3,8.4,30.5,16.9v-15h27.4v49.2h-28.1c0-12.7-9.4-23.6-22.1-23.6s-20.8,13.1-20.8,26.4,6.7,29.8,20.8,29.8,21.1-9.7,21.1-23.9h29.1c0,23.6-14.1,49.3-52.7,49.3z"/>
-        <path class="hd" d="M363.1,249c-30.1,0-54.5-24.5-54.5-54.5s24.5-54.4,54.5-54.4,54.5,24.3,54.5,54.4-24.5,54.5-54.5,54.5zM363.1,166.4c-11.7,0-17.6,11.1-17.6,28.1s5.9,28.1,17.6,28.1,17.6-11,17.6-28.1-5.9-28.1-17.6-28.1z"/>
-        <path class="hd" d="M531.8,168.1v47.5c0,20.2-15.2,33.5-52,33.5s-47.5-7.2-47.5-29.9v-51h-14.1v-26.3h64.4v26.3h-15.2v40.5c0,14.1,7,17.6,17.6,17.6s19.4-5.3,19.4-17.6v-40.5h-15.9v-26.3h58.1v26.3h-14.8z"/>
-        <path class="hd" d="M666,168.1v79.1h-19.4l-49.2-52.7v26.3h17.6v26.4h-59.7v-26.4h17.6v-52.7h-17.6v-26.3h38.7l47.5,50.9v-24.6h-15.2v-26.3h57.4v26.3h-17.6z"/>
-        <path class="hd" d="M785.5,192.7v-24.6h-15.9v52.7h15.9v26.4h-65.1v-26.4h15.9v-52.7h-15.9v24.6h-28.1v-50.9h121.3v50.9h-28.1z"/>
-        <path class="hd" d="M927.7,249c-18.3,0-33.3-6.7-33.3-31.9s-8.9-14.8-14.1-14.8-5.3.8-5.3.8v17.6h12.4v26.4h-65.1v-26.4h17.6v-52.7h-17.6v-26.3h83.3c17.6,0,34.4,10.5,34.4,31.6s-12.4,23.3-29.9,23.9h0c2.8.4,8,1.4,12.4,3.7,12.7,6.9,9.8,25.9,15.7,25.7,3.5,0,3.5-3.9,3.5-8.6v-4.4h12.4s.7,6.2.7,9.6c0,14.8-7,25.7-27.1,25.7zM890.9,168.1h-15.9v19.4h15.9c6.3,0,13.4-.8,13.4-9.8s-7-9.6-13.4-9.6z"/>
-        <path class="hd" d="M1054.9,168.1l-28.1,45.7v7h12.4v26.4h-61.6v-26.4h14.1v-7l-31.6-45.7h-14.1v-26.3h65.1v26.3h-15.9l16.6,25.7,16.9-25.7h-14.1v-26.3h54.4v26.3h-14.1z"/>
-      </svg>
-    </div>
-    <div class="hdr-meta">
-      <h1>Intelligence Controller</h1>
-      <p>Hill Country BBQ — New York</p>
-    </div>
-  </div>
-  <div class="tabs">
-    <button class="tab active" onclick="showTab('live',this)">Live Systems</button>
-    <button class="tab" onclick="showTab('report',this)">Daily Report</button>
-    <button class="tab" onclick="showTab('pl',this)">P&amp;L</button>
-    <button class="tab" onclick="showTab('qa',this)">Ask RIC</button>
-  </div>
-</div>
+// Hill Country Hospitality — RIC Proxy Server v3.7
+import express from "express";
+import cors from "cors";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
-<!-- Live Systems -->
-<div id="tab-live" class="panel active">
-  <h2 class="sr-only">Live system connections</h2>
-  <div class="sys-grid" id="sys-grid"></div>
-  <div class="prog-bar"><div class="prog-fill" id="prog" style="width:0%"></div></div>
-  <div class="stat-row">
-    <div class="stat"><div class="stat-label">Connected</div><div class="stat-val" id="s-conn">0 / 11</div></div>
-    <div class="stat"><div class="stat-label">Last sync</div><div class="stat-val" id="s-time" style="font-size:12px;margin-top:2px">—</div></div>
-    <div class="stat"><div class="stat-label">Status</div><div class="stat-val" id="s-status" style="font-size:12px;margin-top:2px">Ready</div></div>
-  </div>
-  <div id="live-flags" class="flags"></div>
-  <button class="btn-primary" id="sync-btn" onclick="runSync()">Fetch data + generate daily report</button>
-</div>
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const app  = express();
+const PORT = process.env.PORT || 3000;
 
-<!-- Daily Report -->
-<div id="tab-report" class="panel">
-  <h2 class="sr-only">Daily intelligence report</h2>
-  <div id="report-out">
-    <div class="status"><div class="sdot"></div><span>No report yet — go to Live Systems and generate one.</span></div>
-  </div>
-</div>
+// ── Credentials ───────────────────────────────────────────────────────────────
+const GOTAB_ID             = process.env.GOTAB_ID;
+const GOTAB_SECRET         = process.env.GOTAB_SECRET;
+const GOTAB_LOCATION_UUID  = process.env.GOTAB_LOCATION_UUID;
+const SHIFTS_TOKEN         = process.env.SHIFTS_TOKEN;
+const SHIFTS_COMPANY_GUID  = process.env.SHIFTS_COMPANY_GUID;
+const SHIFTS_COMPANY_ID    = process.env.SHIFTS_COMPANY_ID;
+const SHIFTS_LOCATION_ID   = process.env.SHIFTS_LOCATION_ID;
+const MARGINEDGE_API_KEY   = process.env.MARGINEDGE_API_KEY;
+const MARGINEDGE_TENANT_ID = process.env.MARGINEDGE_TENANT_ID;
+const QB_CLIENT_ID         = process.env.QB_CLIENT_ID;
+const QB_CLIENT_SECRET     = process.env.QB_CLIENT_SECRET;
+const QB_REDIRECT_URI      = "https://ric.up.railway.app/auth/quickbooks/callback";
+const QB_SCOPES            = "com.intuit.quickbooks.accounting";
+const MC_API_KEY           = process.env.MAILCHIMP_API_KEY;
+const MC_SERVER            = process.env.MAILCHIMP_SERVER;
+const MC_AUDIENCE_ID       = process.env.MAILCHIMP_AUDIENCE_ID;
+const TS_CLIENT_ID         = process.env.TRIPLESEAT_CLIENT_ID;
+const TS_CLIENT_SECRET     = process.env.TRIPLESEAT_CLIENT_SECRET;
+const TS_REDIRECT_URI      = "https://ric.up.railway.app/auth/tripleseat/callback";
+const RAILWAY_API_TOKEN      = process.env.RAILWAY_API_TOKEN;
+const RAILWAY_PROJECT_ID     = process.env.RAILWAY_PROJECT_ID;
+const RAILWAY_SERVICE_ID     = process.env.RAILWAY_SERVICE_ID;
+const RAILWAY_ENVIRONMENT_ID = process.env.RAILWAY_ENVIRONMENT_ID;
 
-<!-- P&L -->
-<div id="tab-pl" class="panel">
-  <h2 class="sr-only">Monthly P&L</h2>
-  <div class="pl-toolbar">
-    <span style="font-size:11px;color:var(--t1);white-space:nowrap">Month ending</span>
-    <input type="date" class="pl-date-inp" id="pl-date"/>
-    <button class="btn-pl" id="pl-btn" onclick="fetchPL()">Load</button>
-    <div class="pl-meta"><div class="pl-dot" id="pl-dot"></div><span id="pl-txt">Select a month-ending date</span></div>
-  </div>
-  <div id="pl-content">
-    <div class="pl-empty">
-      Select a <strong>month-ending date</strong> and tap Load.<br><br>
-      RIC pulls the full monthly P&L from QuickBooks — matching the controller report structure exactly.<br>
-      COGS category detail is enhanced by MarginEdge where available.<br><br>
-      💡 Set to the last day of last month for a complete closed period.
-    </div>
-  </div>
-  <div class="future-panel">
-    <div class="future-title">Coming online — additional intelligence metrics</div>
-    <div class="future-grid">
-      <div class="future-item"><div class="future-src">7Shifts</div><div class="future-metrics">FOH/BOH labor by role<br>Scheduled vs actual hrs<br>Overtime & no-shows</div></div>
-      <div class="future-item"><div class="future-src">OpenTable</div><div class="future-metrics">Revenue per cover<br>Table turn time<br>No-show rate</div></div>
-      <div class="future-item"><div class="future-src">GA4</div><div class="future-metrics">Online order conversion<br>Digital revenue attribution<br>Search visibility</div></div>
-      <div class="future-item"><div class="future-src">Marqii</div><div class="future-metrics">Rating trend<br>Review sentiment score<br>Competitor delta</div></div>
-      <div class="future-item"><div class="future-src">DoorDash</div><div class="future-metrics">Delivery margin after fees<br>Avg order value trend<br>Cancellation rate</div></div>
-      <div class="future-item"><div class="future-src">Microsoft 365</div><div class="future-metrics">Ops comms summary<br>Flagged items<br>Meeting load</div></div>
-    </div>
-  </div>
-</div>
+app.use(cors({ origin: "*", methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type","Authorization"] }));
+app.options("*", cors());
+app.use(express.json());
 
-<!-- Ask RIC -->
-<div id="tab-qa" class="panel">
-  <h2 class="sr-only">Ask RIC</h2>
-  <div class="chips">
-    <button class="chip" onclick="setQ('What is our true brisket margin after trim loss and current beef prices?')">Brisket margin</button>
-    <button class="chip" onclick="setQ('How does delivery profitability compare to dine-in after platform fees?')">Delivery vs dine-in</button>
-    <button class="chip" onclick="setQ('What labor changes would have the biggest impact on prime cost?')">Labor optimization</button>
-    <button class="chip" onclick="setQ('How is our email marketing performing and what campaigns drive the most traffic?')">Email performance</button>
-    <button class="chip" onclick="setQ('Where are our biggest hidden profit opportunities?')">Hidden opportunities</button>
-    <button class="chip" onclick="setQ('What anomalies in today\'s data need immediate attention?')">Anomaly review</button>
-  </div>
-  <div style="margin-bottom:14px">
-    <textarea class="inp" id="qa-inp" placeholder="Ask any financial, operational, or strategic question..." style="margin-bottom:8px"></textarea>
-    <button class="btn-primary" id="qa-btn" onclick="askQ()">Ask RIC</button>
-  </div>
-  <div id="qa-out"></div>
-</div>
-</div>
+// ── Time helpers (Eastern) ────────────────────────────────────────────────────
+const toET  = (d = new Date()) => new Date(d.toLocaleString("en-US", { timeZone: "America/New_York" }));
+const today = () => {
+  const e = toET();
+  return `${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,"0")}-${String(e.getDate()).padStart(2,"0")}`;
+};
+const nowET = () => toET().toISOString().replace("T"," ").slice(0,19) + " ET";
 
-<script>
-const SYSTEMS=[
-  {id:"gotab",     name:"GoTab",         domain:"POS & Revenue", color:"#185FA5",icon:"GT"},
-  {id:"marginedge",name:"MarginEdge",    domain:"Food Cost",     color:"#D85A30",icon:"ME"},
-  {id:"quickbooks",name:"QuickBooks",    domain:"Financials",    color:"#1D9E75",icon:"QB"},
-  {id:"mailchimp", name:"Mailchimp",     domain:"Marketing",     color:"#3B6D11",icon:"MC"},
-  {id:"7shifts",   name:"7Shifts",       domain:"Labor",         color:"#534AB7",icon:"7S"},
-  {id:"opentable", name:"OpenTable",     domain:"Reservations",  color:"#A32D2D",icon:"OT"},
-  {id:"tripleseat",name:"TripleSeat",    domain:"Events",        color:"#854F0B",icon:"TS"},
-  {id:"ga4",       name:"GA4",           domain:"Digital",       color:"#185FA5",icon:"GA"},
-  {id:"m365",      name:"Microsoft 365", domain:"Comms",         color:"#534AB7",icon:"M3"},
-  {id:"marqii",    name:"Marqii",        domain:"Reputation",    color:"#1D9E75",icon:"MQ"},
-  {id:"doordash",  name:"DoorDash",      domain:"Delivery",      color:"#993C1D",icon:"DD"},
-];
-
-const TARGETS={food:32,liquor:18,beer:30,wine:30,na_bev:40,total_cogs:38,foh_labor:12,boh_labor:18,total_labor:35,prime:65};
-
-const SYS_PROMPT=`You are the Restaurant Intelligence Controller (RIC) for Hill Country BBQ, New York — a live AI-powered intelligence system built on Railway, integrating 11 operational data sources via their APIs.
-
-LIVE sources currently connected:
-- GoTab (POS): real-time revenue, tabs, bar sales, catering, comps, voids
-- MarginEdge: COGS by category (meat, produce, dairy, grocery, liquor, beer, wine, packaging) — 24-48hr lag
-- QuickBooks Online: full monthly P&L — all income, COGS, labor, controllable + non-controllable expenses
-- Mailchimp: email audience (27,317 subscribers), campaign performance, open/click rates, list growth
-- TripleSeat: private dining & events — today's events, this week's events, confirmed/tentative pipeline, open leads. Flag if any events are happening today. Note guest counts for staffing awareness.
-
-PENDING sources (integrations in progress): 7Shifts, OpenTable, GA4, Microsoft 365, Marqii, DoorDash.
-
-Only data from live sources is included in reports. Do not fabricate or estimate data for pending sources.
-
-Produce clear, actionable intelligence for GM and store leadership. Be direct, specific, write for someone reading at 7am. Use $ and %. Flag anomalies clearly.`;
-
-const f$=v=>v==null?"—":"$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-const fp=v=>v==null?"—":Number(v).toFixed(1)+"%";
-const fc=(v,t,hi=true)=>{if(v==null||!t) return "";return hi?(v<=t*0.97?"ok":v<=t?"warn":"crit"):(v>=t?"ok":v>=t*0.97?"warn":"crit");};
-const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-
-(function(){
-  const inp=document.getElementById("pl-date");
-  const d=new Date();d.setDate(0);
-  inp.value=d.toISOString().slice(0,10);
-  inp.max=new Date().toISOString().slice(0,10);
-})();
-
-function monthRange(endDate){
-  const end=new Date(endDate+"T12:00:00");
-  const start=new Date(end.getFullYear(),end.getMonth(),1);
-  const fmt=d=>d.toLocaleDateString("en-US",{month:"long",year:"numeric"});
-  return{startDate:start.toISOString().slice(0,10),endDate,label:fmt(end)};
-}
-
-async function fetchPL(){
-  const endDate=document.getElementById("pl-date").value;if(!endDate) return;
-  const btn=document.getElementById("pl-btn"),dot=document.getElementById("pl-dot"),
-        txt=document.getElementById("pl-txt"),cont=document.getElementById("pl-content");
-  btn.disabled=true;dot.className="pl-dot load";
-  const{startDate,label}=monthRange(endDate);
-  txt.textContent=`Fetching ${label}...`;cont.innerHTML="";
-  try{
-    const dates=[];
-    const s=new Date(startDate+"T12:00:00"),e=new Date(endDate+"T12:00:00");
-    for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1)) dates.push(d.toISOString().slice(0,10));
-
-    const[qbRes,meResults]=await Promise.all([
-      fetch(`/api/quickbooks?start=${startDate}&end=${endDate}`).then(r=>r.ok?r.json():null).catch(()=>null),
-      Promise.all(dates.map(d=>fetch(`/api/marginedge?date=${d}`).then(r=>r.ok?r.json():null).catch(()=>null))),
-    ]);
-
-    const me={invoice_count:0,cogs:{food:0,meat:0,produce:0,dairy:0,grocery:0,liquor:0,beer:0,wine:0,na_bev:0,paper:0,supplies:0,other:0,total:0},data_as_of:null,ok:false};
-    for(const r of meResults){
-      if(!r||!r.ok) continue;
-      me.invoice_count+=r.invoice_count||0;
-      for(const k of Object.keys(me.cogs)) me.cogs[k]+=(r.cogs?.[k]||0);
-      me.data_as_of=r.data_as_of;if(me.cogs.total>0) me.ok=true;
+// ── Retry helper ──────────────────────────────────────────────────────────────
+async function fetchWithRetry(url, options = {}, retries = 1, delayMs = 1000) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok || attempt === retries) return res;
+      if (![429,500,502,503,504].includes(res.status)) return res;
+      console.warn(`Retrying ${url} after ${res.status} (attempt ${attempt+1})`);
+      await new Promise(r => setTimeout(r, delayMs));
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.warn(`Retrying ${url} after error: ${err.message}`);
+      await new Promise(r => setTimeout(r, delayMs));
     }
-    for(const k of Object.keys(me.cogs)) me.cogs[k]=+me.cogs[k].toFixed(2);
-
-    dot.className="pl-dot live";txt.textContent=`Live · ${label}`;
-    cont.innerHTML=renderMonthlyPL(qbRes,me,label);
-  }catch(e){
-    dot.className="pl-dot err";txt.textContent="Error";
-    cont.innerHTML=`<div class="pl-empty" style="color:var(--red-t)">Failed: ${esc(e.message)}</div>`;
   }
-  btn.disabled=false;
 }
 
-function renderMonthlyPL(qb,me,label){
-  const hasQb=qb?.ok&&(qb?.income?.total_sales||0)>0;
-  const qbInc=qb?.income||{};
-  const ns=qbInc.total_sales||0;
-  // QB is always authoritative for COGS total (matches controller report, accrual basis, reconciled)
-  // MarginEdge provides category detail only — we scale ME proportions to the QB total
-  const hasQbCogs=(qb?.cogs?.total||0)>0;
-  const hasMeDetail=(me.cogs?.total||0)>1000; // ME has enough data for proportional breakdown
-  const qbCogsTotal=qb?.cogs?.total||0;
-
-  // Scale MarginEdge category proportions to QB total
-  let cd={};
-  if(hasMeDetail&&hasQbCogs&&qbCogsTotal>0){
-    const scale=qbCogsTotal/me.cogs.total;
-    cd={
-      meat:   +(( me.cogs.meat   ||0)*scale).toFixed(2),
-      produce:+(( me.cogs.produce||0)*scale).toFixed(2),
-      grocery:+(( me.cogs.grocery||0)*scale).toFixed(2),
-      bakery: +(( me.cogs.bakery ||0)*scale).toFixed(2),
-      dairy:  +(( me.cogs.dairy  ||0)*scale).toFixed(2),
-      liquor: +(( me.cogs.liquor ||0)*scale).toFixed(2),
-      beer:   +(( me.cogs.beer   ||0)*scale).toFixed(2),
-      wine:   +(( me.cogs.wine   ||0)*scale).toFixed(2),
-      na_bev: +(( me.cogs.na_bev ||0)*scale).toFixed(2),
-      paper:  +(( me.cogs.paper  ||0)*scale).toFixed(2),
-      food:   +(( me.cogs.food   ||0)*scale).toFixed(2),
-      total:  qbCogsTotal, // always QB total
-    };
-  } else {
-    // Fall back to QB categories directly
-    cd=qb?.cogs||{};
+// ── Railway variable persistence ──────────────────────────────────────────────
+async function persistRailwayVars(variables) {
+  if (!RAILWAY_API_TOKEN || !RAILWAY_PROJECT_ID || !RAILWAY_SERVICE_ID || !RAILWAY_ENVIRONMENT_ID) {
+    console.warn("Railway credentials not fully set — variables will not persist across restarts");
+    return;
   }
-
-  const tc=qbCogsTotal||0; // always QB total
-  const fc_f=cd.food||0;
-  const gp=ns>0&&tc>0?ns-tc:null;
-  const qbFoh=qb?.foh||{},qbBoh=qb?.boh||{},qbMgmt=qb?.mgmt||{};
-  const qbLR=qb?.labor_related||{},qbDOps=qb?.direct_ops||{};
-  const qbTxn=qb?.transaction_expenses||{},qbMkt=qb?.marketing||{};
-  const qbGA=qb?.ga_expenses||{},qbTM=qb?.travel_meals||{},qbRM=qb?.repair_maintenance||{};
-  const qbProp=qb?.property_expenses||{},qbOther=qb?.other_expenses||{};
-  const totalLabor=qb?.total_labor||null,totalCtrl=qb?.total_controllable||null;
-  const totalNonCtrl=qb?.total_non_controllable||null,totalExp=qb?.total_expenses||null;
-  const netOpIncome=qb?.net_operating_income||null;
-  const primeCost=qb?.prime_cost||null,primePct=qb?.prime_cost_pct||null;
-  const pct=(n,d)=>d>0?+((n/d)*100).toFixed(1):null;
-  const food_pct=pct(fc_f,ns),liq_pct=pct(cd.liquor,ns),beer_pct=pct(cd.beer,ns);
-  const wine_pct=pct(cd.wine,ns),nabev_pct=pct(cd.na_bev,ns),tc_pct=pct(tc,ns);
-  const gp_pct=pct(gp,ns),foh_pct=pct(qbFoh.total,ns),boh_pct=pct(qbBoh.total,ns);
-  const labor_pct=pct(totalLabor,ns),ctrl_pct=pct(totalCtrl,ns);
-  const nonctrl_pct=pct(totalNonCtrl,ns),noi_pct=pct(netOpIncome,ns);
-  const qbSrc=hasQb?"live":"pend";
-  const cogsSrc=hasQbCogs?"live":"pend";
-
-  let h="";
-  if(!hasQb) h+=obs("info","QuickBooks has no data for this period. Try a prior completed month.");
-
-  if(primePct!=null&&totalLabor!=null){
-    const pcCls=fc(primePct,TARGETS.prime);
-    h+=`<div class="prime-banner ${pcCls}"><div><div class="prime-label ${pcCls}">Prime Cost — ${esc(label)}</div><div class="prime-detail">COGS ${f$(tc)} + Labor ${f$(totalLabor)} = ${f$(primeCost)}</div></div><div class="prime-val ${pcCls}">${fp(primePct)}</div></div>`;
+  const mutation = `
+    mutation upsertVariables($input: VariableCollectionUpsertInput!) {
+      variableCollectionUpsert(input: $input)
+    }
+  `;
+  try {
+    const res = await fetch("https://backboard.railway.app/graphql/v2", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RAILWAY_API_TOKEN}` },
+      body: JSON.stringify({ query: mutation, variables: { input: {
+        projectId: RAILWAY_PROJECT_ID, serviceId: RAILWAY_SERVICE_ID,
+        environmentId: RAILWAY_ENVIRONMENT_ID, variables,
+      }}}),
+    });
+    const data = await res.json();
+    if (data.errors) console.error("Railway persist failed:", JSON.stringify(data.errors));
+    else console.log("Railway vars persisted:", Object.keys(variables).join(", "));
+  } catch (err) {
+    console.error("Railway persist error:", err.message);
   }
-
-  h+=`<div class="kpi-grid">`;
-  h+=kpi("Net Sales",f$(ns||null),label,"");
-  h+=kpi("Gross Profit",gp!=null?f$(gp):"—",gp_pct?fp(gp_pct)+" margin":"needs COGS","");
-  h+=kpi("Total Labor",totalLabor?f$(totalLabor):"—",labor_pct?fp(labor_pct)+" of sales":"pending",labor_pct?fc(labor_pct,TARGETS.total_labor):"");
-  h+=kpi("Net Op. Income",netOpIncome!=null?f$(netOpIncome):"—",noi_pct?fp(noi_pct)+" margin":"pending","");
-  h+=`</div>`;
-
-  h+=`<div class="metric-strip">`;
-  h+=metric("Food Cost %",food_pct?fp(food_pct):"—",`target <${TARGETS.food}%`,food_pct?fc(food_pct,TARGETS.food):"info");
-  h+=metric("FOH Labor %",foh_pct?fp(foh_pct):"—",`target <${TARGETS.foh_labor}% · ${f$(qbFoh.total||null)}`,foh_pct?fc(foh_pct,TARGETS.foh_labor):"info");
-  h+=metric("BOH Labor %",boh_pct?fp(boh_pct):"—",`target <${TARGETS.boh_labor}% · ${f$(qbBoh.total||null)}`,boh_pct?fc(boh_pct,TARGETS.boh_labor):"info");
-  h+=metric("Wine Cost %",wine_pct?fp(wine_pct):"—",`target <${TARGETS.wine}%`,wine_pct?fc(wine_pct,TARGETS.wine):"info");
-  h+=metric("3rd Party Comm",qbTxn.third_party_commissions?f$(qbTxn.third_party_commissions):"—","DoorDash + OTA fees","info");
-  h+=metric("Controllable",totalCtrl?fp(ctrl_pct):"—",`${f$(totalCtrl)} total`,"info");
-  h+=`</div>`;
-
-  if(primePct&&primePct>TARGETS.prime) h+=obs("crit",`<strong>Prime cost ${fp(primePct)}</strong> is ${fp(primePct-TARGETS.prime)} above the ${TARGETS.prime}% target.`);
-  if(labor_pct&&labor_pct>TARGETS.total_labor) h+=obs("warn",`<strong>Total labor ${fp(labor_pct)}</strong> — target &lt;${TARGETS.total_labor}%.`);
-  if(food_pct&&food_pct>TARGETS.food) h+=obs("warn",`<strong>Food cost ${fp(food_pct)}</strong> is above the ${TARGETS.food}% target.`);
-  if(wine_pct&&wine_pct>TARGETS.wine) h+=obs("warn",`<strong>Wine cost ${fp(wine_pct)}</strong> — target &lt;${TARGETS.wine}%.`);
-  if(nabev_pct&&nabev_pct>TARGETS.na_bev) h+=obs("warn",`<strong>N/A Bev cost ${fp(nabev_pct)}</strong> — target &lt;${TARGETS.na_bev}%.`);
-  if(me.invoice_count===0&&hasQb) h+=obs("info","MarginEdge has 0 invoices for this period — QB COGS category breakdown shown. Load a month with delivery activity for MarginEdge category detail.");
-  if(primePct&&primePct<=TARGETS.prime&&totalLabor) h+=obs("ok",`✓ Prime cost ${fp(primePct)} is within the ${TARGETS.prime}% target.`);
-  if(netOpIncome!=null&&netOpIncome<0) h+=obs("warn",`<strong>Net operating income is negative</strong> at ${f$(netOpIncome)} (${fp(noi_pct)}).`);
-
-  h+=`<div class="src-note">Revenue & expenses: QuickBooks (accrual basis, authoritative) · COGS total: QuickBooks · COGS category detail: ${hasMeDetail&&hasQbCogs?"MarginEdge (scaled to QB total)":"QuickBooks"} · GoTab used for real-time daily report only</div>`;
-
-  h+=`<div class="fr-wrap"><table class="fr-table"><thead><tr><th>Account</th><th>${esc(label)}</th><th>Source</th><th>% of Sales</th></tr></thead><tbody>`;
-
-  h+=sec("Income");h+=sec2("4000 Sales");
-  h+=row("4105 Sales, Food",qbInc.food_sales,qbSrc,pct(qbInc.food_sales,ns));
-  h+=row("4110 Sales, Liquor",qbInc.liquor_sales,qbSrc,pct(qbInc.liquor_sales,ns));
-  h+=row("4115 Sales, Beer",qbInc.beer_sales,qbSrc,null,false,true);
-  h+=row("4120 Sales, Wine",qbInc.wine_sales,qbSrc,null,false,true);
-  h+=row("4125 Sales, N/A Bev",qbInc.na_bev_sales,qbSrc,null,false,true);
-  h+=row("4130 Sales, Retail",qbInc.retail_sales,qbSrc,null,false,true);
-  h+=row("4140 Sales, Misc",qbInc.misc_sales,qbSrc,null,false,true);
-  h+=row("4145 Banquet Admin Fee",qbInc.banquet_admin,qbSrc,null,false,true);
-  h+=row("4150 Sales, Ticket",qbInc.ticket_sales,qbSrc,null,false,true);
-  h+=row("4155 Catering Food",qbInc.catering_food,qbSrc,null,false,true);
-  h+=row("4156 Catering N/A Bev",qbInc.catering_na_bev,qbSrc,null,false,true);
-  h+=row("4193 Banquet N/A Bev",qbInc.banquet_na_bev,qbSrc,null,false,true);
-  h+=row("4194 Banquet Food",qbInc.banquet_food,qbSrc,null,false,true);
-  h+=row("4196 Banquet Liquor",qbInc.banquet_liquor,qbSrc,null,false,true);
-  h+=row("4197 Banquet Beer",qbInc.banquet_beer,qbSrc,null,false,true);
-  h+=row("4198 Banquet Wine",qbInc.banquet_wine,qbSrc,null,false,true);
-  h+=row("4200 Transport Fee",qbInc.transport_fee,qbSrc,null,false,true);
-  h+=row("4500 Discounts & Comps",qbInc.discounts_comps,qbSrc,null);
-  h+=tot("Total Income",ns||null,qbSrc,null);
-
-  h+=sec("Cost of Goods Sold");h+=sec2("5000 COGS");
-  h+=row("5101 COGS, Meat & Poultry",cd.meat,cogsSrc,pct(cd.meat,ns));
-  h+=row("5103 COGS, Produce",cd.produce,cogsSrc,pct(cd.produce,ns),false,true);
-  h+=row("5104 COGS, Grocery",cd.grocery,cogsSrc,pct(cd.grocery,ns),false,true);
-  h+=row("5105 COGS, Bakery",cd.bakery||0,cogsSrc,pct(cd.bakery||0,ns),false,true);
-  h+=row("5106 COGS, Dairy",cd.dairy,cogsSrc,pct(cd.dairy,ns),false,true);
-  h+=subtot("Food COGS Total",fc_f||null,cogsSrc,food_pct,food_pct,TARGETS.food);
-  h+=row("5110 COGS, Liquor",cd.liquor,cogsSrc,null,false,false,liq_pct,TARGETS.liquor);
-  h+=row("5115 COGS, Beer",cd.beer,cogsSrc,null,false,false,beer_pct,TARGETS.beer);
-  h+=row("5120 COGS, Wine",cd.wine,cogsSrc,null,false,false,wine_pct,TARGETS.wine);
-  h+=row("5125 COGS, Non-Alcoholic",cd.na_bev,cogsSrc,null,false,false,nabev_pct,TARGETS.na_bev);
-  h+=row("5135 COGS, Packaging",cd.paper||cd.packaging||0,cogsSrc,pct(cd.paper||cd.packaging||0,ns));
-  h+=tot("Total COGS",tc||null,cogsSrc,tc_pct,TARGETS.total_cogs);
-  h+=grand("Gross Profit",gp,gp_pct);
-
-  h+=sec("Labor — 6000");h+=sec2("5200 Direct Labor");h+=sec2("5205 FOH");
-  h+=row("5205-1 Bartender",qbFoh.bartender,qbSrc,null,true);
-  h+=row("5205-2 Bar Back",qbFoh.bar_back,qbSrc,null,true);
-  h+=row("5205-3 Busser",qbFoh.busser,qbSrc,null,true);
-  h+=row("5205-7 Host",qbFoh.host,qbSrc,null,true);
-  h+=row("5205-8 Server",qbFoh.server,qbSrc,null,true);
-  h+=row("5205-9 FOH Training",qbFoh.training,qbSrc,null,true);
-  h+=subtot("Total FOH Labor",qbFoh.total||null,qbSrc,foh_pct,foh_pct,TARGETS.foh_labor);
-  h+=sec2("5210 BOH");
-  h+=row("5210-1 Prep",qbBoh.prep,qbSrc,null,true);
-  h+=row("5210-2 Dishwasher/Porter",qbBoh.dishwasher_porter,qbSrc,null,true);
-  h+=row("5210-3 Line Cook",qbBoh.line_cook,qbSrc,null,true);
-  h+=row("5210-5 Chef",qbBoh.chef,qbSrc,null,true);
-  h+=row("5210-6 Sous Chef",qbBoh.sous_chef,qbSrc,null,true);
-  h+=subtot("Total BOH Labor",qbBoh.total||null,qbSrc,boh_pct,boh_pct,TARGETS.boh_labor);
-  h+=row("5215 Labor, Admin",qbMgmt.admin,qbSrc,null);
-  h+=sec2("5220 Management");
-  h+=row("5220-2 Manager Salaries",qbMgmt.manager_salary,qbSrc,null,true);
-  h+=row("5230 Labor-Other",qbMgmt.labor_other,qbSrc,null,true);
-  h+=subtot("Total Direct Labor",qb?.direct_labor||null,qbSrc,null,null,null);
-  h+=sec2("5300 Labor Related");
-  h+=row("5310 Commission/Bonus",qbLR.commission,qbSrc,null,true);
-  h+=row("5315-1 Payroll Taxes-FICA",qbLR.payroll_fica,qbSrc,null,true);
-  h+=row("5315-2 Payroll Taxes-SUI",qbLR.payroll_sui,qbSrc,null,true);
-  h+=row("5315-3 Payroll Taxes-FUI",qbLR.payroll_fui,qbSrc,null,true);
-  h+=row("5315-4 Payroll Taxes-MTA",qbLR.payroll_mta,qbSrc,null,true);
-  h+=row("5320 Health/Dental Ins",qbLR.health_insurance,qbSrc,null,true);
-  h+=row("5325 Workers Comp Ins",qbLR.workers_comp,qbSrc,null,true);
-  h+=row("5330 Disability Ins",qbLR.disability_ins,qbSrc,null,true);
-  h+=row("5350 EPLI Insurance",qbLR.epli_insurance,qbSrc,null,true);
-  h+=subtot("Total Labor Related",qbLR.total||null,qbSrc,null,null,null);
-  h+=tot("Total Labor",totalLabor,qbSrc,labor_pct,TARGETS.total_labor);
-
-  h+=sec("Controllable Expenses — 7000");h+=sec2("6100 Direct Operating");
-  h+=row("6105 Cash Over/Under",qbDOps.cash_over_under,qbSrc,null,true);
-  h+=row("6110 Equipment Lease",qbDOps.equipment_lease,qbSrc,null,true);
-  h+=row("6115 Cleaning Supplies",qbDOps.cleaning_supplies,qbSrc,null,true);
-  h+=row("6125 Restaurant Supplies",qbDOps.restaurant_supplies,qbSrc,null,true);
-  h+=row("6135 Laundry & Uniforms",qbDOps.laundry,qbSrc,null,true);
-  h+=row("6150 Kitchen Smallwares",qbDOps.smallwares,qbSrc,null,true);
-  h+=row("6175 Wood Supplies",qbDOps.wood_supplies,qbSrc,null,true);
-  h+=row("6180 Delivery Expense",qbDOps.delivery_expense,qbSrc,null,true);
-  h+=row("6185 Catering Rental",qbDOps.catering_rental,qbSrc,null,true);
-  h+=row("6305 Music & DJ",qbDOps.music_dj,qbSrc,null,true);
-  h+=subtot("Total Direct Operating",qbDOps.total||null,qbSrc,null,null,null);
-  h+=sec2("6200 Transaction Related");
-  h+=row("6205 Credit Card Fees",qbTxn.cc_fees,qbSrc,null,true);
-  h+=row("6210 Reservation System",qbTxn.reservation_system,qbSrc,null,true);
-  h+=row("6215 3rd Party Commissions",qbTxn.third_party_commissions,qbSrc,null,true);
-  h+=row("6220 Late Fees",qbTxn.late_fees,qbSrc,null,true);
-  h+=row("6615 Chargeback",qbTxn.chargeback,qbSrc,null,true);
-  h+=subtot("Total Transaction Exp",qbTxn.total||null,qbSrc,null,null,null);
-  h+=sec2("6250 Marketing & Advertising");
-  h+=row("6250 Marketing & Advertising",qbMkt.marketing_advertising,qbSrc,null,true);
-  h+=row("6255 Marketing & PR",qbMkt.marketing_pr,qbSrc,null,true);
-  h+=row("6260 Advertising & Promotions",qbMkt.advertising_promotions,qbSrc,null,true);
-  h+=row("6580 Stationary & Printing",qbMkt.stationary_printing,qbSrc,null,true);
-  h+=subtot("Total Marketing",qbMkt.total||null,qbSrc,null,null,null);
-  h+=sec2("6500 General & Administrative");
-  h+=row("6505 Accounting & Bookkeeping",qbGA.accounting_bookkeeping,qbSrc,null,true);
-  h+=row("6512 Recruiting",qbGA.recruiting,qbSrc,null,true);
-  h+=row("6520 Legal",qbGA.legal,qbSrc,null,true);
-  h+=row("6525 Payroll Processing",qbGA.payroll_processing,qbSrc,null,true);
-  h+=row("6535 Computer & Software",qbGA.computer_software_it,qbSrc,null,true);
-  h+=row("6550 Dues & Subscriptions",qbGA.dues_subscriptions,qbSrc,null,true);
-  h+=row("6560 Bank Charges & Fees",qbGA.bank_charges,qbSrc,null,true);
-  h+=row("6570 License & Permits",qbGA.license_permits,qbSrc,null,true);
-  h+=row("6585 Postage & Shipping",qbGA.postage,qbSrc,null,true);
-  h+=row("6590 Liability Insurance",qbGA.liability_insurance,qbSrc,null,true);
-  h+=row("6605 Phone & Internet",qbGA.phone_internet,qbSrc,null,true);
-  h+=subtot("Total G&A",qbGA.total||null,qbSrc,null,null,null);
-  h+=sec2("6700 Travel, Meals & Entertainment");
-  h+=row("6705 Travel & Transport",qbTM.travel_transport,qbSrc,null,true);
-  h+=row("6710 Meals & Entertainment",qbTM.meals_entertainment,qbSrc,null,true);
-  h+=row("6720 Parking",qbTM.parking,qbSrc,null,true);
-  h+=subtot("Total Travel & Meals",qbTM.total||null,qbSrc,null,null,null);
-  h+=sec2("6800 Repair & Maintenance");
-  h+=row("6810 R&M, Equipment",qbRM.equipment,qbSrc,null,true);
-  h+=row("6820 Pest Control",qbRM.pest_control,qbSrc,null,true);
-  h+=row("6825 Fire Control",qbRM.fire_control,qbSrc,null,true);
-  h+=row("6835 Facility Supplies",qbRM.facility_supplies,qbSrc,null,true);
-  h+=subtot("Total Repair & Maint",qbRM.total||null,qbSrc,null,null,null);
-  h+=tot("Total Controllable Exp",totalCtrl,qbSrc,ctrl_pct);
-
-  h+=secNC("Non-Controllable Expenses — 8000");h+=sec2("7100 Property Expenses");
-  h+=row("7105 Rent/Lease",qbProp.rent_lease,qbSrc,pct(qbProp.rent_lease,ns),true);
-  h+=row("7111 Common Area Maint",qbProp.common_area_maint,qbSrc,null,true);
-  h+=row("7115 Property/RE Tax",qbProp.property_re_tax,qbSrc,null,true);
-  h+=row("7120 Property Insurance",qbProp.property_insurance,qbSrc,null,true);
-  h+=row("7125 Utility, Electricity",qbProp.utility_electricity,qbSrc,pct(qbProp.utility_electricity,ns),true);
-  h+=row("7130 Utility, Gas",qbProp.utility_gas,qbSrc,null,true);
-  h+=row("7135 Utility, Trash",qbProp.utility_trash,qbSrc,null,true);
-  h+=row("7140 Utility, Water/Sewage",qbProp.utility_water_sewage,qbSrc,null,true);
-  h+=subtot("Total Property Expenses",qbProp.total||null,qbSrc,nonctrl_pct,null,null);
-  h+=sec2("8100 Other");
-  h+=row("8130 Other Income/Expense",qbOther.other_income_expense,qbSrc,null,true);
-  h+=row("8510 Corporate Overhead",qbOther.corporate_overhead,qbSrc,null,true);
-  h+=subtot("Total Other",qbOther.total||null,qbSrc,null,null,null);
-  h+=tot("Total Non-Controllable",totalNonCtrl,qbSrc,nonctrl_pct);
-  h+=tot("Total Expenses",totalExp,qbSrc,pct(totalExp,ns));
-  h+=netRow("Net Operating Income",netOpIncome,noi_pct);
-
-  h+=`</tbody></table></div>`;
-  h+=`<div class="as-of">QuickBooks: ${qb?.data_as_of||"—"} · MarginEdge: ${me.data_as_of||"—"} · Accrual basis</div>`;
-  return h;
 }
 
-function kpi(l,v,s,cls){return `<div class="kpi"><div class="kpi-l">${l}</div><div class="kpi-v ${cls}">${v}</div><div class="kpi-s">${s}</div></div>`;}
-function metric(l,v,s,cls){return `<div class="metric-card ${cls}"><div class="metric-l">${l}</div><div class="metric-v">${v}</div><div class="metric-s">${s}</div></div>`;}
-function obs(t,m){return `<div class="obs ${t}">${m}</div>`;}
-function badge(src){if(!src) return "";return src==="live"?`<span class="badge live">Live</span>`:`<span class="badge pend">Pending</span>`;}
-function pctCell(v,t){if(v==null) return "—";const c=t?fc(v,t):"";const cc=c==="ok"?"v-ok":c==="warn"?"v-warn":c==="crit"?"v-crit":"";return `<span class="${cc}">${fp(v)}</span>`;}
-function sec(l){return `<tr class="fr-section"><td colspan="4">${l}</td></tr>`;}
-function secNC(l){return `<tr class="fr-section-nc"><td colspan="4">${l}</td></tr>`;}
-function sec2(l){return `<tr><td colspan="4" style="padding:4px 8px 2px 16px;font-size:10px;font-weight:600;color:var(--t1);text-transform:uppercase;letter-spacing:0.04em;background:var(--bg1)">${l}</td></tr>`;}
-function row(label,val,src,pctVal,isSub=false,isDeep=false,costPct=null,target=null){
-  const cls=isDeep?"fr-sub2":isSub?"fr-sub":"";
-  const dp=costPct!=null?pctCell(costPct,target):pctVal!=null?fp(pctVal):"—";
-  const vs=val!=null?f$(val):`<span class="pend-val">—</span>`;
-  return `<tr class="${cls}"><td>${esc(label)}</td><td>${vs}</td><td>${badge(src)}</td><td>${dp}</td></tr>`;
-}
-function subtot(label,val,src,pctVal,costPct=null,target=null){
-  const dp=costPct!=null?pctCell(costPct,target):pctVal!=null?fp(pctVal):"—";
-  const vs=val!=null?f$(val):`<span class="pend-val">—</span>`;
-  return `<tr class="fr-total"><td>${esc(label)}</td><td>${vs}</td><td>${badge(src)}</td><td>${dp}</td></tr>`;
-}
-function tot(label,val,src,pctVal,target=null){
-  const dp=pctVal!=null?pctCell(pctVal,target):"—";
-  const vs=val!=null?`<strong>${f$(val)}</strong>`:`<span class="pend-val">—</span>`;
-  return `<tr class="fr-total"><td><strong>${esc(label)}</strong></td><td>${vs}</td><td>${badge(src)}</td><td>${dp}</td></tr>`;
-}
-function grand(label,val,pctVal){
-  const vs=val!=null?f$(val):`<span class="pend-val">—</span>`;
-  return `<tr class="fr-grand"><td>${esc(label)}</td><td>${vs}</td><td></td><td>${pctVal!=null?fp(pctVal):"—"}</td></tr>`;
-}
-function netRow(label,val,pctVal){
-  const vs=val!=null?f$(val):`<span class="pend-val">—</span>`;
-  return `<tr class="fr-net"><td>${esc(label)}</td><td>${vs}</td><td></td><td>${pctVal!=null?fp(pctVal):"—"}</td></tr>`;
+async function persistQBRefreshToken(newToken) {
+  return persistRailwayVars({ QB_REFRESH_TOKEN: newToken });
 }
 
-// Live Systems
-let sysSt={},lastReport="",fetchedData={},sourceMap={};
-SYSTEMS.forEach(s=>sysSt[s.id]="idle");
-function buildGrid(){
-  const g=document.getElementById("sys-grid");g.innerHTML="";
-  SYSTEMS.forEach(s=>{
-    const d=document.createElement("div");d.className="sys-card";d.id="sc-"+s.id;
-    d.innerHTML=`<div class="sys-icon" style="background:${s.color}22;color:${s.color}">${s.icon}</div><div class="sys-info"><div class="sys-name">${s.name}</div><div class="sys-domain">${s.domain}</div></div><div class="sys-dot" id="dot-${s.id}"></div>`;
-    g.appendChild(d);
+// ── QuickBooks token state ────────────────────────────────────────────────────
+let qbState = {
+  accessToken:    null,
+  refreshToken:   process.env.QB_REFRESH_TOKEN || null,
+  realmId:        process.env.QB_REALM_ID       || null,
+  tokenExpiresAt: 0,
+  lastSyncTime:   null,
+};
+
+async function qbRefreshAccessToken() {
+  if (!qbState.refreshToken) throw new Error("No QB refresh token — visit /auth/quickbooks");
+  const creds = Buffer.from(`${QB_CLIENT_ID}:${QB_CLIENT_SECRET}`).toString("base64");
+  const res = await fetchWithRetry("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
+    method: "POST",
+    headers: { "Authorization": `Basic ${creds}`, "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: qbState.refreshToken }),
   });
-}
-buildGrid();
-function updDot(id,state){
-  sysSt[id]=state;
-  const dot=document.getElementById("dot-"+id),card=document.getElementById("sc-"+id);
-  if(!dot||!card) return;
-  dot.className="sys-dot"+(state==="connected"?" live":state==="sync"?" sync":state==="err"?" err":"");
-  card.className="sys-card"+(state==="connected"?" on":state==="err"?" err":"");
-}
-
-async function runSync(){
-  const btn=document.getElementById("sync-btn");
-  btn.disabled=true;btn.textContent="Contacting proxy...";
-  document.getElementById("s-status").textContent="Fetching";
-  document.getElementById("live-flags").innerHTML="";
-  SYSTEMS.forEach(s=>updDot(s.id,"idle"));
-  fetchedData={};sourceMap={};
-  updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");
-  btn.textContent="Fetching live data...";
-  // Pre-warm TripleSeat cache (slow two-page fetch) in parallel with /api/ric
-  const [ricRes, tsRes] = await Promise.allSettled([
-    fetch("/api/ric").then(r=>r.ok?r.json():null).catch(()=>null),
-    fetch("/api/tripleseat").then(r=>r.ok?r.json():null).catch(()=>null),
-  ]);
-  let ricLive = ricRes.status==="fulfilled"&&ricRes.value ? ricRes.value : {};
-  const tsLive = tsRes.status==="fulfilled"&&tsRes.value ? tsRes.value : null;
-  // Merge TripleSeat into ricLive
-  if(tsLive&&tsLive.ok!==false){ricLive.tripleseat=tsLive;if(!ricLive.sources) ricLive.sources={};ricLive.sources.tripleseat="live";}
-  let done=0;
-  for(const s of SYSTEMS){
-    if(sysSt[s.id]!=="sync") updDot(s.id,"sync");
-    await sleep(120+Math.random()*180);
-    const isLive=ricLive.sources?.[s.id]==="live";
-    if(isLive){fetchedData[s.id]=ricLive[s.id];sourceMap[s.id]="live";updDot(s.id,"connected");}
-    else{fetchedData[s.id]=null;sourceMap[s.id]="pending";updDot(s.id,"err");}
-    done++;
-    const lc=Object.values(sourceMap).filter(v=>v==="live").length;
-    document.getElementById("s-conn").textContent=lc+" / "+SYSTEMS.length;
-    document.getElementById("prog").style.width=Math.round((done/SYSTEMS.length)*60)+"%";
+  const intuitTid = res.headers?.get("intuit_tid") || "unknown";
+  if (!res.ok) {
+    const body = await res.text();
+    console.error(`QB token refresh failed | intuit_tid: ${intuitTid} | ${res.status} | ${body}`);
+    throw new Error(`QB token refresh failed: ${res.status} | intuit_tid: ${intuitTid}`);
   }
-  document.getElementById("s-time").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-  document.getElementById("s-status").textContent="Generating";
-  btn.textContent="Generating report...";
-  showTab("report",document.querySelectorAll(".tab")[1]);
-  await generateReport();
-  document.getElementById("prog").style.width="100%";
-  document.getElementById("s-status").textContent="Complete";
-  btn.disabled=false;btn.textContent="Fetch data + generate daily report";
-  renderFlags();
+  const data = await res.json();
+  qbState.accessToken    = data.access_token;
+  qbState.refreshToken   = data.refresh_token;
+  qbState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
+  console.log(`QB token refreshed | intuit_tid: ${intuitTid}`);
+  persistQBRefreshToken(data.refresh_token).catch(err => console.error("Background token persist failed:", err.message));
+  return qbState.accessToken;
 }
 
-async function generateReport(){
-  const live=Object.entries(sourceMap).filter(([,v])=>v==="live").map(([k])=>k);
-  const pending=Object.entries(sourceMap).filter(([,v])=>v==="pending").map(([k])=>k);
-  let elapsed=0;
-  const now=new Date();
-  const etH=parseInt(now.toLocaleString("en-US",{timeZone:"America/New_York",hour:"numeric",hour12:false}));
-  const svc=etH>=12?"Restaurant is OPEN (12:00 PM ET).":"Restaurant NOT yet open (opens 12:00 PM ET). Pre-noon revenue is catering/events only.";
-  const liveData=Object.fromEntries(Object.entries(fetchedData).filter(([k,v])=>sourceMap[k]==="live"&&v!=null));
-  const me=liveData.marginedge||{};
-  const qb=liveData.quickbooks||{};
-  const mc=liveData.mailchimp||{};
-  const ts=liveData.tripleseat||{};
+async function getQBToken() {
+  if (qbState.accessToken && Date.now() < qbState.tokenExpiresAt) return qbState.accessToken;
+  return qbRefreshAccessToken();
+}
 
-  const meCtx=me.invoice_count>0
-    ?`MarginEdge (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)} (${me.total_cogs_pct||"—"}% of sales). Food $${(me.cogs?.food||0).toFixed(2)} (${me.food_cost_pct||"—"}%). Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
-    :"MarginEdge (live): 0 invoices today (24-48hr lag).";
+async function qbGet(endpoint) {
+  const token = await getQBToken();
+  if (!qbState.realmId) throw new Error("QB Realm ID not set");
+  const url = `https://quickbooks.api.intuit.com/v3/company/${qbState.realmId}/${endpoint}&minorversion=65`;
+  const res = await fetchWithRetry(url, { headers: { "Authorization": `Bearer ${token}`, "Accept": "application/json" } });
+  const intuitTid = res.headers?.get("intuit_tid") || "unknown";
+  if (!res.ok) {
+    const body = await res.text();
+    console.error(`QB API error | intuit_tid: ${intuitTid} | ${res.status} | ${endpoint}`);
+    throw new Error(`QB API error: ${res.status} | intuit_tid: ${intuitTid}`);
+  }
+  console.log(`QB API ok | intuit_tid: ${intuitTid} | ${endpoint.split("?")[0]}`);
+  return res.json();
+}
 
-  const qbCtx=qb.total_labor
-    ?`QuickBooks (live): FOH $${(qb.foh?.total||0).toFixed(2)} (${qb.foh_labor_pct||"—"}%), BOH $${(qb.boh?.total||0).toFixed(2)} (${qb.boh_labor_pct||"—"}%), Mgmt $${(qb.mgmt?.total||0).toFixed(2)}. Total labor $${(qb.total_labor||0).toFixed(2)} (${qb.total_labor_pct||"—"}%). Prime cost ${qb.prime_cost_pct||"—"}%. Net operating income $${(qb.net_operating_income||0).toFixed(2)}.`
-    :"QuickBooks (live): No labor data for today — posts after payroll runs.";
-
-  const mcCtx=mc.total_subscribers
-    ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()} emails sent, ${mc.open_rate_30d}% open rate, ${mc.click_rate_30d}% click rate, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth. Most recent campaign: "${mc.recent_campaigns?.[0]?.subject||"—"}" — ${mc.recent_campaigns?.[0]?.open_rate}% open, ${mc.recent_campaigns?.[0]?.click_rate}% click.`
-    :"Mailchimp: data unavailable.";
-
-  const todayISO=now.toISOString().slice(0,10);
-  const weekOut=new Date(now); weekOut.setDate(weekOut.getDate()+7);
-  const weekISO=weekOut.toISOString().slice(0,10);
-  const tsEvents=ts.upcoming_events||[];
-  const todayEvents=tsEvents.filter(e=>e.date===todayISO);
-  const weekEvents=tsEvents.filter(e=>e.date>todayISO&&e.date<=weekISO);
-  const nextBig=tsEvents.filter(e=>e.guest_count>0).sort((a,b)=>b.guest_count-a.guest_count)[0];
-  const fmt$=v=>v!=null?(+v).toLocaleString("en-US",{minimumFractionDigits:2}):"0.00";
-  const tsCtx=ts.data_as_of
-    ?[
-        `TripleSeat (live): Pipeline $${fmt$(ts.total_pipeline)} total — ${ts.confirmed_count||0} confirmed ($${fmt$(ts.confirmed_revenue)}), ${ts.tentative_count||0} tentative ($${fmt$(ts.tentative_revenue)}). Open leads: ${ts.open_leads||0}.`,
-        todayEvents.length?`TODAY'S EVENTS (${todayEvents.length}): ${todayEvents.map(e=>`${e.name} (${e.guest_count||"?"} guests, ${e.status})`).join("; ")}.`:"No events at HC NY today.",
-        weekEvents.length?`THIS WEEK: ${weekEvents.map(e=>`${e.name} on ${e.date} (${e.guest_count||"?"} guests)`).join("; ")}.`:"No events this week.",
-        nextBig?`Largest upcoming: ${nextBig.name} on ${nextBig.date} — ${nextBig.guest_count} guests.`:"",
-      ].filter(Boolean).join(" ")
-    :"TripleSeat: data unavailable.";
-
-  const prompt=`${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})} · ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET · ${svc}
-Live sources: ${live.join(", ")||"none"}
-
-GoTab: $${liveData.gotab?.net_sales||0} net sales, ${liveData.gotab?.tab_count||0} tabs, bar $${liveData.gotab?.bar_sales||0}, catering $${liveData.gotab?.catering_sales||0}, comps $${liveData.gotab?.comps||0}, deferred $${liveData.gotab?.deferred_revenue||0}
-${meCtx}
-${qbCtx}
-${mcCtx}
-${tsCtx}
-
-Write a tight GM briefing. ### headers only. Max 3 sentences per section. Skip sections with no data. Use exact $ and %.
-
-### Revenue snapshot
-### Food cost
-### Events & private dining
-### Digital & marketing
-### Watch list`;
-
-  const timer=setInterval(()=>{elapsed++;const el=document.getElementById("report-timer");if(el) el.textContent=`${elapsed}s`;},1000);
-  document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
-  try{
-    let res,attempts=0;
-    while(attempts<3){
-      attempts++;
-      res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
-      if(res.ok) break;
-      if((res.status===502||res.status===504)&&attempts<3){console.log(`Claude ${res.status} — retry ${attempts}/3`);await new Promise(r=>setTimeout(r,3000));continue;}
-      break;
+// ── QuickBooks P&L parser ─────────────────────────────────────────────────────
+function parseQBRows(rows, accounts = {}) {
+  if (!rows) return accounts;
+  for (const row of rows) {
+    if (row.type === "Section" && row.Rows) parseQBRows(row.Rows.Row, accounts);
+    if (row.type === "Data" && row.ColData) {
+      const name   = row.ColData[0]?.value || "";
+      const amount = parseFloat(row.ColData[1]?.value || 0);
+      if (name && !isNaN(amount) && amount !== 0) accounts[name] = amount;
     }
-    if(!res.ok){const errText=await res.text();throw new Error(`Claude API ${res.status}: ${errText.slice(0,200)}`);}
-    const data=await res.json();
-    if(data.error) throw new Error(`Claude error: ${data.error.message||JSON.stringify(data.error)}`);
-    const full=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
-    console.log("Report stop_reason:", data.stop_reason, "| output_tokens:", data.usage?.output_tokens, "| length:", full.length);
-    lastReport=full;clearInterval(timer);
-    document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot done"></div><span>Complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${live.length}/${SYSTEMS.length} live</span></div><div class="report-wrap"><div class="report-body">${renderReport(full)}</div><div class="report-actions"><button class="btn-sec" onclick="copyReport()">Copy</button><button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[3]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button></div><div class="disclaimer">AI-generated. ${live.length}/${SYSTEMS.length} sources live. Verify before operational decisions.</div></div>`;
-  }catch(e){clearInterval(timer);document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;}
-}
-
-function renderFlags(){
-  const d=fetchedData,flags=[];
-  const live=Object.entries(sourceMap).filter(([,v])=>v==="live").map(([k])=>k);
-  if(live.length>0) flags.push({t:"info",l:`${live.length} live: ${live.join(", ")}`});
-  if(d.quickbooks?.prime_cost_pct>TARGETS.prime) flags.push({t:"crit",l:`Prime cost ${d.quickbooks.prime_cost_pct}% — above ${TARGETS.prime}% target`});
-  if(d.quickbooks?.total_labor_pct>TARGETS.total_labor) flags.push({t:"warn",l:`Labor ${d.quickbooks.total_labor_pct}% — above ${TARGETS.total_labor}%`});
-  if(d.marginedge?.food_cost_pct>34) flags.push({t:"crit",l:`Food cost ${d.marginedge.food_cost_pct}% — critical`});
-  if(d.gotab?.comps>0&&d.gotab?.net_sales>0&&(d.gotab.comps/d.gotab.net_sales)>0.015) flags.push({t:"warn",l:`Comps ${((d.gotab.comps/d.gotab.net_sales)*100).toFixed(1)}% — review`});
-  if(d.mailchimp?.open_rate_30d&&d.mailchimp.open_rate_30d<20) flags.push({t:"warn",l:`Email open rate ${d.mailchimp.open_rate_30d}% — below 20% threshold`});
-  if(d.mailchimp?.net_list_growth_30d<0) flags.push({t:"warn",l:`Email list shrinking — ${d.mailchimp.net_list_growth_30d} net change (30d)`});
-  if(flags.filter(f=>f.t!=="info").length===0) flags.push({t:"ok",l:"All live metrics within threshold"});
-  document.getElementById("live-flags").innerHTML=flags.map(f=>`<span class="flag ${f.t}">${f.l}</span>`).join("");
-}
-
-function getSectionClass(h){
-  const l=h.toLowerCase();
-  if(l.includes("revenue")||l.includes("sales")||l.includes("snapshot")) return "s-revenue";
-  if(l.includes("labor")||l.includes("staffing")) return "s-labor";
-  if(l.includes("food cost")||l.includes("cogs")) return "s-food";
-  if(l.includes("cover")||l.includes("dining")||l.includes("guest")) return "s-covers";
-  if(l.includes("deliver")) return "s-delivery";
-  if(l.includes("event")||l.includes("banquet")||l.includes("private")||l.includes("catering")) return "s-events";
-  if(l.includes("digital")||l.includes("market")||l.includes("email")||l.includes("mailchimp")||l.includes("online")) return "s-marketing";
-  if(l.includes("reput")||l.includes("review")||l.includes("rating")) return "s-reputation";
-  if(l.includes("ops")||l.includes("comm")||l.includes("operation")) return "s-ops";
-  if(l.includes("gm")||l.includes("narrative")||l.includes("summary")||l.includes("manager")) return "s-gm";
-  if(l.includes("anomal")||l.includes("flag")||l.includes("alert")||l.includes("action")) return "s-anomaly";
-  return "s-digital";
-}
-function renderReport(md){
-  const lines=md.split("\n");let html="",inList=false;
-  for(const line of lines){
-    const t=line.trim();
-    if(!t){if(inList){html+="</ul>";inList=false;}html+="<br>";continue;}
-    if(t.startsWith("## ")){if(inList){html+="</ul>";inList=false;}html+=`<h2>${esc(t.slice(3))}</h2>`;}
-    else if(t.startsWith("### ")){if(inList){html+="</ul>";inList=false;}const tx=t.slice(4);html+=`<h3 class="${getSectionClass(tx)}">${esc(tx)}</h3>`;}
-    else if(t.startsWith("* ")||t.startsWith("- ")){if(!inList){html+="<ul>";inList=true;}html+=`<li>${ri(t.slice(2))}</li>`;}
-    else{if(inList){html+="</ul>";inList=false;}html+=`<p>${ri(t)}</p>`;}
   }
-  if(inList) html+="</ul>";
-  return html;
+  return accounts;
 }
-function ri(t){return esc(t).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>");}
 
-async function askQ(){
-  const q=document.getElementById("qa-inp").value.trim();if(!q) return;
-  const btn=document.getElementById("qa-btn");btn.disabled=true;btn.textContent="Thinking...";
-  const out=document.getElementById("qa-out");
-  out.innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Thinking...</span></div>`;
-  const liveData=Object.fromEntries(Object.entries(fetchedData).filter(([k,v])=>sourceMap[k]==="live"&&v!=null));
-  // Trim verbose nested objects before sending to Claude
-  const trimmedData={
-    gotab: liveData.gotab||null,
-    marginedge: liveData.marginedge?{invoice_count:liveData.marginedge.invoice_count,cogs:liveData.marginedge.cogs,food_cost_pct:liveData.marginedge.food_cost_pct}:null,
-    quickbooks: liveData.quickbooks?{income:{total_sales:liveData.quickbooks.income?.total_sales},total_labor:liveData.quickbooks.total_labor,prime_cost_pct:liveData.quickbooks.prime_cost_pct,net_operating_income:liveData.quickbooks.net_operating_income}:null,
-    mailchimp: liveData.mailchimp?{total_subscribers:liveData.mailchimp.total_subscribers,open_rate_30d:liveData.mailchimp.open_rate_30d,click_rate_30d:liveData.mailchimp.click_rate_30d,recent_campaigns:liveData.mailchimp.recent_campaigns?.slice(0,3)}:null,
-    tripleseat: liveData.tripleseat?{confirmed_revenue:liveData.tripleseat.confirmed_revenue,tentative_revenue:liveData.tripleseat.tentative_revenue,total_pipeline:liveData.tripleseat.total_pipeline,confirmed_count:liveData.tripleseat.confirmed_count,open_leads:liveData.tripleseat.open_leads,upcoming_events:liveData.tripleseat.upcoming_events?.slice(0,5)}:null,
+function acct(raw, ...keys) {
+  for (const k of keys) {
+    for (const [name, val] of Object.entries(raw)) { if (name.startsWith(k)) return val; }
+    const kl = k.toLowerCase();
+    for (const [name, val] of Object.entries(raw)) { if (name.toLowerCase().includes(kl)) return val; }
+  }
+  return null;
+}
+
+function sum(...vals) { return vals.reduce((a, v) => a + (v || 0), 0); }
+
+async function fetchQuickBooks(startDate, endDate) {
+  const [plRes, cdcRes] = await Promise.allSettled([
+    qbGet(`reports/ProfitAndLoss?start_date=${startDate}&end_date=${endDate}&accounting_method=Accrual&`),
+    qbState.lastSyncTime ? qbGet(`cdc?entities=Invoice,Bill,JournalEntry,Payment,Purchase&changedSince=${qbState.lastSyncTime}&`) : Promise.resolve(null),
+  ]);
+  qbState.lastSyncTime = new Date().toISOString();
+  if (plRes.status === "rejected") throw new Error("QB P&L unavailable: " + plRes.reason);
+  const raw = parseQBRows(plRes.value?.Rows?.Row);
+  const cdc = cdcRes.status === "fulfilled" ? cdcRes.value : null;
+
+  const income = {
+    food_sales: acct(raw,"4105"), liquor_sales: acct(raw,"4110"), beer_sales: acct(raw,"4115"),
+    wine_sales: acct(raw,"4120"), na_bev_sales: acct(raw,"4125"), retail_sales: acct(raw,"4130"),
+    misc_sales: acct(raw,"4140"), banquet_admin: acct(raw,"4145"), ticket_sales: acct(raw,"4150"),
+    catering_food: acct(raw,"4155"), catering_na_bev: acct(raw,"4156"), banquet_na_bev: acct(raw,"4193"),
+    banquet_food: acct(raw,"4194"), banquet_liquor: acct(raw,"4196"), banquet_beer: acct(raw,"4197"),
+    banquet_wine: acct(raw,"4198"), transport_fee: acct(raw,"4200"), discounts_comps: acct(raw,"4500"),
   };
-  const ctx=lastReport?`Today's report:\n${lastReport}\n\nLive data:\n${JSON.stringify(trimmedData,null,2)}\n\n`:`Live data:\n${JSON.stringify(trimmedData,null,2)}\n\n`;
-  try{
-    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,system:SYS_PROMPT,messages:[{role:"user",content:ctx+"Question: "+q}]})});
-    const data=await res.json();
-    const txt=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
-    out.innerHTML=`<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-body">${renderReport(txt)}</div></div>`;
-  }catch(e){out.innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;}
-  btn.disabled=false;btn.textContent="Ask RIC";
+  income.total_sales = sum(
+    income.food_sales, income.liquor_sales, income.beer_sales, income.wine_sales,
+    income.na_bev_sales, income.retail_sales, income.misc_sales, income.banquet_admin,
+    income.ticket_sales, income.catering_food, income.catering_na_bev, income.banquet_na_bev,
+    income.banquet_food, income.banquet_liquor, income.banquet_beer, income.banquet_wine,
+    income.transport_fee, income.discounts_comps
+  );
+
+  const cogs = {
+    meat: acct(raw,"5101"), produce: acct(raw,"5103"), grocery: acct(raw,"5104"),
+    bakery: acct(raw,"5105"), dairy: acct(raw,"5106"), bar_grocery: acct(raw,"5111"),
+    liquor: acct(raw,"5110"), beer: acct(raw,"5115"), wine: acct(raw,"5120"),
+    na_bev: acct(raw,"5125"), packaging: acct(raw,"5135"),
+  };
+  cogs.food  = sum(cogs.meat, cogs.produce, cogs.grocery, cogs.bakery, cogs.dairy);
+  cogs.total = sum(cogs.food, cogs.bar_grocery, cogs.liquor, cogs.beer, cogs.wine, cogs.na_bev, cogs.packaging);
+
+  const foh = { bartender: acct(raw,"5205-1"), bar_back: acct(raw,"5205-2"), busser: acct(raw,"5205-3"), host: acct(raw,"5205-7"), server: acct(raw,"5205-8"), training: acct(raw,"5205-9") };
+  foh.total = sum(foh.bartender, foh.bar_back, foh.busser, foh.host, foh.server, foh.training);
+
+  const boh = { prep: acct(raw,"5210-1"), dishwasher_porter: acct(raw,"5210-2"), line_cook: acct(raw,"5210-3"), chef: acct(raw,"5210-5"), sous_chef: acct(raw,"5210-6") };
+  boh.total = sum(boh.prep, boh.dishwasher_porter, boh.line_cook, boh.chef, boh.sous_chef);
+
+  const mgmt = { admin: acct(raw,"5215"), manager_salary: acct(raw,"5220-2"), labor_other: acct(raw,"5230") };
+  mgmt.total = sum(mgmt.admin, mgmt.manager_salary, mgmt.labor_other);
+  const direct_labor = sum(foh.total, boh.total, mgmt.total);
+
+  const labor_related = {
+    commission: acct(raw,"5310"), payroll_fica: acct(raw,"5315-1"), payroll_sui: acct(raw,"5315-2"),
+    payroll_fui: acct(raw,"5315-3"), payroll_mta: acct(raw,"5315-4"), health_insurance: acct(raw,"5320"),
+    workers_comp: acct(raw,"5325"), disability_ins: acct(raw,"5330"), epli_insurance: acct(raw,"5350"),
+  };
+  labor_related.total = sum(
+    labor_related.commission, labor_related.payroll_fica, labor_related.payroll_sui,
+    labor_related.payroll_fui, labor_related.payroll_mta, labor_related.health_insurance,
+    labor_related.workers_comp, labor_related.disability_ins, labor_related.epli_insurance
+  );
+  const total_labor = sum(direct_labor, labor_related.total);
+
+  const direct_ops = {
+    cash_over_under: acct(raw,"6105"), equipment_lease: acct(raw,"6110"),
+    cleaning_supplies: acct(raw,"6115"), restaurant_supplies: acct(raw,"6125"),
+    laundry: acct(raw,"6135"), smallwares: acct(raw,"6150"), wood_supplies: acct(raw,"6175"),
+    delivery_expense: acct(raw,"6180"), catering_rental: acct(raw,"6185"), music_dj: acct(raw,"6305"),
+  };
+  direct_ops.total = sum(
+    direct_ops.cash_over_under, direct_ops.equipment_lease, direct_ops.cleaning_supplies,
+    direct_ops.restaurant_supplies, direct_ops.laundry, direct_ops.smallwares,
+    direct_ops.wood_supplies, direct_ops.delivery_expense, direct_ops.catering_rental, direct_ops.music_dj
+  );
+
+  const transaction_expenses = {
+    cc_fees: acct(raw,"6205"), reservation_system: acct(raw,"6210"),
+    third_party_commissions: acct(raw,"6215"), late_fees: acct(raw,"6220"), chargeback: acct(raw,"6615"),
+  };
+  transaction_expenses.total = sum(
+    transaction_expenses.cc_fees, transaction_expenses.reservation_system,
+    transaction_expenses.third_party_commissions, transaction_expenses.late_fees, transaction_expenses.chargeback
+  );
+
+  const marketing = {
+    marketing_advertising: acct(raw,"6250"), marketing_pr: acct(raw,"6255"),
+    advertising_promotions: acct(raw,"6260"), stationary_printing: acct(raw,"6580"),
+  };
+  marketing.total = sum(marketing.marketing_advertising, marketing.marketing_pr, marketing.advertising_promotions, marketing.stationary_printing);
+
+  const ga_expenses = {
+    research_development: acct(raw,"6450"), accounting_bookkeeping: acct(raw,"6505"),
+    recruiting: acct(raw,"6512"), legal: acct(raw,"6520"), payroll_processing: acct(raw,"6525"),
+    computer_software_it: acct(raw,"6535"), dues_subscriptions: acct(raw,"6550"),
+    bank_charges: acct(raw,"6560"), license_permits: acct(raw,"6570"), office_supplies: acct(raw,"6575"),
+    postage: acct(raw,"6585","6603"), liability_insurance: acct(raw,"6590"),
+    penalties_settlements: acct(raw,"6600"), phone_internet: acct(raw,"6605"),
+  };
+  ga_expenses.total = sum(
+    ga_expenses.research_development, ga_expenses.accounting_bookkeeping, ga_expenses.recruiting,
+    ga_expenses.legal, ga_expenses.payroll_processing, ga_expenses.computer_software_it,
+    ga_expenses.dues_subscriptions, ga_expenses.bank_charges, ga_expenses.license_permits,
+    ga_expenses.office_supplies, ga_expenses.postage, ga_expenses.liability_insurance,
+    ga_expenses.penalties_settlements, ga_expenses.phone_internet
+  );
+
+  const travel_meals = { travel_transport: acct(raw,"6705"), meals_entertainment: acct(raw,"6710"), parking: acct(raw,"6720") };
+  travel_meals.total = sum(travel_meals.travel_transport, travel_meals.meals_entertainment, travel_meals.parking);
+
+  const repair_maintenance = { equipment: acct(raw,"6810"), pest_control: acct(raw,"6820"), fire_control: acct(raw,"6825"), facility_supplies: acct(raw,"6835") };
+  repair_maintenance.total = sum(repair_maintenance.equipment, repair_maintenance.pest_control, repair_maintenance.fire_control, repair_maintenance.facility_supplies);
+
+  const total_controllable  = sum(direct_ops.total, transaction_expenses.total, marketing.total, ga_expenses.total, travel_meals.total, repair_maintenance.total);
+
+  const property_expenses = {
+    rent_lease: acct(raw,"7105"), common_area_maint: acct(raw,"7111"), property_re_tax: acct(raw,"7115"),
+    property_insurance: acct(raw,"7120"), utility_electricity: acct(raw,"7125"), utility_gas: acct(raw,"7130"),
+    utility_trash: acct(raw,"7135"), utility_water_sewage: acct(raw,"7140"),
+  };
+  property_expenses.total = sum(
+    property_expenses.rent_lease, property_expenses.common_area_maint, property_expenses.property_re_tax,
+    property_expenses.property_insurance, property_expenses.utility_electricity, property_expenses.utility_gas,
+    property_expenses.utility_trash, property_expenses.utility_water_sewage
+  );
+
+  const other_expenses = { other_income_expense: acct(raw,"8130"), corporate_overhead: acct(raw,"8510") };
+  other_expenses.total = sum(other_expenses.other_income_expense, other_expenses.corporate_overhead);
+
+  const total_non_controllable = sum(property_expenses.total, other_expenses.total);
+  const total_expenses         = sum(total_labor, total_controllable, total_non_controllable);
+  const gross_profit           = sum(income.total_sales, -cogs.total);
+  const net_operating_income   = sum(income.total_sales, -cogs.total, -total_expenses);
+  const pct = (n) => income.total_sales > 0 ? +((n / income.total_sales) * 100).toFixed(1) : null;
+
+  return {
+    income, cogs,
+    food_cost_pct: pct(cogs.food), total_cogs_pct: pct(cogs.total),
+    liquor_cost_pct: pct(cogs.liquor), beer_cost_pct: pct(cogs.beer),
+    wine_cost_pct: pct(cogs.wine), na_bev_cost_pct: pct(cogs.na_bev),
+    gross_profit, gross_profit_pct: pct(gross_profit),
+    foh, boh, mgmt, direct_labor,
+    foh_labor_pct: pct(foh.total), boh_labor_pct: pct(boh.total), mgmt_labor_pct: pct(mgmt.total),
+    labor_related, total_labor, total_labor_pct: pct(total_labor),
+    direct_ops, transaction_expenses, marketing, ga_expenses, travel_meals, repair_maintenance,
+    total_controllable, total_controllable_pct: pct(total_controllable),
+    property_expenses, other_expenses,
+    total_non_controllable, total_non_controllable_pct: pct(total_non_controllable),
+    total_expenses, net_operating_income, net_operating_income_pct: pct(net_operating_income),
+    prime_cost: sum(cogs.total, total_labor), prime_cost_pct: pct(sum(cogs.total, total_labor)),
+    cdc_entities: cdc ? Object.keys(cdc.CDCResponse?.[0]?.QueryResponse || {}) : [],
+    raw_accounts: raw, data_as_of: nowET(),
+  };
 }
 
-function setQ(q){document.getElementById("qa-inp").value=q;document.getElementById("qa-inp").focus();}
-function copyReport(){navigator.clipboard.writeText(lastReport).catch(()=>{});}
-function showTab(id,el){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
-  if(el) el.classList.add("active");
-  document.getElementById("tab-"+id).classList.add("active");
+// ── Mailchimp ─────────────────────────────────────────────────────────────────
+async function fetchMailchimp() {
+  if (!MC_API_KEY || !MC_SERVER || !MC_AUDIENCE_ID) throw new Error("Mailchimp credentials not configured");
+  const base    = `https://${MC_SERVER}.api.mailchimp.com/3.0`;
+  const auth    = "Basic " + Buffer.from(`anystring:${MC_API_KEY}`).toString("base64");
+  const headers = { "Authorization": auth, "Content-Type": "application/json" };
+
+  const [listRes, campaignsRes, activityRes] = await Promise.all([
+    fetchWithRetry(`${base}/lists/${MC_AUDIENCE_ID}?fields=id,name,stats,date_created`, { headers }),
+    fetchWithRetry(`${base}/campaigns?list_id=${MC_AUDIENCE_ID}&status=sent&count=5&sort_field=send_time&sort_dir=DESC&fields=campaigns.id,campaigns.settings.subject_line,campaigns.send_time,campaigns.emails_sent,campaigns.report_summary`, { headers }),
+    fetchWithRetry(`${base}/lists/${MC_AUDIENCE_ID}/activity?fields=activity.day,activity.emails_sent,activity.unique_opens,activity.recipient_clicks,activity.subs,activity.unsubs&count=30`, { headers }),
+  ]);
+
+  if (!listRes.ok) throw new Error(`Mailchimp list failed: ${listRes.status}`);
+  const list      = await listRes.json();
+  const campaigns = campaignsRes.ok ? await campaignsRes.json() : { campaigns: [] };
+  const activity  = activityRes.ok  ? await activityRes.json()  : { activity: [] };
+  const stats     = list.stats || {};
+
+  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  let emails_sent_30d=0,opens_30d=0,clicks_30d=0,subs_30d=0,unsubs_30d=0;
+  for (const day of activity.activity || []) {
+    if (new Date(day.day) >= thirtyDaysAgo) {
+      emails_sent_30d += day.emails_sent || 0; opens_30d += day.unique_opens || 0;
+      clicks_30d += day.recipient_clicks || 0; subs_30d += day.subs || 0; unsubs_30d += day.unsubs || 0;
+    }
+  }
+  const toPercent = (v) => v != null ? +(v * 100).toFixed(1) : null;
+  return {
+    audience_name: list.name, total_subscribers: stats.member_count || 0,
+    open_rate_avg: toPercent(stats.open_rate), click_rate_avg: toPercent(stats.click_rate),
+    unsubscribe_rate: toPercent(stats.unsubscribe_rate),
+    emails_sent_30d, opens_30d, clicks_30d, subs_30d, unsubs_30d,
+    open_rate_30d: emails_sent_30d > 0 ? +((opens_30d/emails_sent_30d)*100).toFixed(1) : null,
+    click_rate_30d: emails_sent_30d > 0 ? +((clicks_30d/emails_sent_30d)*100).toFixed(1) : null,
+    net_list_growth_30d: subs_30d - unsubs_30d,
+    recent_campaigns: (campaigns.campaigns || []).map(c => ({
+      subject: c.settings?.subject_line || "—", send_time: c.send_time, emails_sent: c.emails_sent || 0,
+      open_rate: c.report_summary?.open_rate != null ? +(c.report_summary.open_rate*100).toFixed(1) : null,
+      click_rate: c.report_summary?.click_rate != null ? +(c.report_summary.click_rate*100).toFixed(1) : null,
+      opens: c.report_summary?.unique_opens || 0, clicks: c.report_summary?.subscriber_clicks || 0,
+    })),
+    data_as_of: nowET(),
+  };
 }
-</script>
-</body>
-</html>
+
+// ── TripleSeat ────────────────────────────────────────────────────────────────
+let tsState = {
+  accessToken:    process.env.TRIPLESEAT_ACCESS_TOKEN  || null,
+  refreshToken:   process.env.TRIPLESEAT_REFRESH_TOKEN || null,
+  tokenExpiresAt: 0,
+};
+
+// Cache TripleSeat data — refresh once per hour max (events don't change minute to minute)
+let tsCache = { data: null, fetchedAt: 0 };
+const TS_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+async function tsRefreshAccessToken() {
+  if (!tsState.refreshToken) throw new Error("No TripleSeat refresh token — visit /auth/tripleseat");
+  const res = await fetchWithRetry("https://api.tripleseat.com/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type:    "refresh_token",
+      refresh_token: tsState.refreshToken,
+      client_id:     TS_CLIENT_ID,
+      client_secret: TS_CLIENT_SECRET,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`TripleSeat token refresh failed: ${res.status} | ${body}`);
+  }
+  const data = await res.json();
+  const newRefreshToken = data.refresh_token || tsState.refreshToken;
+  tsState.accessToken    = data.access_token;
+  tsState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
+  // Persist new refresh token to Railway before updating in-memory state
+  if(data.refresh_token && data.refresh_token !== tsState.refreshToken){
+    persistRailwayVars({ TRIPLESEAT_REFRESH_TOKEN: data.refresh_token })
+      .catch(e=>console.error("TS refresh token persist failed:",e.message));
+  }
+  tsState.refreshToken = newRefreshToken;
+  console.log("TripleSeat token refreshed");
+  return tsState.accessToken;
+}
+
+async function getTSToken() {
+  if (!tsState.accessToken && !tsState.refreshToken) throw new Error("TripleSeat not authorized — visit /auth/tripleseat");
+  if (tsState.accessToken && Date.now() < tsState.tokenExpiresAt) return tsState.accessToken;
+  return tsRefreshAccessToken();
+}
+
+async function fetchTripleSeat() {
+  // Return cached data if fresh
+  if (tsCache.data && (Date.now() - tsCache.fetchedAt) < TS_CACHE_TTL) {
+    console.log("TripleSeat: returning cached data");
+    return tsCache.data;
+  }
+
+  const token = await getTSToken();
+  const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+  const base = "https://api.tripleseat.com/v1";
+
+  const fmtDate = (d) => {
+    const dt = new Date(d+"T12:00:00");
+    return `${String(dt.getMonth()+1).padStart(2,"0")}/${String(dt.getDate()).padStart(2,"0")}/${dt.getFullYear()}`;
+  };
+
+  const thirtyDaysOut = new Date(); thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+  const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const endFmt  = fmtDate(thirtyDaysOut.toISOString().slice(0,10));
+  const pastFmt = fmtDate(thirtyDaysAgo.toISOString().slice(0,10));
+
+  // Fetch page 1 to get total_pages, bookings, and leads all in parallel
+  const [firstEventsRes, bookingsRes, leadsRes] = await Promise.all([
+    fetchWithRetry(`${base}/events.json?per_page=50`, { headers }),
+    fetchWithRetry(`${base}/bookings.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
+    fetchWithRetry(`${base}/leads.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
+  ]);
+
+  if (!firstEventsRes.ok) throw new Error(`TripleSeat events failed: ${firstEventsRes.status}`);
+  const firstEventsJson = await firstEventsRes.json();
+  const totalPages = firstEventsJson.total_pages || 1;
+
+  // Fetch last page for upcoming events (in parallel with nothing — already have bookings/leads)
+  let lastEventsJson = firstEventsJson;
+  if (totalPages > 1) {
+    const lastEventsRes = await fetchWithRetry(`${base}/events.json?per_page=50&page=${totalPages}`, { headers });
+    if (lastEventsRes.ok) lastEventsJson = await lastEventsRes.json();
+  }
+
+  const bookingsJson = bookingsRes.ok ? await bookingsRes.json() : {};
+  const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : {};
+  const eventsJson   = lastEventsJson;
+
+  // TripleSeat wraps all responses in {total_pages, results: [...]}
+  const allEvents   = (eventsJson.results   || []);
+  const bookings    = (bookingsJson.results  || []);
+  const leads       = (leadsJson.results     || []);
+
+  // Filter to upcoming NY events only, sorted ascending by date
+  const todayISO = today();
+  const events = allEvents
+    .filter(e => {
+      const dateStr = e.event_date_iso8601 || e.start_date || "";
+      return dateStr >= todayISO;
+    })
+    .sort((a,b) => (a.event_date_iso8601||a.start_date||"").localeCompare(b.event_date_iso8601||b.start_date||""));
+
+  // Upcoming events summary
+  const upcomingEvents = events.slice(0, 10).map(e => ({
+    name:          e.name || "—",
+    date:          e.event_date_iso8601 || e.start_date || "—",
+    guest_count:   e.guest_count || e.guests || 0,
+    total_revenue: parseFloat(e.total_revenue || e.actual_revenue || 0),
+    status:        e.status || "—",
+    location:      typeof e.location === "object" ? (e.location?.name || "—") : (e.location || "—"),
+  }));
+
+  // Revenue pipeline from bookings — TripleSeat statuses: DEFINITE, TENTATIVE, CLOSED, CLOSED-LOST
+  let confirmed_revenue=0, tentative_revenue=0, total_pipeline=0;
+  let confirmed_count=0, tentative_count=0;
+  for (const b of bookings) {
+    const rev = parseFloat(b.total_grand_total || b.total_actual_amount || b.total_event_grand_total || 0);
+    const status = (b.status || "").toUpperCase();
+    if (status === "CLOSED-LOST" || status === "CLOSED") continue; // exclude closed/lost
+    total_pipeline += rev;
+    if (status === "DEFINITE") {
+      confirmed_revenue += rev; confirmed_count++;
+    } else {
+      tentative_revenue += rev; tentative_count++;
+    }
+  }
+
+  // Leads summary — exclude converted leads
+  const open_leads = leads.filter(l => !l.converted_at && !l.deleted_at).length;
+  const total_lead_value = leads.filter(l => !l.converted_at && !l.deleted_at)
+    .reduce((s,l) => s + parseFloat(l.estimated_revenue || l.total_revenue || 0), 0);
+
+  const result = {
+    upcoming_events:      upcomingEvents,
+    event_count_upcoming: events.length,
+    booking_count:        bookings.length,
+    confirmed_revenue:    +confirmed_revenue.toFixed(2),
+    tentative_revenue:    +tentative_revenue.toFixed(2),
+    total_pipeline:       +total_pipeline.toFixed(2),
+    confirmed_count,
+    tentative_count,
+    open_leads,
+    total_lead_value:     +total_lead_value.toFixed(2),
+    data_as_of:           nowET(),
+  };
+
+  tsCache = { data: result, fetchedAt: Date.now() };
+  console.log(`TripleSeat: fetched live data, pipeline=$${result.total_pipeline}, events=${result.event_count_upcoming}`);
+  return result;
+}
+async function getGoTabToken() {
+  const res = await fetchWithRetry("https://gotab.io/api/oauth/token", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_access_id: GOTAB_ID, api_access_secret: GOTAB_SECRET }),
+  });
+  if (!res.ok) throw new Error(`GoTab auth failed: ${res.status}`);
+  return (await res.json()).token;
+}
+
+function goTabQuery(locationUuid, fiscalDay) {
+  return {
+    query: `query($locationUuid: String, $tabCreationDate: Datetime) {
+        locations: locationsList(condition: { locationUuid: $locationUuid }) {
+          name locationUuid
+          tabs: tabsList(filter: { created: { greaterThan: $tabCreationDate } ordersPlaced: { greaterThan: 0 } }) {
+            name tabMode tax total subtotal tippedSubtotal balanceDue autogratDue href
+            items: itemsList(filter: { ordered: { equalTo: true } }) {
+              name subtotal subtotalInitial quantity quantityInitial comped voided fee discount
+              accountingStream { name reportingGroup }
+              adjustments: adjustments { adjustmentReason adjustmentType quantity unitPrice deltaTax deltaAutograt deltaAutogratTax }
+            }
+          }
+        }
+      }`,
+    variables: { locationUuid, tabCreationDate: fiscalDay + "T00:00:00Z" },
+  };
+}
+
+function normalizeGoTab(tabs) {
+  let net_sales=0,tax_total=0,bar_sales=0,catering_sales=0,voids=0,comps=0,tip_total=0,tab_count=0,deferred_revenue=0;
+  const BAR=["Sales, Liquor:","Sales, Beer:","Sales, Non-Alcoholic Beverage:","Sales, Wine:","Sales, Banquet Liquor:","Sales, Banquet Beer:","Sales, Banquet Wine:","Sales, Banquet N/A Beverage:"];
+  const CAT=["Sales, Catering Food:","Sales, Banquet Food:","Sales, Banquet Admin Fee:","Sales, Transport Fee:"];
+  const EX=["DEFERRED_REVENUE","PROCESSORS","EXPENSE"];
+  for (const tab of tabs) {
+    const tt=tab.tax||0,tto=tab.total||0,ts=tab.subtotal||0,ta=tab.autogratDue||0;
+    tax_total+=tt; const tip=tto-ts-tt-ta; if(tip>0) tip_total+=tip; tab_count++;
+    for (const item of tab.items||[]) {
+      const g=item.accountingStream?.reportingGroup||"",n=item.accountingStream?.name||"",a=item.subtotal||0;
+      if(EX.includes(g)){if(g==="DEFERRED_REVENUE") deferred_revenue+=a;continue;}
+      if(n.startsWith("Discounts and Comps")){comps+=Math.abs(a);continue;}
+      if(item.voided||g==="VOID"){voids+=Math.abs(a);continue;}
+      net_sales+=a;
+      if(BAR.some(b=>n.startsWith(b))) bar_sales+=a;
+      else if(CAT.some(b=>n.startsWith(b))) catering_sales+=a;
+    }
+  }
+  return {
+    net_sales:+(net_sales/100).toFixed(2), tab_count,
+    bar_sales:+(bar_sales/100).toFixed(2), catering_sales:+(catering_sales/100).toFixed(2),
+    voids:+(voids/100).toFixed(2), comps:+(comps/100).toFixed(2),
+    tax_total:+(tax_total/100).toFixed(2), tip_total:+(tip_total/100).toFixed(2),
+    deferred_revenue:+(deferred_revenue/100).toFixed(2), data_as_of:nowET(),
+  };
+}
+
+// ── 7Shifts ───────────────────────────────────────────────────────────────────
+async function fetch7Shifts(date) {
+  const headers = {
+    "Authorization": `Bearer ${SHIFTS_TOKEN}`, "Content-Type": "application/json",
+    ...(SHIFTS_COMPANY_GUID ? {"x-company-guid": SHIFTS_COMPANY_GUID} : {}),
+  };
+  const base = `https://api.7shifts.com/v2/company/${SHIFTS_COMPANY_ID}`;
+  const [sRes,pRes] = await Promise.all([
+    fetchWithRetry(`${base}/shifts?location_id=${SHIFTS_LOCATION_ID}&start=${date}T00:00:00&end=${date}T23:59:59&limit=200`, {headers}),
+    fetchWithRetry(`${base}/time_punches?location_id=${SHIFTS_LOCATION_ID}&clocked_in_gte=${date}T00:00:00&clocked_in_lte=${date}T23:59:59&limit=200`, {headers}),
+  ]);
+  if (!sRes.ok) throw new Error(`7Shifts shifts failed: ${sRes.status}`);
+  if (!pRes.ok) throw new Error(`7Shifts punches failed: ${pRes.status}`);
+  const shifts=(await sRes.json()).data||[], punches=(await pRes.json()).data||[];
+  let sh=0,ah=0,lc=0,oh=0,ns=0;
+  for (const s of shifts) sh+=(new Date(s.end)-new Date(s.start))/3600000;
+  for (const p of punches) { if(p.clocked_in&&p.clocked_out){const h=(new Date(p.clocked_out)-new Date(p.clocked_in))/3600000;ah+=h;if(p.wage_cents) lc+=(h*p.wage_cents)/100;if(h>8) oh+=h-8;}}
+  const pi=new Set(punches.map(p=>p.user_id));
+  for (const s of shifts) if(s.user_id&&!pi.has(s.user_id)) ns++;
+  return {scheduled_hours:+sh.toFixed(1),actual_hours:+ah.toFixed(1),labor_cost:+lc.toFixed(2),labor_pct:null,overtime_hours:+oh.toFixed(1),no_shows:ns,shift_count:shifts.length,punch_count:punches.length,data_as_of:nowET()};
+}
+
+// ── MarginEdge ────────────────────────────────────────────────────────────────
+function bucketCogs(cogs,cat,amt){
+  const c=(cat||"").toLowerCase();
+  if(c.includes("meat")||c.includes("protein")||c.includes("bbq")||c.includes("poultry")||c.includes("seafood")||c.includes("fish")||c.includes("brisket")||c.includes("chicken")||c.includes("pork")||c.includes("beef")||c.includes("sausage")||c.includes("lamb")||c.includes("turkey")){cogs.meat+=amt;cogs.food+=amt;}
+  else if(c.includes("produce")||c.includes("vegetable")||c.includes("fruit")||c.includes("lettuce")||c.includes("tomato")||c.includes("onion")||c.includes("pepper")||c.includes("herb")){cogs.produce+=amt;cogs.food+=amt;}
+  else if(c.includes("dairy")||c.includes("egg")||c.includes("cheese")||c.includes("butter")||c.includes("cream")||c.includes("milk")){cogs.dairy+=amt;cogs.food+=amt;}
+  else if(c.includes("grocery")||c.includes("dry")||c.includes("pantry")||c.includes("baked")||c.includes("bread")||c.includes("bakery")||c.includes("flour")||c.includes("sugar")||c.includes("oil")||c.includes("sauce")||c.includes("spice")||c.includes("condiment")){cogs.grocery+=amt;cogs.food+=amt;}
+  else if(c.includes("vodka")||c.includes("whiskey")||c.includes("whisky")||c.includes("bourbon")||c.includes("tequila")||c.includes("gin")||c.includes("rum")||c.includes("scotch")||c.includes("brandy")||c.includes("cognac")||c.includes("triple sec")||c.includes("liqueur")||c.includes("spirit")||c.includes("liquor")||c.includes("cocktail")||c.includes("mezcal")||c.includes("pf")){cogs.liquor+=amt;}
+  else if(c.includes("beer")||c.includes("draft")||c.includes("brew")||c.includes("ale")||c.includes("lager")||c.includes("ipa")||c.includes("stout")||c.includes("porter")||c.includes("cider")){cogs.beer+=amt;}
+  else if(c.includes("wine")||c.includes("chardonnay")||c.includes("cabernet")||c.includes("merlot")||c.includes("pinot")||c.includes("sauvignon")||c.includes("riesling")||c.includes("prosecco")||c.includes("champagne")||c.includes("brut")||c.includes("rose")||c.includes("rosé")||c.includes("blanc")||c.includes("noir")){cogs.wine+=amt;}
+  else if(c.includes("non-alc")||c.includes("na bev")||c.includes("beverage")||c.includes("soda")||c.includes("juice")||c.includes("water")||c.includes("coffee")||c.includes("tea")||c.includes("energy")||c.includes("sparkling")){cogs.na_bev+=amt;}
+  else if(c.includes("paper")||c.includes("packaging")||c.includes("to-go")||c.includes("disposable")||c.includes("napkin")||c.includes("container")||c.includes("bag")||c.includes("wrap")||c.includes("foil")){cogs.paper+=amt;}
+  else if(c.includes("supply")||c.includes("supplies")||c.includes("cleaning")||c.includes("chemical")||c.includes("sanitizer")||c.includes("detergent")){cogs.supplies+=amt;}
+  else{cogs.other+=amt;}
+}
+
+async function fetchMarginEdge(date) {
+  const headers = {"X-Api-Key": MARGINEDGE_API_KEY, "Accept": "application/json"};
+  const base = "https://api.marginedge.com/public", rid = MARGINEDGE_TENANT_ID;
+  const ordersRes = await fetchWithRetry(`${base}/orders?restaurantUnitId=${rid}&startDate=${date}&endDate=${date}&orderStatus=CLOSED`, {headers});
+  if (!ordersRes.ok) throw new Error(`MarginEdge orders failed: ${ordersRes.status}`);
+  const ordersJson = await ordersRes.json();
+  const orders = ordersJson.orders||ordersJson.data||(Array.isArray(ordersJson)?ordersJson:[]);
+  const cogs = {food:0,meat:0,produce:0,dairy:0,grocery:0,liquor:0,beer:0,wine:0,na_bev:0,paper:0,supplies:0,other:0,total:0};
+  const details = await Promise.all(orders.slice(0,10).map(o=>
+    Promise.race([
+      fetchWithRetry(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.ok?r.json():null).catch(()=>null),
+      new Promise(r=>setTimeout(()=>r(null),5000)), // 5s timeout per order detail
+    ])
+  ));
+  for (let i=0;i<details.length;i++) {
+    const d=details[i],o=orders[i];
+    if (!d){const a=parseFloat(o.orderTotal||0);if(a){cogs.total+=a;cogs.other+=a;}continue;}
+    const lines=d.lineItems||d.line_items||d.items||d.orderItems||[];
+    if (!lines.length){const a=parseFloat(d.orderTotal||o.orderTotal||0);if(a){cogs.total+=a;bucketCogs(cogs,d.vendorName||o.vendorName||"",a);}continue;}
+    for (const l of lines){const cat=l.category||l.categoryName||l.category_name||l.categoryType||l.vendorItemName||l.vendorItemCode||"";const a=parseFloat(l.linePrice||l.extendedCost||l.extended_cost||l.amount||l.total||l.cost||l.lineTotal||0);if(!a) continue;cogs.total+=a;bucketCogs(cogs,cat,a);}
+  }
+  for (const k of Object.keys(cogs)) cogs[k]=+cogs[k].toFixed(2);
+  return {invoice_count:orders.length,pending_invoices:0,cogs,food_cost_pct:null,total_cogs_pct:null,data_as_of:nowET()};
+}
+
+// ── Routes ────────────────────────────────────────────────────────────────────
+
+app.get("/auth/quickbooks",(req,res)=>{
+  if (!QB_CLIENT_ID) return res.status(500).send("QB_CLIENT_ID not set.");
+  const url = new URL("https://appcenter.intuit.com/connect/oauth2");
+  url.searchParams.set("client_id",QB_CLIENT_ID); url.searchParams.set("redirect_uri",QB_REDIRECT_URI);
+  url.searchParams.set("response_type","code"); url.searchParams.set("scope",QB_SCOPES);
+  url.searchParams.set("state",Math.random().toString(36).slice(2));
+  res.redirect(url.toString());
+});
+
+app.get("/auth/quickbooks/callback",async(req,res)=>{
+  const{code,realmId,error}=req.query;
+  if (error) return res.send(`<h2>QB Auth Failed</h2><p>${error}</p>`);
+  if (!code||!realmId) return res.status(400).send("<h2>Missing code or realmId</h2>");
+  try {
+    const creds = Buffer.from(`${QB_CLIENT_ID}:${QB_CLIENT_SECRET}`).toString("base64");
+    const tokenRes = await fetchWithRetry("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer",{method:"POST",headers:{"Authorization":`Basic ${creds}`,"Content-Type":"application/x-www-form-urlencoded","Accept":"application/json"},body:new URLSearchParams({grant_type:"authorization_code",code,redirect_uri:QB_REDIRECT_URI})});
+    if (!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>Token exchange failed</h2><pre>${body}</pre>`);}
+    const tokens = await tokenRes.json();
+    qbState.accessToken=tokens.access_token; qbState.refreshToken=tokens.refresh_token;
+    qbState.realmId=realmId; qbState.tokenExpiresAt=Date.now()+(tokens.expires_in-60)*1000;
+    await persistQBRefreshToken(tokens.refresh_token);
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Token automatically saved to Railway.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN</div><div class="value">${tokens.refresh_token}</div></div><div class="step">✓ Token persisted. Verify: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div><div class="warn">⚠️ Close this tab. Token rotates automatically.</div></body></html>`);
+  } catch(err){res.status(500).send(`<h2>Callback error</h2><pre>${err.message}</pre>`);}
+});
+
+app.get("/auth/tripleseat",(req,res)=>{
+  if (!TS_CLIENT_ID) return res.status(500).send("TRIPLESEAT_CLIENT_ID not set.");
+  const url = new URL("https://login.tripleseat.com/oauth2/authorize");
+  url.searchParams.set("client_id",    TS_CLIENT_ID);
+  url.searchParams.set("redirect_uri", TS_REDIRECT_URI);
+  url.searchParams.set("response_type","code");
+  url.searchParams.set("scope",        "read");
+  url.searchParams.set("state",        Math.random().toString(36).slice(2));
+  res.redirect(url.toString());
+});
+
+app.get("/auth/tripleseat/callback",async(req,res)=>{
+  const{code,error}=req.query;
+  if (error) return res.send(`<h2>TripleSeat Auth Failed</h2><p>${error}</p>`);
+  if (!code) return res.status(400).send("<h2>Missing code</h2>");
+  try {
+    const tokenRes = await fetchWithRetry("https://api.tripleseat.com/oauth2/token",{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:new URLSearchParams({
+        grant_type:"authorization_code", code,
+        client_id:TS_CLIENT_ID, client_secret:TS_CLIENT_SECRET,
+        redirect_uri:TS_REDIRECT_URI,
+      }),
+    });
+    if (!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>TS Token exchange failed</h2><pre>${body}</pre>`);}
+    const tokens = await tokenRes.json();
+    tsState.accessToken    = tokens.access_token;
+    tsState.refreshToken   = tokens.refresh_token;
+    tsState.tokenExpiresAt = Date.now() + (tokens.expires_in - 60) * 1000;
+    await persistRailwayVars({
+      TRIPLESEAT_ACCESS_TOKEN:  tokens.access_token,
+      TRIPLESEAT_REFRESH_TOKEN: tokens.refresh_token,
+    });
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>TripleSeat Connected</title>
+<style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}
+h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}
+.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}
+.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}
+.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px}</style></head>
+<body><h1>✓ TripleSeat Connected</h1><p>Tokens saved automatically to Railway.</p>
+<div class="card"><div class="label">Access Token</div><div class="value">${tokens.access_token}</div></div>
+<div class="card"><div class="label">Refresh Token</div><div class="value">${tokens.refresh_token}</div></div>
+<div class="step">Test: <strong>curl https://ric.up.railway.app/api/tripleseat</strong></div>
+</body></html>`);
+  } catch(err){res.status(500).send(`<h2>TS Callback error</h2><pre>${err.message}</pre>`);}
+});
+
+app.get("/api/tripleseat",async(req,res)=>{
+  try {
+    if (!tsState.accessToken&&!tsState.refreshToken) return res.status(401).json({ok:false,error:"Not authorized — visit /auth/tripleseat"});
+    res.json({ok:true,source:"tripleseat_live",...await fetchTripleSeat()});
+  } catch(err){console.error("TripleSeat error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
+
+app.get("/api/quickbooks/status",(_req,res)=>{
+  res.json({ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,
+    tokenValid:Date.now()<qbState.tokenExpiresAt,
+    tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,
+    lastSyncTime:qbState.lastSyncTime,
+    railwayPersistenceEnabled:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID)});
+});
+
+app.get("/api/quickbooks",async(req,res)=>{
+  try {
+    if (!qbState.refreshToken) return res.status(401).json({ok:false,error:"Not authorized — visit /auth/quickbooks"});
+    const start=req.query.start||today(), end=req.query.end||today();
+    res.json({ok:true,source:"quickbooks_live",start,end,...await fetchQuickBooks(start,end)});
+  } catch(err){console.error("QB error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
+
+app.get("/api/mailchimp",async(req,res)=>{
+  try{res.json({ok:true,source:"mailchimp_live",...await fetchMailchimp()});}
+  catch(err){console.error("Mailchimp error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
+
+app.get("/api/gotab/streams",async(req,res)=>{
+  try {
+    const date=req.query.date||today(), token=await getGoTabToken();
+    const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
+    const gqlData=await gqlRes.json(), tabs=gqlData?.data?.locations?.[0]?.tabs||[], streams={};
+    for (const tab of tabs) for (const item of tab.items||[]){
+      const g=item.accountingStream?.reportingGroup||"NONE",n=item.accountingStream?.name||"NONE",key=`${g} | ${n}`;
+      if(!streams[key]) streams[key]={reportingGroup:g,name:n,count:0,subtotal_cents:0};
+      streams[key].count++; streams[key].subtotal_cents+=item.subtotal||0;
+    }
+    res.json({total_tabs:tabs.length,streams:Object.values(streams).sort((a,b)=>b.subtotal_cents-a.subtotal_cents)});
+  } catch(err){res.status(500).json({ok:false,error:err.message});}
+});
+
+app.get("/api/gotab",async(req,res)=>{
+  try {
+    const date=req.query.date||today(), token=await getGoTabToken();
+    const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
+    if (!gqlRes.ok) throw new Error(`GoTab GraphQL error: ${gqlRes.status}`);
+    const gqlData=await gqlRes.json();
+    if (gqlData.errors) throw new Error(gqlData.errors[0]?.message||"GraphQL error");
+    res.json({ok:true,source:"gotab_live",date,...normalizeGoTab(gqlData?.data?.locations?.[0]?.tabs||[])});
+  } catch(err){console.error("GoTab error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
+
+app.get("/api/7shifts",async(req,res)=>{
+  try{res.json({ok:true,source:"7shifts_live",date:req.query.date||today(),...await fetch7Shifts(req.query.date||today())});}
+  catch(err){console.error("7Shifts error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
+
+app.get("/api/marginedge",async(req,res)=>{
+  try{res.json({ok:true,source:"marginedge_live",date:req.query.date||today(),...await fetchMarginEdge(req.query.date||today())});}
+  catch(err){console.error("MarginEdge error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
+
+app.get("/api/ric",async(req,res)=>{
+  const date=req.query.date||today(), result={date,sources:{}};
+
+  // Fetch all sources in parallel
+  const [goTabResult, meResult, qbResult, mcResult] = await Promise.allSettled([
+    // GoTab
+    getGoTabToken().then(token=>fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))})).then(r=>r.json()).then(d=>normalizeGoTab(d?.data?.locations?.[0]?.tabs||[])),
+    // MarginEdge
+    fetchMarginEdge(date),
+    // QuickBooks
+    (qbState.refreshToken&&qbState.realmId)?fetchQuickBooks(date,date):Promise.reject(new Error("QB not authorized")),
+    // Mailchimp
+    fetchMailchimp(),
+  ]);
+
+  // GoTab
+  if(goTabResult.status==="fulfilled"){result.gotab=goTabResult.value;result.sources.gotab="live";}
+  else{console.error("GoTab failed:",goTabResult.reason?.message);result.gotab=null;result.sources.gotab=`error: ${goTabResult.reason?.message}`;}
+
+  // 7Shifts (always errors currently — keep fast)
+  result["7shifts"]=null;result.sources["7shifts"]="error: JWT not supported";
+
+  // MarginEdge
+  if(meResult.status==="fulfilled"){
+    const me=meResult.value;
+    if(result.gotab?.net_sales){
+      if(me.cogs?.food)  me.food_cost_pct=+((me.cogs.food/result.gotab.net_sales)*100).toFixed(1);
+      if(me.cogs?.total) me.total_cogs_pct=+((me.cogs.total/result.gotab.net_sales)*100).toFixed(1);
+    }
+    result.marginedge=me;result.sources.marginedge="live";
+  } else {console.error("MarginEdge failed:",meResult.reason?.message);result.marginedge=null;result.sources.marginedge=`error: ${meResult.reason?.message}`;}
+
+  // QuickBooks
+  if(qbResult.status==="fulfilled"){
+    result.sources.quickbooks="live";
+    const qb=qbResult.value;
+    const hasRevenue=(qb.income?.total_sales||0)>0;
+    const hasLabor=(qb.total_labor||0)>0;
+    const hasSignificantExpenses=(qb.total_controllable||0)>1000;
+    if(hasRevenue||hasLabor||hasSignificantExpenses){
+      if(result.gotab?.net_sales&&qb.total_labor) qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
+      result.quickbooks=qb;
+    } else {result.quickbooks=null;console.log("QB excluded — sparse data");}
+  } else {console.error("QB failed:",qbResult.reason?.message);result.quickbooks=null;result.sources.quickbooks=`error: ${qbResult.reason?.message}`;}
+
+  // Mailchimp
+  if(mcResult.status==="fulfilled"){result.mailchimp=mcResult.value;result.sources.mailchimp="live";}
+  else{console.error("Mailchimp failed:",mcResult.reason?.message);result.mailchimp=null;result.sources.mailchimp=`error: ${mcResult.reason?.message}`;}
+
+  // TripleSeat — use cache if warm, otherwise fetch with 12s timeout
+  if(tsState.accessToken||tsState.refreshToken){
+    try{
+      const ts=await Promise.race([
+        fetchTripleSeat(),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error("TripleSeat timeout")),12000)),
+      ]);
+      result.tripleseat=ts; result.sources.tripleseat="live";
+    }catch(e){
+      if(tsCache.data){result.tripleseat=tsCache.data;result.sources.tripleseat="live";console.log("TS timeout — using stale cache");}
+      else{console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
+    }
+  }
+
+  res.json({ok:true,...result});
+});
+
+app.post("/api/claude",async(req,res)=>{
+  try{
+    const body={...req.body,stream:false};
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),25000);
+    const upstream=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},
+      body:JSON.stringify(body),
+      signal:controller.signal,
+    });
+    clearTimeout(timeout);
+    const data=await upstream.json();
+    res.json(data);
+  }catch(err){
+    console.error("Claude proxy error:",err.message);
+    if(err.name==="AbortError") return res.status(504).json({ok:false,error:"Claude API timeout after 25s"});
+    res.status(500).json({ok:false,error:err.message});
+  }
+});
+
+app.get("/health",(_req,res)=>res.json({
+  ok:true,service:"hch-ric-proxy",version:"3.9",
+  railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
+}));
+
+// Apple touch icon for home screen
+app.get("/apple-touch-icon.png",(_req,res)=>{
+  res.setHeader("Content-Type","image/svg+xml");
+  res.send('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="40" fill="#1a1a18"/><polygon fill="red" points="90,46 103,89 148,89 112,114 125,157 90,132 55,157 68,114 32,89 77,89"/></svg>');
+});
+
+app.get("/",(_req,res)=>{
+  res.setHeader("Cache-Control","no-store, no-cache, must-revalidate");
+  res.sendFile(join(__dirname,"index.html"));
+});
+
+app.listen(PORT,()=>{
+  console.log(`RIC proxy v3.9 running on port ${PORT}`);
+  // Validate QB token on startup — triggers refresh + persistence if expired
+  if(qbState.refreshToken){
+    getQBToken()
+      .then(()=>console.log("QB token validated on startup"))
+      .catch(e=>console.error("QB startup token validation failed:",e.message));
+  }
+  // Warm TripleSeat cache on startup — triggers token refresh + persistence if needed
+  if(process.env.TRIPLESEAT_ACCESS_TOKEN||process.env.TRIPLESEAT_REFRESH_TOKEN){
+    console.log("Warming TripleSeat cache on startup...");
+    fetchTripleSeat()
+      .then(d=>console.log(`TripleSeat cache warmed: pipeline=$${d.total_pipeline}, events=${d.event_count_upcoming}`))
+      .catch(e=>console.error("TripleSeat startup warm failed:",e.message));
+  }
+});
