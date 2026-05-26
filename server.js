@@ -826,10 +826,24 @@ app.get("/api/ric",async(req,res)=>{
 });
 
 app.post("/api/claude",async(req,res)=>{
-  try {
-    const upstream=await fetchWithRetry("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},body:JSON.stringify({...req.body,stream:false})});
-    res.json(await upstream.json());
-  } catch(err){console.error("Claude proxy error:",err.message);res.status(500).json({ok:false,error:err.message});}
+  try{
+    res.setHeader("Connection","keep-alive");
+    const upstream=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},
+      body:JSON.stringify({...req.body,stream:false}),
+      signal:AbortSignal.timeout(55000), // 55s timeout — just under Railway's 60s limit
+    });
+    if(!upstream.ok){
+      const err=await upstream.text();
+      return res.status(upstream.status).json({ok:false,error:err});
+    }
+    const data=await upstream.json();
+    res.json(data);
+  }catch(err){
+    console.error("Claude proxy error:",err.message);
+    res.status(500).json({ok:false,error:err.message});
+  }
 });
 
 app.get("/health",(_req,res)=>res.json({
