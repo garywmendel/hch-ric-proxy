@@ -454,13 +454,6 @@ async function fetchTripleSeat() {
   const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : {};
   const eventsJson   = lastEventsJson;
 
-  if (!lastEventsRes.ok) throw new Error(`TripleSeat events failed: ${lastEventsRes.status}`);
-  console.log("TripleSeat events keys:", Object.keys(lastEventsJson).slice(0,5));
-
-  const bookingsJson = bookingsRes.ok ? await bookingsRes.json() : {};
-  const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : {};
-  const eventsJson   = lastEventsJson;
-
   // TripleSeat wraps all responses in {total_pages, results: [...]}
   const allEvents   = (eventsJson.results   || []);
   const bookings    = (bookingsJson.results  || []);
