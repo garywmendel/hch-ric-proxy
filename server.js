@@ -617,7 +617,12 @@ async function fetchMarginEdge(date) {
   const ordersJson = await ordersRes.json();
   const orders = ordersJson.orders||ordersJson.data||(Array.isArray(ordersJson)?ordersJson:[]);
   const cogs = {food:0,meat:0,produce:0,dairy:0,grocery:0,liquor:0,beer:0,wine:0,na_bev:0,paper:0,supplies:0,other:0,total:0};
-  const details = await Promise.all(orders.slice(0,20).map(o=>fetchWithRetry(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.ok?r.json():null).catch(()=>null)));
+  const details = await Promise.all(orders.slice(0,10).map(o=>
+    Promise.race([
+      fetchWithRetry(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.ok?r.json():null).catch(()=>null),
+      new Promise(r=>setTimeout(()=>r(null),5000)), // 5s timeout per order detail
+    ])
+  ));
   for (let i=0;i<details.length;i++) {
     const d=details[i],o=orders[i];
     if (!d){const a=parseFloat(o.orderTotal||0);if(a){cogs.total+=a;cogs.other+=a;}continue;}
@@ -770,60 +775,57 @@ app.get("/api/marginedge",async(req,res)=>{
 app.get("/api/ric",async(req,res)=>{
   const date=req.query.date||today(), result={date,sources:{}};
 
-  try {
-    const token=await getGoTabToken();
-    const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
-    const tabs=(await gqlRes.json())?.data?.locations?.[0]?.tabs||[];
-    result.gotab=normalizeGoTab(tabs); result.sources.gotab="live";
-  } catch(e){console.error("GoTab failed:",e.message);result.gotab=null;result.sources.gotab=`error: ${e.message}`;}
+  // Fetch all sources in parallel
+  const [goTabResult, meResult, qbResult, mcResult] = await Promise.allSettled([
+    // GoTab
+    getGoTabToken().then(token=>fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))})).then(r=>r.json()).then(d=>normalizeGoTab(d?.data?.locations?.[0]?.tabs||[])),
+    // MarginEdge
+    fetchMarginEdge(date),
+    // QuickBooks
+    (qbState.refreshToken&&qbState.realmId)?fetchQuickBooks(date,date):Promise.reject(new Error("QB not authorized")),
+    // Mailchimp
+    fetchMailchimp(),
+  ]);
 
-  try {
-    const shifts=await fetch7Shifts(date);
-    if(result.gotab?.net_sales&&shifts.labor_cost) shifts.labor_pct=+((shifts.labor_cost/result.gotab.net_sales)*100).toFixed(1);
-    result["7shifts"]=shifts; result.sources["7shifts"]="live";
-  } catch(e){console.error("7Shifts failed:",e.message);result["7shifts"]=null;result.sources["7shifts"]=`error: ${e.message}`;}
+  // GoTab
+  if(goTabResult.status==="fulfilled"){result.gotab=goTabResult.value;result.sources.gotab="live";}
+  else{console.error("GoTab failed:",goTabResult.reason?.message);result.gotab=null;result.sources.gotab=`error: ${goTabResult.reason?.message}`;}
 
-  try {
-    const me=await fetchMarginEdge(date);
+  // 7Shifts (always errors currently — keep fast)
+  result["7shifts"]=null;result.sources["7shifts"]="error: JWT not supported";
+
+  // MarginEdge
+  if(meResult.status==="fulfilled"){
+    const me=meResult.value;
     if(result.gotab?.net_sales){
       if(me.cogs?.food)  me.food_cost_pct=+((me.cogs.food/result.gotab.net_sales)*100).toFixed(1);
       if(me.cogs?.total) me.total_cogs_pct=+((me.cogs.total/result.gotab.net_sales)*100).toFixed(1);
     }
-    result.marginedge=me; result.sources.marginedge="live";
-  } catch(e){console.error("MarginEdge failed:",e.message);result.marginedge=null;result.sources.marginedge=`error: ${e.message}`;}
+    result.marginedge=me;result.sources.marginedge="live";
+  } else {console.error("MarginEdge failed:",meResult.reason?.message);result.marginedge=null;result.sources.marginedge=`error: ${meResult.reason?.message}`;}
 
-  try {
-    if(qbState.refreshToken&&qbState.realmId){
-      const qb=await fetchQuickBooks(date,date);
-      result.sources.quickbooks="live";
-      const hasRevenue=(qb.income?.total_sales||0)>0;
-      const hasLabor=(qb.total_labor||0)>0;
-      const hasSignificantExpenses=(qb.total_controllable||0)>1000;
-      if(hasRevenue||hasLabor||hasSignificantExpenses){
-        if(result.gotab?.net_sales&&qb.total_labor) qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
-        result.quickbooks=qb;
-      } else {result.quickbooks=null;console.log("QB excluded from daily report — sparse data");}
-    }
-  } catch(e){console.error("QB failed:",e.message);result.quickbooks=null;result.sources.quickbooks=`error: ${e.message}`;}
+  // QuickBooks
+  if(qbResult.status==="fulfilled"){
+    result.sources.quickbooks="live";
+    const qb=qbResult.value;
+    const hasRevenue=(qb.income?.total_sales||0)>0;
+    const hasLabor=(qb.total_labor||0)>0;
+    const hasSignificantExpenses=(qb.total_controllable||0)>1000;
+    if(hasRevenue||hasLabor||hasSignificantExpenses){
+      if(result.gotab?.net_sales&&qb.total_labor) qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
+      result.quickbooks=qb;
+    } else {result.quickbooks=null;console.log("QB excluded — sparse data");}
+  } else {console.error("QB failed:",qbResult.reason?.message);result.quickbooks=null;result.sources.quickbooks=`error: ${qbResult.reason?.message}`;}
 
-  try {
-    result.mailchimp=await fetchMailchimp(); result.sources.mailchimp="live";
-  } catch(e){console.error("Mailchimp failed:",e.message);result.mailchimp=null;result.sources.mailchimp=`error: ${e.message}`;}
+  // Mailchimp
+  if(mcResult.status==="fulfilled"){result.mailchimp=mcResult.value;result.sources.mailchimp="live";}
+  else{console.error("Mailchimp failed:",mcResult.reason?.message);result.mailchimp=null;result.sources.mailchimp=`error: ${mcResult.reason?.message}`;}
 
-  // TripleSeat is fetched separately via /api/tripleseat due to slow two-page fetch
-  // It is cached for 1 hour after first fetch
-  try {
-    if(tsState.accessToken||tsState.refreshToken){
-      // Only include if already cached — don't block /api/ric on a cold TripleSeat fetch
-      if(tsCache.data){
-        result.tripleseat=tsCache.data; result.sources.tripleseat="live";
-      } else {
-        // Warm cache in background — don't await
-        fetchTripleSeat().catch(e=>console.error("TripleSeat background fetch failed:",e.message));
-        result.tripleseat=null; result.sources.tripleseat="warming";
-      }
-    }
-  } catch(e){console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
+  // TripleSeat — use cache only, never block /api/ric
+  if(tsState.accessToken||tsState.refreshToken){
+    if(tsCache.data){result.tripleseat=tsCache.data;result.sources.tripleseat="live";}
+    else{fetchTripleSeat().catch(e=>console.error("TS background warm failed:",e.message));result.tripleseat=null;result.sources.tripleseat="warming";}
+  }
 
   res.json({ok:true,...result});
 });
