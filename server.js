@@ -618,7 +618,7 @@ app.get("/auth/quickbooks/callback",async(req,res)=>{
 
 app.get("/auth/tripleseat",(req,res)=>{
   if (!TS_CLIENT_ID) return res.status(500).send("TRIPLESEAT_CLIENT_ID not set.");
-  const url = new URL("https://api.tripleseat.com/oauth2/authorize");
+  const url = new URL("https://login.tripleseat.com/oauth2/authorize");
   url.searchParams.set("client_id",    TS_CLIENT_ID);
   url.searchParams.set("redirect_uri", TS_REDIRECT_URI);
   url.searchParams.set("response_type","code");
