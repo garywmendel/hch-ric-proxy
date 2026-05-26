@@ -429,7 +429,7 @@ async function fetchTripleSeat() {
   const pastFmt   = fmtDate(pastDate);
 
   const [eventsRes, bookingsRes, leadsRes] = await Promise.all([
-    fetchWithRetry(`${base}/events.json?per_page=50&start_date=${startFmt}&end_date=${endFmt}`, { headers }),
+    fetchWithRetry(`${base}/events.json?per_page=50&location_id=${2191}&sort_direction=desc&order=event_date`, { headers }),
     fetchWithRetry(`${base}/bookings.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
     fetchWithRetry(`${base}/leads.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
   ]);
@@ -446,14 +446,12 @@ async function fetchTripleSeat() {
   const bookings    = (bookingsJson.results  || []);
   const leads       = (leadsJson.results     || []);
 
-  // Filter events to Hill Country NY only (location ID 2191 = Hill Country Barbecue Market NY, 30 W 26th St)
-  const NY_LOCATION_ID = 2191;
+  // Filter to upcoming NY events only, sorted ascending by date
   const todayISO = today();
   const events = allEvents
     .filter(e => {
-      const locId = typeof e.location === "object" ? e.location?.id : null;
       const dateStr = e.event_date_iso8601 || e.start_date || "";
-      return (!locId || locId === NY_LOCATION_ID) && dateStr >= todayISO;
+      return dateStr >= todayISO;
     })
     .sort((a,b) => (a.event_date_iso8601||a.start_date||"").localeCompare(b.event_date_iso8601||b.start_date||""));
 
