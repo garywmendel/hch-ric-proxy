@@ -754,7 +754,7 @@ Rules: blank line between sections. Specific $ and %. GM at 7am voice.`;
   const timer=setInterval(()=>{elapsed++;const el=document.getElementById("report-timer");if(el) el.textContent=`${elapsed}s`;},1000);
   document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
   try{
-    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
+    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:2000,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
     const data=await res.json();
     const full=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
     lastReport=full;clearInterval(timer);
@@ -812,7 +812,15 @@ async function askQ(){
   const out=document.getElementById("qa-out");
   out.innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Thinking...</span></div>`;
   const liveData=Object.fromEntries(Object.entries(fetchedData).filter(([k,v])=>sourceMap[k]==="live"&&v!=null));
-  const ctx=lastReport?`Today's report:\n${lastReport}\n\nLive data:\n${JSON.stringify(liveData,null,2)}\n\n`:`Live data:\n${JSON.stringify(liveData,null,2)}\n\n`;
+  // Trim verbose nested objects before sending to Claude
+  const trimmedData={
+    gotab: liveData.gotab||null,
+    marginedge: liveData.marginedge?{invoice_count:liveData.marginedge.invoice_count,cogs:liveData.marginedge.cogs,food_cost_pct:liveData.marginedge.food_cost_pct}:null,
+    quickbooks: liveData.quickbooks?{income:{total_sales:liveData.quickbooks.income?.total_sales},total_labor:liveData.quickbooks.total_labor,prime_cost_pct:liveData.quickbooks.prime_cost_pct,net_operating_income:liveData.quickbooks.net_operating_income}:null,
+    mailchimp: liveData.mailchimp?{total_subscribers:liveData.mailchimp.total_subscribers,open_rate_30d:liveData.mailchimp.open_rate_30d,click_rate_30d:liveData.mailchimp.click_rate_30d,recent_campaigns:liveData.mailchimp.recent_campaigns?.slice(0,3)}:null,
+    tripleseat: liveData.tripleseat?{confirmed_revenue:liveData.tripleseat.confirmed_revenue,tentative_revenue:liveData.tripleseat.tentative_revenue,total_pipeline:liveData.tripleseat.total_pipeline,confirmed_count:liveData.tripleseat.confirmed_count,open_leads:liveData.tripleseat.open_leads,upcoming_events:liveData.tripleseat.upcoming_events?.slice(0,5)}:null,
+  };
+  const ctx=lastReport?`Today's report:\n${lastReport}\n\nLive data:\n${JSON.stringify(trimmedData,null,2)}\n\n`:`Live data:\n${JSON.stringify(trimmedData,null,2)}\n\n`;
   try{
     const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,system:SYS_PROMPT,messages:[{role:"user",content:ctx+"Question: "+q}]})});
     const data=await res.json();
