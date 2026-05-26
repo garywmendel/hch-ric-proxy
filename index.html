@@ -665,7 +665,7 @@ async function runSync(){
   document.getElementById("live-flags").innerHTML="";
   SYSTEMS.forEach(s=>updDot(s.id,"idle"));
   fetchedData={};sourceMap={};
-  updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");
+  updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");
   btn.textContent="Fetching live data...";
   let ricLive={};
   try{const r=await fetch("/api/ric");if(!r.ok) throw new Error();ricLive=await r.json();}catch(e){}
@@ -717,9 +717,11 @@ async function generateReport(){
     ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()} emails sent, ${mc.open_rate_30d}% open rate, ${mc.click_rate_30d}% click rate, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth. Most recent campaign: "${mc.recent_campaigns?.[0]?.subject||"—"}" — ${mc.recent_campaigns?.[0]?.open_rate}% open, ${mc.recent_campaigns?.[0]?.click_rate}% click.`
     :"Mailchimp: data unavailable.";
 
-  const tsCtx=ts.total_pipeline>0
-    ?`TripleSeat (live): ${ts.confirmed_count} confirmed events ($${ts.confirmed_revenue?.toLocaleString("en-US",{minimumFractionDigits:2})}), ${ts.tentative_count} tentative ($${ts.tentative_revenue?.toLocaleString("en-US",{minimumFractionDigits:2})}). Total pipeline $${ts.total_pipeline?.toLocaleString("en-US",{minimumFractionDigits:2})}. Open leads: ${ts.open_leads} ($${ts.total_lead_value?.toLocaleString("en-US",{minimumFractionDigits:2})} value). Next event: ${ts.upcoming_events?.[0]?.name||"—"} on ${ts.upcoming_events?.[0]?.date||"—"} (${ts.upcoming_events?.[0]?.guest_count||0} guests, $${ts.upcoming_events?.[0]?.total_revenue||0} revenue).`
-    :(ts.data_as_of?"TripleSeat (live): No upcoming events or bookings in current window.":"TripleSeat: data unavailable.");
+  const tsCtx=ts.data_as_of
+    ?(ts.total_pipeline>0
+      ?`TripleSeat (live): ${ts.confirmed_count} confirmed events ($${ts.confirmed_revenue?.toLocaleString("en-US",{minimumFractionDigits:2})}), ${ts.tentative_count} tentative ($${ts.tentative_revenue?.toLocaleString("en-US",{minimumFractionDigits:2})}). Total pipeline $${ts.total_pipeline?.toLocaleString("en-US",{minimumFractionDigits:2})}. Open leads: ${ts.open_leads}. Next event: ${ts.upcoming_events?.[0]?.name||"—"} on ${ts.upcoming_events?.[0]?.date||"—"} (${ts.upcoming_events?.[0]?.guest_count||0} guests).`
+      :"TripleSeat (live): No active pipeline in current window.")
+    :"TripleSeat: data unavailable.";
 
   const prompt=`Hill Country BBQ — New York
 Date: ${now.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
