@@ -806,7 +806,13 @@ app.get("/api/ric",async(req,res)=>{
 
   try {
     if(tsState.accessToken||tsState.refreshToken){
-      result.tripleseat=await fetchTripleSeat(); result.sources.tripleseat="live";
+      const ts=await fetchTripleSeat();
+      // Strip verbose location objects from upcoming_events to keep payload small
+      if(ts.upcoming_events) ts.upcoming_events=ts.upcoming_events.map(e=>({
+        name:e.name,date:e.date,guest_count:e.guest_count,
+        total_revenue:e.total_revenue,status:e.status,location:e.location,
+      }));
+      result.tripleseat=ts; result.sources.tripleseat="live";
     }
   } catch(e){console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
 
