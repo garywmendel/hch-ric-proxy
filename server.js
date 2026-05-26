@@ -865,6 +865,16 @@ app.get("/health",(_req,res)=>res.json({
   railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
 }));
 
+// Apple touch icon for home screen
+app.get("/apple-touch-icon.png",(_req,res)=>{
+  // 180x180 SVG rendered as PNG-like response — browsers accept SVG for touch icons
+  res.setHeader("Content-Type","image/svg+xml");
+  res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+    <rect width="180" height="180" rx="40" fill="#1a1a18"/>
+    <polygon fill="red" points="90,46 103,89 148,89 112,114 125,157 90,132 55,157 68,114 32,89 77,89"/>
+  </svg>`);
+});
+
 app.get("/",(_req,res)=>{
   res.setHeader("Cache-Control","no-store, no-cache, must-revalidate");
   res.sendFile(join(__dirname,"index.html"));
