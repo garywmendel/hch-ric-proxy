@@ -670,6 +670,8 @@ app.get("/api/tripleseat",async(req,res)=>{
     res.json({ok:true,source:"tripleseat_live",...await fetchTripleSeat()});
   } catch(err){console.error("TripleSeat error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
+
+app.get("/api/quickbooks/status",(_req,res)=>{
   res.json({ok:true,authorized:!!qbState.refreshToken,realmId:qbState.realmId||null,
     tokenValid:Date.now()<qbState.tokenExpiresAt,
     tokenExpiresAt:qbState.tokenExpiresAt?new Date(qbState.tokenExpiresAt).toISOString():null,
