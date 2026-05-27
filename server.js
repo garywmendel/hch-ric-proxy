@@ -1,4 +1,4 @@
-// Hill Country Hospitality — RIC Proxy Server v3.7
+// Hill Country Hospitality — RIC Proxy Server v4.0
 import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
@@ -7,6 +7,9 @@ import { dirname, join } from "path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app  = express();
 const PORT = process.env.PORT || 3000;
+
+// ── Apple touch icon PNG (180x180, red star on #1a1a18) ───────────────────────
+const TOUCH_ICON_PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAFIklEQVR4nO3cS27bQBBF0ZaQRRjaRTLy/kcZ2bsQvItkYhptmpTY7F/Vq3umASx+roolw8olTXS7vfyb+fro537/uMx43WEvSrwYEXnXFyBi7OkVd5cfSsg4qnXYTX8YIeOsVmE3+SGEjFZqw77WHgAxo6XanqqCJmb0UNPVqfFOyBildAUpntDEjJFKeysKmpgxQ0l3h4MmZsx0tL9DQRMzLDjS4dOgiRmWPOux+vfQgCUPg2Y6w6JHXe4GTcywbK/PzaCJGR5sdcoODSk/gmY6w5N1r0xoSPkWNNMZHuXdMqEh5StopjM8W/plQkMKQUPKJSXWDehgQkMKQUMKQUMKQUPKlQ+EUMKEhhSChhSChhSChhSChhSChhSChhSChhSChhSChhSCHuTv7z+zDyEEgoYUgh5gmc5M6f4IGlIIujOm8lgEPRiB90XQkELQHe1NY6Z0PwQNKQTdCVN4DoKehOD7IGhIIegOmL7zEPREhN8eQTdGpHMR9GS8AdoiaEgh6IaYtvMRtAG8EdohaEgh6EaYsjYQtBG8Idog6AaI0Q6ChhSCNoRJX4+gKxGhLQRtDG+QOgRdgfjsIWhIIWiDmPznEfRJRGcTQUMKQZ8wYjrzBDiHoCGFoA1jSpcj6EJEZhtBQwpBF5gxnXkilCFoSLncbi//Zh9EL0y3ba/vb7MPoRszQROfb1beJGZWDisXBOUs3TszEzrHtPbBUsgLMxM6Z/FC4Tur98hk0CnZvWCwfW9MrhxrrCA2WA55YXZC5zxcSHVe7oGLoFPyc0EVebr2LlaONVaQMTyFvHAzoXMeL7Q3Xq+xy6BT8nvBPfB8bV2uHGusIG14DnnhdkLnFG7EbCrXUCLolHRuyAxK104m6JS0bswoatdMYofewl79mFrIC6kJnVO9YS0oXxvZoFPSvnFnqV8T2ZVjLfoKoh7yQnpC56Lc0C2Rzj1M0CnFurGLaOccZuVYU19BooW8CDWhc8o3XPncngkbdEqaN17xnEqEXTnWvK8g0UNehJ7QOc9BeD721ggaUgj6k+eVw/Oxt0bQkELQkELQSeORrXAOLRA0pBA0pBA0pIQPWmn3VDqXs8IHDS0EDSmhg1Z8RCueU4nQQUMPQUNK2KCVH83K5/ZM2KChiaAhJeRXsEY/kvNvlIx87YjfZGFCd7aOKmJkI/2afQCqHoW7/FvkD2+9MKE7ODqFmdbthduhe07FmkB7HVe0Nw0TuoHX97fqcKKF1wtBV2oZYos3RnShVo6Wj/Xe4Xk6VkuY0CeMCIRpfQ5BF5gRGVGXCbNy1DzCrUSlcA69MaGfsBQCa8hzBL3DcjxWj8uCECtH6aPaUzAl5+bpvM5iQmcsT+U93o63N4L+5DkMj2/EXsIHrRSDynnUkN+h93ZM9Zsf9bxDTmj1m5pSjHPcEuoP/KPd5IhfJJCe0PmNjBZzbtZ3GmeQn9CRQ85FmdbyHwoRi/TKgXgIGlKu9/vHZfZBAK0woSGFoCGFoCGFoCHlmlJKfDCEgvv948KEhhSChpSvoFk74NnSLxMaUr4FzZSGR3m3TGhI+RE0UxqerHtlQkPKZtBMaXiw1enuhCZqWLbX58OVg6hh0aMu2aEh5WnQTGlY8qzHQxOaqGHBkQ4PrxxEjZmO9le0QxM1ZijprvhDIVFjpNLequLkf11CL2cHZ9Wv7ZjW6KGmq+rfQxM1WqrtqWmMrCA4q9Vg7DJdCRtHtX7Cd10XCBt7eq2qw/Zf4saIz1v/AeqjugbVrL3jAAAAAElFTkSuQmCC","base64");
 
 // ── Credentials ───────────────────────────────────────────────────────────────
 const GOTAB_ID             = process.env.GOTAB_ID;
@@ -372,7 +375,6 @@ let tsState = {
   tokenExpiresAt: 0,
 };
 
-// Cache TripleSeat data — refresh once per hour max (events don't change minute to minute)
 let tsCache = { data: null, fetchedAt: 0 };
 const TS_CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
@@ -382,10 +384,8 @@ async function tsRefreshAccessToken() {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      grant_type:    "refresh_token",
-      refresh_token: tsState.refreshToken,
-      client_id:     TS_CLIENT_ID,
-      client_secret: TS_CLIENT_SECRET,
+      grant_type: "refresh_token", refresh_token: tsState.refreshToken,
+      client_id: TS_CLIENT_ID, client_secret: TS_CLIENT_SECRET,
     }),
   });
   if (!res.ok) {
@@ -396,10 +396,9 @@ async function tsRefreshAccessToken() {
   const newRefreshToken = data.refresh_token || tsState.refreshToken;
   tsState.accessToken    = data.access_token;
   tsState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
-  // Persist new refresh token to Railway before updating in-memory state
-  if(data.refresh_token && data.refresh_token !== tsState.refreshToken){
+  if (data.refresh_token && data.refresh_token !== tsState.refreshToken) {
     persistRailwayVars({ TRIPLESEAT_REFRESH_TOKEN: data.refresh_token })
-      .catch(e=>console.error("TS refresh token persist failed:",e.message));
+      .catch(e => console.error("TS refresh token persist failed:", e.message));
   }
   tsState.refreshToken = newRefreshToken;
   console.log("TripleSeat token refreshed");
@@ -413,7 +412,6 @@ async function getTSToken() {
 }
 
 async function fetchTripleSeat() {
-  // Return cached data if fresh
   if (tsCache.data && (Date.now() - tsCache.fetchedAt) < TS_CACHE_TTL) {
     console.log("TripleSeat: returning cached data");
     return tsCache.data;
@@ -433,7 +431,6 @@ async function fetchTripleSeat() {
   const endFmt  = fmtDate(thirtyDaysOut.toISOString().slice(0,10));
   const pastFmt = fmtDate(thirtyDaysAgo.toISOString().slice(0,10));
 
-  // Fetch page 1 to get total_pages, bookings, and leads all in parallel
   const [firstEventsRes, bookingsRes, leadsRes] = await Promise.all([
     fetchWithRetry(`${base}/events.json?per_page=50`, { headers }),
     fetchWithRetry(`${base}/bookings.json?per_page=50&start_date=${pastFmt}&end_date=${endFmt}`, { headers }),
@@ -444,7 +441,6 @@ async function fetchTripleSeat() {
   const firstEventsJson = await firstEventsRes.json();
   const totalPages = firstEventsJson.total_pages || 1;
 
-  // Fetch last page for upcoming events (in parallel with nothing — already have bookings/leads)
   let lastEventsJson = firstEventsJson;
   if (totalPages > 1) {
     const lastEventsRes = await fetchWithRetry(`${base}/events.json?per_page=50&page=${totalPages}`, { headers });
@@ -455,21 +451,15 @@ async function fetchTripleSeat() {
   const leadsJson    = leadsRes.ok   ? await leadsRes.json()    : {};
   const eventsJson   = lastEventsJson;
 
-  // TripleSeat wraps all responses in {total_pages, results: [...]}
-  const allEvents   = (eventsJson.results   || []);
-  const bookings    = (bookingsJson.results  || []);
-  const leads       = (leadsJson.results     || []);
+  const allEvents = (eventsJson.results   || []);
+  const bookings  = (bookingsJson.results  || []);
+  const leads     = (leadsJson.results     || []);
 
-  // Filter to upcoming NY events only, sorted ascending by date
   const todayISO = today();
   const events = allEvents
-    .filter(e => {
-      const dateStr = e.event_date_iso8601 || e.start_date || "";
-      return dateStr >= todayISO;
-    })
+    .filter(e => { const d = e.event_date_iso8601 || e.start_date || ""; return d >= todayISO; })
     .sort((a,b) => (a.event_date_iso8601||a.start_date||"").localeCompare(b.event_date_iso8601||b.start_date||""));
 
-  // Upcoming events summary
   const upcomingEvents = events.slice(0, 10).map(e => ({
     name:          e.name || "—",
     date:          e.event_date_iso8601 || e.start_date || "—",
@@ -479,44 +469,34 @@ async function fetchTripleSeat() {
     location:      typeof e.location === "object" ? (e.location?.name || "—") : (e.location || "—"),
   }));
 
-  // Revenue pipeline from bookings — TripleSeat statuses: DEFINITE, TENTATIVE, CLOSED, CLOSED-LOST
-  let confirmed_revenue=0, tentative_revenue=0, total_pipeline=0;
-  let confirmed_count=0, tentative_count=0;
+  let confirmed_revenue=0, tentative_revenue=0, total_pipeline=0, confirmed_count=0, tentative_count=0;
   for (const b of bookings) {
     const rev = parseFloat(b.total_grand_total || b.total_actual_amount || b.total_event_grand_total || 0);
     const status = (b.status || "").toUpperCase();
-    if (status === "CLOSED-LOST" || status === "CLOSED") continue; // exclude closed/lost
+    if (status === "CLOSED-LOST" || status === "CLOSED") continue;
     total_pipeline += rev;
-    if (status === "DEFINITE") {
-      confirmed_revenue += rev; confirmed_count++;
-    } else {
-      tentative_revenue += rev; tentative_count++;
-    }
+    if (status === "DEFINITE") { confirmed_revenue += rev; confirmed_count++; }
+    else { tentative_revenue += rev; tentative_count++; }
   }
 
-  // Leads summary — exclude converted leads
   const open_leads = leads.filter(l => !l.converted_at && !l.deleted_at).length;
   const total_lead_value = leads.filter(l => !l.converted_at && !l.deleted_at)
     .reduce((s,l) => s + parseFloat(l.estimated_revenue || l.total_revenue || 0), 0);
 
   const result = {
-    upcoming_events:      upcomingEvents,
-    event_count_upcoming: events.length,
-    booking_count:        bookings.length,
-    confirmed_revenue:    +confirmed_revenue.toFixed(2),
-    tentative_revenue:    +tentative_revenue.toFixed(2),
-    total_pipeline:       +total_pipeline.toFixed(2),
-    confirmed_count,
-    tentative_count,
-    open_leads,
-    total_lead_value:     +total_lead_value.toFixed(2),
-    data_as_of:           nowET(),
+    upcoming_events: upcomingEvents, event_count_upcoming: events.length,
+    booking_count: bookings.length,
+    confirmed_revenue: +confirmed_revenue.toFixed(2), tentative_revenue: +tentative_revenue.toFixed(2),
+    total_pipeline: +total_pipeline.toFixed(2), confirmed_count, tentative_count,
+    open_leads, total_lead_value: +total_lead_value.toFixed(2), data_as_of: nowET(),
   };
 
   tsCache = { data: result, fetchedAt: Date.now() };
   console.log(`TripleSeat: fetched live data, pipeline=$${result.total_pipeline}, events=${result.event_count_upcoming}`);
   return result;
 }
+
+// ── GoTab ─────────────────────────────────────────────────────────────────────
 async function getGoTabToken() {
   const res = await fetchWithRetry("https://gotab.io/api/oauth/token", {
     method: "POST", headers: { "Content-Type": "application/json" },
@@ -588,7 +568,7 @@ async function fetch7Shifts(date) {
   const shifts=(await sRes.json()).data||[], punches=(await pRes.json()).data||[];
   let sh=0,ah=0,lc=0,oh=0,ns=0;
   for (const s of shifts) sh+=(new Date(s.end)-new Date(s.start))/3600000;
-  for (const p of punches) { if(p.clocked_in&&p.clocked_out){const h=(new Date(p.clocked_out)-new Date(p.clocked_in))/3600000;ah+=h;if(p.wage_cents) lc+=(h*p.wage_cents)/100;if(h>8) oh+=h-8;}}
+  for (const p of punches){if(p.clocked_in&&p.clocked_out){const h=(new Date(p.clocked_out)-new Date(p.clocked_in))/3600000;ah+=h;if(p.wage_cents) lc+=(h*p.wage_cents)/100;if(h>8) oh+=h-8;}}
   const pi=new Set(punches.map(p=>p.user_id));
   for (const s of shifts) if(s.user_id&&!pi.has(s.user_id)) ns++;
   return {scheduled_hours:+sh.toFixed(1),actual_hours:+ah.toFixed(1),labor_cost:+lc.toFixed(2),labor_pct:null,overtime_hours:+oh.toFixed(1),no_shows:ns,shift_count:shifts.length,punch_count:punches.length,data_as_of:nowET()};
@@ -621,7 +601,7 @@ async function fetchMarginEdge(date) {
   const details = await Promise.all(orders.slice(0,10).map(o=>
     Promise.race([
       fetchWithRetry(`${base}/orders/${o.orderId}?restaurantUnitId=${rid}`,{headers}).then(r=>r.ok?r.json():null).catch(()=>null),
-      new Promise(r=>setTimeout(()=>r(null),5000)), // 5s timeout per order detail
+      new Promise(r=>setTimeout(()=>r(null),5000)),
     ])
   ));
   for (let i=0;i<details.length;i++) {
@@ -637,12 +617,12 @@ async function fetchMarginEdge(date) {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
-app.post("/api/pin",express.json(),(req,res)=>{
+// PIN verification
+app.post("/api/pin",(req,res)=>{
   const correct = process.env.RIC_ACCESS_CODE || process.env.RIC_PIN || "00000";
-  const provided=String(req.body?.pin||"");
-  if(provided===correct) return res.json({ok:true});
-  // Slow response on failure to prevent brute force
-  setTimeout(()=>res.json({ok:false}),1000);
+  const provided = String(req.body?.pin || "");
+  if (provided === correct) return res.json({ok:true});
+  setTimeout(()=>res.json({ok:false}), 1000);
 });
 
 app.get("/auth/quickbooks",(req,res)=>{
@@ -666,18 +646,16 @@ app.get("/auth/quickbooks/callback",async(req,res)=>{
     qbState.accessToken=tokens.access_token; qbState.refreshToken=tokens.refresh_token;
     qbState.realmId=realmId; qbState.tokenExpiresAt=Date.now()+(tokens.expires_in-60)*1000;
     await persistQBRefreshToken(tokens.refresh_token);
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Token automatically saved to Railway.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN</div><div class="value">${tokens.refresh_token}</div></div><div class="step">✓ Token persisted. Verify: <strong>curl https://ric.up.railway.app/api/quickbooks/status</strong></div><div class="warn">⚠️ Close this tab. Token rotates automatically.</div></body></html>`);
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>QB Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px}.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head><body><h1>✓ QuickBooks Connected</h1><p>Token automatically saved to Railway.</p><div class="card"><div class="label">QB_REALM_ID</div><div class="value">${realmId}</div></div><div class="card"><div class="label">QB_REFRESH_TOKEN</div><div class="value">${tokens.refresh_token}</div></div><div class="step">✓ Token persisted.</div><div class="warn">⚠️ Close this tab. Token rotates automatically.</div></body></html>`);
   } catch(err){res.status(500).send(`<h2>Callback error</h2><pre>${err.message}</pre>`);}
 });
 
 app.get("/auth/tripleseat",(req,res)=>{
   if (!TS_CLIENT_ID) return res.status(500).send("TRIPLESEAT_CLIENT_ID not set.");
   const url = new URL("https://login.tripleseat.com/oauth2/authorize");
-  url.searchParams.set("client_id",    TS_CLIENT_ID);
-  url.searchParams.set("redirect_uri", TS_REDIRECT_URI);
-  url.searchParams.set("response_type","code");
-  url.searchParams.set("scope",        "read");
-  url.searchParams.set("state",        Math.random().toString(36).slice(2));
+  url.searchParams.set("client_id",TS_CLIENT_ID); url.searchParams.set("redirect_uri",TS_REDIRECT_URI);
+  url.searchParams.set("response_type","code"); url.searchParams.set("scope","read");
+  url.searchParams.set("state",Math.random().toString(36).slice(2));
   res.redirect(url.toString());
 });
 
@@ -687,34 +665,16 @@ app.get("/auth/tripleseat/callback",async(req,res)=>{
   if (!code) return res.status(400).send("<h2>Missing code</h2>");
   try {
     const tokenRes = await fetchWithRetry("https://api.tripleseat.com/oauth2/token",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded"},
-      body:new URLSearchParams({
-        grant_type:"authorization_code", code,
-        client_id:TS_CLIENT_ID, client_secret:TS_CLIENT_SECRET,
-        redirect_uri:TS_REDIRECT_URI,
-      }),
+      method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:new URLSearchParams({grant_type:"authorization_code",code,client_id:TS_CLIENT_ID,client_secret:TS_CLIENT_SECRET,redirect_uri:TS_REDIRECT_URI}),
     });
     if (!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>TS Token exchange failed</h2><pre>${body}</pre>`);}
     const tokens = await tokenRes.json();
-    tsState.accessToken    = tokens.access_token;
-    tsState.refreshToken   = tokens.refresh_token;
-    tsState.tokenExpiresAt = Date.now() + (tokens.expires_in - 60) * 1000;
-    await persistRailwayVars({
-      TRIPLESEAT_ACCESS_TOKEN:  tokens.access_token,
-      TRIPLESEAT_REFRESH_TOKEN: tokens.refresh_token,
-    });
-    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>TripleSeat Connected</title>
-<style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}
-h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}
-.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}
-.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}
-.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px}</style></head>
-<body><h1>✓ TripleSeat Connected</h1><p>Tokens saved automatically to Railway.</p>
-<div class="card"><div class="label">Access Token</div><div class="value">${tokens.access_token}</div></div>
-<div class="card"><div class="label">Refresh Token</div><div class="value">${tokens.refresh_token}</div></div>
-<div class="step">Test: <strong>curl https://ric.up.railway.app/api/tripleseat</strong></div>
-</body></html>`);
+    tsState.accessToken=tokens.access_token; tsState.refreshToken=tokens.refresh_token;
+    tsState.tokenExpiresAt=Date.now()+(tokens.expires_in-60)*1000;
+    tsCache = { data: null, fetchedAt: 0 }; // invalidate cache on re-auth
+    await persistRailwayVars({ TRIPLESEAT_ACCESS_TOKEN: tokens.access_token, TRIPLESEAT_REFRESH_TOKEN: tokens.refresh_token });
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>TripleSeat Connected</title><style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px}</style></head><body><h1>✓ TripleSeat Connected</h1><p>Tokens saved automatically to Railway.</p><div class="card"><div class="label">Access Token</div><div class="value">${tokens.access_token}</div></div><div class="card"><div class="label">Refresh Token</div><div class="value">${tokens.refresh_token}</div></div><div class="step">Test: <strong>curl https://ric.up.railway.app/api/tripleseat</strong></div></body></html>`);
   } catch(err){res.status(500).send(`<h2>TS Callback error</h2><pre>${err.message}</pre>`);}
 });
 
@@ -784,53 +744,39 @@ app.get("/api/marginedge",async(req,res)=>{
 app.get("/api/ric",async(req,res)=>{
   const date=req.query.date||today(), result={date,sources:{}};
 
-  // Fetch all sources in parallel
   const [goTabResult, meResult, qbResult, mcResult] = await Promise.allSettled([
-    // GoTab
     getGoTabToken().then(token=>fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))})).then(r=>r.json()).then(d=>normalizeGoTab(d?.data?.locations?.[0]?.tabs||[])),
-    // MarginEdge
     fetchMarginEdge(date),
-    // QuickBooks
     (qbState.refreshToken&&qbState.realmId)?fetchQuickBooks(date,date):Promise.reject(new Error("QB not authorized")),
-    // Mailchimp
     fetchMailchimp(),
   ]);
 
-  // GoTab
   if(goTabResult.status==="fulfilled"){result.gotab=goTabResult.value;result.sources.gotab="live";}
   else{console.error("GoTab failed:",goTabResult.reason?.message);result.gotab=null;result.sources.gotab=`error: ${goTabResult.reason?.message}`;}
 
-  // 7Shifts (always errors currently — keep fast)
-  result["7shifts"]=null;result.sources["7shifts"]="error: JWT not supported";
+  result["7shifts"]=null; result.sources["7shifts"]="error: JWT not supported";
 
-  // MarginEdge
   if(meResult.status==="fulfilled"){
     const me=meResult.value;
     if(result.gotab?.net_sales){
       if(me.cogs?.food)  me.food_cost_pct=+((me.cogs.food/result.gotab.net_sales)*100).toFixed(1);
       if(me.cogs?.total) me.total_cogs_pct=+((me.cogs.total/result.gotab.net_sales)*100).toFixed(1);
     }
-    result.marginedge=me;result.sources.marginedge="live";
-  } else {console.error("MarginEdge failed:",meResult.reason?.message);result.marginedge=null;result.sources.marginedge=`error: ${meResult.reason?.message}`;}
+    result.marginedge=me; result.sources.marginedge="live";
+  } else{console.error("MarginEdge failed:",meResult.reason?.message);result.marginedge=null;result.sources.marginedge=`error: ${meResult.reason?.message}`;}
 
-  // QuickBooks
   if(qbResult.status==="fulfilled"){
     result.sources.quickbooks="live";
     const qb=qbResult.value;
-    const hasRevenue=(qb.income?.total_sales||0)>0;
-    const hasLabor=(qb.total_labor||0)>0;
-    const hasSignificantExpenses=(qb.total_controllable||0)>1000;
-    if(hasRevenue||hasLabor||hasSignificantExpenses){
+    if((qb.income?.total_sales||0)>0||(qb.total_labor||0)>0||(qb.total_controllable||0)>1000){
       if(result.gotab?.net_sales&&qb.total_labor) qb.total_labor_pct=+((qb.total_labor/result.gotab.net_sales)*100).toFixed(1);
       result.quickbooks=qb;
-    } else {result.quickbooks=null;console.log("QB excluded — sparse data");}
-  } else {console.error("QB failed:",qbResult.reason?.message);result.quickbooks=null;result.sources.quickbooks=`error: ${qbResult.reason?.message}`;}
+    } else{result.quickbooks=null;console.log("QB excluded — sparse data");}
+  } else{console.error("QB failed:",qbResult.reason?.message);result.quickbooks=null;result.sources.quickbooks=`error: ${qbResult.reason?.message}`;}
 
-  // Mailchimp
   if(mcResult.status==="fulfilled"){result.mailchimp=mcResult.value;result.sources.mailchimp="live";}
   else{console.error("Mailchimp failed:",mcResult.reason?.message);result.mailchimp=null;result.sources.mailchimp=`error: ${mcResult.reason?.message}`;}
 
-  // TripleSeat — use cache if warm, otherwise fetch with 12s timeout
   if(tsState.accessToken||tsState.refreshToken){
     try{
       const ts=await Promise.race([
@@ -849,13 +795,12 @@ app.get("/api/ric",async(req,res)=>{
 
 app.post("/api/claude",async(req,res)=>{
   try{
-    const body={...req.body,stream:false};
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),25000);
     const upstream=await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
       headers:{"Content-Type":"application/json","x-api-key":process.env.ANTHROPIC_API_KEY,"anthropic-version":"2023-06-01"},
-      body:JSON.stringify(body),
+      body:JSON.stringify({...req.body,stream:false}),
       signal:controller.signal,
     });
     clearTimeout(timeout);
@@ -869,14 +814,15 @@ app.post("/api/claude",async(req,res)=>{
 });
 
 app.get("/health",(_req,res)=>res.json({
-  ok:true,service:"hch-ric-proxy",version:"3.9",
+  ok:true, service:"hch-ric-proxy", version:"4.0",
   railwayPersistence:!!(RAILWAY_API_TOKEN&&RAILWAY_PROJECT_ID&&RAILWAY_SERVICE_ID&&RAILWAY_ENVIRONMENT_ID),
 }));
 
-// Apple touch icon for home screen
+// Apple touch icon — proper PNG for iOS home screen
 app.get("/apple-touch-icon.png",(_req,res)=>{
-  res.setHeader("Content-Type","image/svg+xml");
-  res.send('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="40" fill="#1a1a18"/><polygon fill="red" points="90,46 103,89 148,89 112,114 125,157 90,132 55,157 68,114 32,89 77,89"/></svg>');
+  res.setHeader("Content-Type","image/png");
+  res.setHeader("Cache-Control","public,max-age=86400");
+  res.send(TOUCH_ICON_PNG);
 });
 
 app.get("/",(_req,res)=>{
@@ -885,8 +831,8 @@ app.get("/",(_req,res)=>{
 });
 
 app.listen(PORT,()=>{
-  console.log(`RIC proxy v3.9 running on port ${PORT}`);
-  // Warm TripleSeat cache on startup — triggers token refresh + persistence if needed
+  console.log(`RIC proxy v4.0 running on port ${PORT}`);
+  // Warm TripleSeat cache on startup
   if(process.env.TRIPLESEAT_ACCESS_TOKEN||process.env.TRIPLESEAT_REFRESH_TOKEN){
     console.log("Warming TripleSeat cache on startup...");
     fetchTripleSeat()
