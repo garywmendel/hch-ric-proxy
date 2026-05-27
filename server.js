@@ -17,7 +17,7 @@ const __dirname  = dirname(__filename);
 
 const app = express();
 app.use(express.json({ limit: '2mb' }));
-app.use(express.static(join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
 
@@ -562,7 +562,7 @@ app.post('/api/claude', async (req, res) => {
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
 
-app.get('*', (_req, res) => res.sendFile(join(__dirname, 'public', 'index.html')));
+app.get('*', (_req, res) => res.sendFile(join(__dirname, 'index.html')));
 
 app.listen(PORT, () => {
   console.log(`[RIC] listening on :${PORT}`);
