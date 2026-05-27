@@ -777,12 +777,64 @@ async function generateReport(){
   const nextBig=tsEvents.filter(e=>e.guest_count>0).sort((a,b)=>b.guest_count-a.guest_count)[0];
   const fmt$=v=>v!=null?(+v).toLocaleString("en-US",{minimumFractionDigits:2}):"0.00";
   const tsCtx=ts.data_as_of
-    ?[
-        `TripleSeat (live): Pipeline $${fmt$(ts.total_pipeline)} total — ${ts.confirmed_count||0} confirmed ($${fmt$(ts.confirmed_revenue)}), ${ts.tentative_count||0} tentative ($${fmt$(ts.tentative_revenue)}). Open leads: ${ts.open_leads||0}.`,
-        todayEvents.length?`TODAY'S EVENTS (${todayEvents.length}): ${todayEvents.map(e=>`${e.name} (${e.guest_count||"?"} guests, ${e.status})`).join("; ")}.`:"No events at HC NY today.",
-        weekEvents.length?`THIS WEEK: ${weekEvents.map(e=>`${e.name} on ${e.date} (${e.guest_count||"?"} guests)`).join("; ")}.`:"No events this week.",
-        nextBig?`Largest upcoming: ${nextBig.name} on ${nextBig.date} — ${nextBig.guest_count} guests.`:"",
-      ].filter(Boolean).join(" ")
+    ?(()=>{
+        const lines=[];
+
+        // Pipeline health
+        const convRate=ts.booking_count>0?+((ts.confirmed_count/ts.booking_count)*100).toFixed(0):0;
+        lines.push(`TripleSeat (live): Pipeline $${fmt$(ts.total_pipeline)} — ${ts.confirmed_count||0} DEFINITE ($${fmt$(ts.confirmed_revenue)}), ${ts.tentative_count||0} TENTATIVE ($${fmt$(ts.tentative_revenue)}). Conversion: ${convRate}% of active bookings confirmed. Open leads: ${ts.open_leads||0}${ts.open_leads>0?" — follow up required":""}.`);
+
+        // Today's events — critical for staffing
+        if(todayEvents.length){
+          const totalGuests=todayEvents.reduce((s,e)=>s+(e.guest_count||0),0);
+          lines.push(`TODAY (${todayEvents.length} event${todayEvents.length>1?"s":""}): ${todayEvents.map(e=>`${e.name} — ${e.guest_count||"TBD"} guests, ${e.status}`).join(" | ")}. Total guest load: ${totalGuests||"TBD"}.`);
+        } else {
+          lines.push("No private events at HC NY today.");
+        }
+
+        // This week — staffing awareness
+        if(weekEvents.length){
+          const totalGuests=weekEvents.reduce((s,e)=>s+(e.guest_count||0),0);
+          lines.push(`THIS WEEK (${weekEvents.length} event${weekEvents.length>1?"s":""}): ${weekEvents.map(e=>`${e.name} ${e.date} (${e.guest_count||"TBD"} guests)`).join(" | ")}. Combined guest load: ${totalGuests||"TBD"}.`);
+        } else {
+          lines.push("No private events this week.");
+        }
+
+        // Flag same-day events — double booking / ops conflict risk
+        const byDate={};
+        tsEvents.forEach(e=>{if(e.date){if(!byDate[e.date])byDate[e.date]=[];byDate[e.date].push(e);}});
+        const conflicts=Object.entries(byDate).filter(([,evs])=>evs.length>1&&evs[0].date>todayISO);
+        if(conflicts.length){
+          lines.push(`MULTI-EVENT DATES: ${conflicts.map(([d,evs])=>`${d} has ${evs.length} events (${evs.map(e=>e.name).join(" + ")}) — ${evs.reduce((s,e)=>s+(e.guest_count||0),0)} combined guests, confirm room allocation and staffing`).join("; ")}.`);
+        }
+
+        // Back-to-back nights flag
+        const sortedDates=Object.keys(byDate).filter(d=>d>todayISO).sort();
+        const backToBack=[];
+        for(let i=0;i<sortedDates.length-1;i++){
+          const d1=new Date(sortedDates[i]+"T12:00:00"),d2=new Date(sortedDates[i+1]+"T12:00:00");
+          if((d2-d1)===86400000) backToBack.push(`${sortedDates[i]} + ${sortedDates[i+1]}`);
+        }
+        if(backToBack.length) lines.push(`BACK-TO-BACK NIGHTS: ${backToBack.join(", ")} — flag for setup/breakdown turnaround and staff fatigue.`);
+
+        // Upcoming 30-day snapshot — next 5 events
+        const next30=tsEvents.filter(e=>e.date>todayISO).slice(0,5);
+        if(next30.length){
+          lines.push(`NEXT 30 DAYS (${ts.event_count_upcoming} total): ${next30.map(e=>`${e.name} ${e.date}${e.guest_count?` (${e.guest_count} guests)`:""}`).join(" · ")}.`);
+        }
+
+        // Conversion flag — all tentative is a problem
+        if(ts.tentative_count>0&&ts.confirmed_count===0){
+          lines.push("ALERT: All upcoming events are TENTATIVE — no confirmed bookings. Push for deposits and contracts.");
+        }
+
+        // Unqualified leads flag
+        if(ts.open_leads>0&&ts.total_lead_value===0){
+          lines.push(`${ts.open_leads} open lead${ts.open_leads>1?"s":""} with $0 estimated value — leads need qualification and revenue projection before next review.`);
+        }
+
+        return lines.join(" ");
+      })()
     :"TripleSeat: data unavailable.";
 
   const prompt=`${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})} · ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET · ${svc}
