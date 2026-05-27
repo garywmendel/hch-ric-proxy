@@ -638,7 +638,7 @@ async function fetchMarginEdge(date) {
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 app.post("/api/pin",express.json(),(req,res)=>{
-  const correct=process.env.RIC_PIN||"000000";
+  const correct = process.env.RIC_ACCESS_CODE || process.env.RIC_PIN || "00000";
   const provided=String(req.body?.pin||"");
   if(provided===correct) return res.json({ok:true});
   // Slow response on failure to prevent brute force
