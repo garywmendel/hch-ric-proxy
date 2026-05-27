@@ -637,6 +637,14 @@ async function fetchMarginEdge(date) {
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
+app.post("/api/pin",express.json(),(req,res)=>{
+  const correct=process.env.RIC_PIN||"000000";
+  const provided=String(req.body?.pin||"");
+  if(provided===correct) return res.json({ok:true});
+  // Slow response on failure to prevent brute force
+  setTimeout(()=>res.json({ok:false}),1000);
+});
+
 app.get("/auth/quickbooks",(req,res)=>{
   if (!QB_CLIENT_ID) return res.status(500).send("QB_CLIENT_ID not set.");
   const url = new URL("https://appcenter.intuit.com/connect/oauth2");
