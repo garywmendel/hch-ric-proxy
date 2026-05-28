@@ -351,14 +351,28 @@ LIVE sources currently connected:
 - GoTab (POS): real-time revenue, tabs, bar sales, catering, comps, voids
 - MarginEdge: COGS by category (meat, produce, dairy, grocery, liquor, beer, wine, packaging) — 24-48hr lag
 - QuickBooks Online: full monthly P&L — all income, COGS, labor, controllable + non-controllable expenses
-- Mailchimp: email audience (27,317 subscribers), campaign performance, open/click rates, list growth
+- Mailchimp: email audience, campaign performance, open/click rates, list growth
 - TripleSeat: private dining & events — today's events, this week's events, confirmed/tentative pipeline, open leads. Flag if any events are happening today. Note guest counts for staffing awareness.
 
 PENDING sources (integrations in progress): 7Shifts, OpenTable, GA4, Microsoft 365, Marqii, DoorDash.
 
 Only data from live sources is included in reports. Do not fabricate or estimate data for pending sources.
 
-Produce clear, actionable intelligence for GM and store leadership. Be direct, specific, write for someone reading at 7am. Use $ and %. Flag anomalies clearly.`;
+INTELLIGENCE DISCIPLINE — every section must surface three quantitative anchors:
+1. A current value ($ or %).
+2. A comparison (vs target, vs prior period, vs benchmark, or vs run-rate).
+3. An implication (so-what — what the GM should do, watch, or note).
+
+Industry benchmarks to reference where relevant:
+- Prime cost: target <62%, danger >65%
+- Food cost %: target 28-32% for BBQ
+- Labor cost %: target 28-32% for full-service
+- Bar mix %: healthy 25-30% of net sales
+- Comp+void %: under 2% of gross
+- Email open rate: 25%+ healthy, <20% concerning
+- Email CTOR: 10-15% healthy
+
+Write for a GM reading at 7am. Be direct, specific, numeric. No fluff, no hedging, no narrative filler. Each anchor is one short sentence. Flag anomalies clearly with $ and %.`;
 
 const f$=v=>v==null?"—":"$"+Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
 const fp=v=>v==null?"—":Number(v).toFixed(1)+"%";
@@ -794,13 +808,23 @@ ${qbCtx}
 ${mcCtx}
 ${tsCtx}
 
-Write a tight GM briefing. ### headers only. Max 3 sentences per section. Skip sections with no data. Use exact $ and %.
+Write a tight GM briefing using ### headers only. Each section must contain exactly THREE quantitative anchors written as three short sentences:
+  1. The current value ($ or %, exact figures from the data above).
+  2. A comparison — vs target, vs run-rate, vs prior 30-day, vs same-day-last-week, or vs industry benchmark.
+  3. The implication — what to do, watch, or note before service.
+
+Skip any section whose data is unavailable rather than guessing. No filler, no hedging, no narrative paragraphs. Each anchor = one sentence.
 
 ### Revenue snapshot
+(Anchor on: net sales pace, avg check, bar mix or catering share)
 ### Food cost
+(Anchor on: COGS total or %, biggest category mover, theoretical-vs-actual or recipe drift signal)
 ### Events & private dining
+(Anchor on: today's event load, this-week pipeline, largest upcoming + staffing implication)
 ### Digital & marketing
-### Watch list`;
+(Anchor on: campaign open/click vs benchmark, list growth direction, momentum signal)
+### Watch list
+(Anchor on: top 3 anomalies or risks for the next 24-48 hours, each with a specific number)`;
 
   const timer=setInterval(()=>{elapsed++;const el=document.getElementById("report-timer");if(el) el.textContent=`${elapsed}s`;},1000);
   document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
@@ -808,7 +832,7 @@ Write a tight GM briefing. ### headers only. Max 3 sentences per section. Skip s
     let res,attempts=0;
     while(attempts<3){
       attempts++;
-      res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
+      res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
       if(res.ok) break;
       if((res.status===502||res.status===504)&&attempts<3){console.log(`Claude ${res.status} — retry ${attempts}/3`);await new Promise(r=>setTimeout(r,3000));continue;}
       break;
