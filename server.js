@@ -314,10 +314,6 @@ async function fetchQuickBooks(startDate, endDate) {
     total_non_controllable, total_non_controllable_pct: pct(total_non_controllable),
     total_expenses, net_operating_income, net_operating_income_pct: pct(net_operating_income),
     prime_cost: sum(cogs.total, total_labor), prime_cost_pct: pct(sum(cogs.total, total_labor)),
-    // new derived ratios
-    occupancy_cost_pct: pct(property_expenses.total),
-    ebitda: net_operating_income,           // best available — D&A/interest/tax not separately tracked
-    ebitda_margin: pct(net_operating_income),
     cdc_entities: cdc ? Object.keys(cdc.CDCResponse?.[0]?.QueryResponse || {}) : [],
     raw_accounts: raw, data_as_of: nowET(),
   };
@@ -358,8 +354,6 @@ async function fetchMailchimp() {
     emails_sent_30d, opens_30d, clicks_30d, subs_30d, unsubs_30d,
     open_rate_30d: emails_sent_30d > 0 ? +((opens_30d/emails_sent_30d)*100).toFixed(1) : null,
     click_rate_30d: emails_sent_30d > 0 ? +((clicks_30d/emails_sent_30d)*100).toFixed(1) : null,
-    ctor_30d: opens_30d > 0 ? +((clicks_30d/opens_30d)*100).toFixed(1) : null,
-    net_list_growth_30d: subs_30d - unsubs_30d,
     net_list_growth_30d: subs_30d - unsubs_30d,
     recent_campaigns: (campaigns.campaigns || []).map(c => ({
       subject: c.settings?.subject_line || "—", send_time: c.send_time, emails_sent: c.emails_sent || 0,
@@ -505,8 +499,6 @@ async function fetchTripleSeat() {
   const total_lead_value = leads.filter(l => !l.converted_at && !l.deleted_at)
     .reduce((s,l) => s + parseFloat(l.estimated_revenue || l.total_revenue || 0), 0);
 
-  const total_bookings = confirmed_count + tentative_count;
-  const total_funnel   = total_bookings + open_leads;
   const result = {
     upcoming_events:      upcomingEvents,
     event_count_upcoming: events.length,
@@ -518,9 +510,6 @@ async function fetchTripleSeat() {
     tentative_count,
     open_leads,
     total_lead_value:     +total_lead_value.toFixed(2),
-    // new derived
-    avg_event_value:      confirmed_count > 0 ? +(confirmed_revenue / confirmed_count).toFixed(2) : 0,
-    lead_to_booking_pct:  total_funnel    > 0 ? +((total_bookings / total_funnel) * 100).toFixed(1) : 0,
     data_as_of:           nowET(),
   };
 
@@ -574,22 +563,12 @@ function normalizeGoTab(tabs) {
       else if(CAT.some(b=>n.startsWith(b))) catering_sales+=a;
     }
   }
-  const _net=+(net_sales/100).toFixed(2);
-  const _bar=+(bar_sales/100).toFixed(2);
-  const _comps=+(comps/100).toFixed(2);
-  const _voids=+(voids/100).toFixed(2);
-  const _gross=_net+_comps+_voids;
   return {
-    net_sales:_net, tab_count,
-    bar_sales:_bar, catering_sales:+(catering_sales/100).toFixed(2),
-    voids:_voids, comps:_comps,
+    net_sales:+(net_sales/100).toFixed(2), tab_count,
+    bar_sales:+(bar_sales/100).toFixed(2), catering_sales:+(catering_sales/100).toFixed(2),
+    voids:+(voids/100).toFixed(2), comps:+(comps/100).toFixed(2),
     tax_total:+(tax_total/100).toFixed(2), tip_total:+(tip_total/100).toFixed(2),
-    deferred_revenue:+(deferred_revenue/100).toFixed(2),
-    // new derived fields
-    avg_check: tab_count>0 ? +(_net/tab_count).toFixed(2) : 0,
-    bar_mix_pct: _net>0 ? +((_bar/_net)*100).toFixed(1) : 0,
-    comp_void_pct: _gross>0 ? +(((_comps+_voids)/_gross)*100).toFixed(1) : 0,
-    data_as_of:nowET(),
+    deferred_revenue:+(deferred_revenue/100).toFixed(2), data_as_of:nowET(),
   };
 }
 
@@ -655,50 +634,7 @@ async function fetchMarginEdge(date) {
   for (const k of Object.keys(cogs)) cogs[k]=+cogs[k].toFixed(2);
   return {invoice_count:orders.length,pending_invoices:0,cogs,food_cost_pct:null,total_cogs_pct:null,data_as_of:nowET()};
 }
-// ── COGS reconciliation — QB authoritative total, MarginEdge category mix ────
-function reconcileCogs(qb, me) {
-  const qbTotal = Number(qb?.cogs?.total ?? 0);
-  if (qbTotal === 0) {
-    return { total: 0, categories: {}, sources: { total: "QuickBooks", breakdown: "n/a" }, reconciliation: null };
-  }
-  const meCats  = me?.cogs ?? {};
-  const keys    = ["meat","produce","dairy","grocery","liquor","beer","wine","na_bev","paper","supplies","other"];
-  const meTotal = keys.reduce((s,k) => s + Number(meCats[k] || 0), 0);
 
-  if (meTotal === 0) {
-    return {
-      total: qbTotal, categories: { uncategorized: qbTotal },
-      sources: { total: "QuickBooks", breakdown: "n/a (MarginEdge empty)" }, reconciliation: null,
-    };
-  }
-
-  // Scale MarginEdge mix to QB total
-  const categories = {};
-  for (const k of keys) {
-    const raw = Number(meCats[k] || 0);
-    if (raw > 0) categories[k] = +((raw / meTotal) * qbTotal).toFixed(2);
-  }
-
-  // Force the sum to equal QB exactly — push rounding drift into the largest bucket
-  const summed = Object.values(categories).reduce((s,v) => s + v, 0);
-  const drift  = +(qbTotal - summed).toFixed(2);
-  if (drift !== 0 && Object.keys(categories).length > 0) {
-    const largest = Object.entries(categories).sort((a,b) => b[1] - a[1])[0][0];
-    categories[largest] = +(categories[largest] + drift).toFixed(2);
-  }
-
-  return {
-    total: qbTotal,
-    categories,
-    sources: { total: "QuickBooks", breakdown: "MarginEdge (mix %)" },
-    reconciliation: {
-      qb_total:  qbTotal,
-      me_total:  +meTotal.toFixed(2),
-      delta:     +(meTotal - qbTotal).toFixed(2),
-      delta_pct: +(((meTotal - qbTotal) / qbTotal) * 100).toFixed(1),
-    },
-  };
-}
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 app.post("/api/pin",express.json(),(req,res)=>{
@@ -908,13 +844,7 @@ app.get("/api/ric",async(req,res)=>{
     }
   }
 
-  // Reconcile COGS: QB total + MarginEdge mix
-  if (result.quickbooks && result.marginedge) {
-    result.cogs_reconciled = reconcileCogs(result.quickbooks, result.marginedge);
-  }
-
   res.json({ok:true,...result});
-});
 });
 
 app.post("/api/claude",async(req,res)=>{
