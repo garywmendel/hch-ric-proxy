@@ -397,11 +397,7 @@ async function tsRefreshAccessToken() {
   const newRefreshToken = data.refresh_token || tsState.refreshToken;
   tsState.accessToken    = data.access_token;
   tsState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
-  // Persist new refresh token to Railway before updating in-memory state
-  if(data.refresh_token && data.refresh_token !== tsState.refreshToken){
-    persistRailwayVars({ TRIPLESEAT_REFRESH_TOKEN: data.refresh_token })
-      .catch(e=>console.error("TS refresh token persist failed:",e.message));
-  }
+ 
   tsState.refreshToken = newRefreshToken;
   console.log("TripleSeat token refreshed");
   return tsState.accessToken;
