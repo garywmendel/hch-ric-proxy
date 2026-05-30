@@ -606,6 +606,39 @@ function bucketCogs(cogs,cat,amt){
   else{cogs.other+=amt;}
 }
 
+async function fetchGoTabRange(startDate, endDate) {
+  const token = await getGoTabToken();
+  const dates = [];
+  const s = new Date(startDate + "T12:00:00");
+  const e = new Date(endDate + "T12:00:00");
+  for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+    dates.push(d.toISOString().slice(0, 10));
+  }
+
+  const results = await Promise.all(dates.map(async date => {
+    try {
+      const gqlRes = await fetchWithRetry("https://gotab.io/api/v2/graph", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID, date)),
+      });
+      if (!gqlRes.ok) return null;
+      const gqlData = await gqlRes.json();
+      if (gqlData.errors) return null;
+      return normalizeGoTab(gqlData?.data?.locations?.[0]?.tabs || []);
+    } catch { return null; }
+  }));
+
+  const agg = { net_sales: 0, tab_count: 0, bar_sales: 0, catering_sales: 0, voids: 0, comps: 0, tax_total: 0, tip_total: 0, deferred_revenue: 0 };
+  for (const r of results) {
+    if (!r) continue;
+    for (const k of Object.keys(agg)) agg[k] += (r[k] || 0);
+  }
+  for (const k of Object.keys(agg)) agg[k] = +agg[k].toFixed(2);
+  return { ...agg, window: "7d", days_covered: results.filter(r => r).length, data_as_of: nowET() };
+}
+
+
 async function fetchMarginEdge(date) {
   const headers = {"X-Api-Key": MARGINEDGE_API_KEY, "Accept": "application/json"};
   const base = "https://api.marginedge.com/public", rid = MARGINEDGE_TENANT_ID;
