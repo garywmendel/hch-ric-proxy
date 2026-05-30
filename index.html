@@ -91,8 +91,22 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 .report-wrap{background:var(--bg0);border:0.5px solid var(--b2);border-radius:var(--r-lg);padding:1rem 1.1rem}
 .report-body{font-size:13px;line-height:1.8;color:var(--t0)}
 .report-body p{margin-bottom:0.75em}
-.report-body ul{margin:0.5em 0 0.75em 1.2em}
-.report-body li{margin-bottom:0.2em}
+.report-body ul{margin:0.5em 0 0.75em 0;padding-left:1.2em;list-style:none}
+.report-body li{margin-bottom:0.4em;position:relative;padding-left:0.9em}
+.report-body li::before{content:"•";position:absolute;left:0;color:inherit;font-weight:700}
+.report-body h3.s-revenue ~ ul li::before,
+.report-body h3.s-revenue + ul li::before{color:#1D9E75}
+.report-body h3.s-food ~ ul li::before{color:#D85A30}
+.report-body h3.s-labor ~ ul li::before{color:#1a1a18}
+.report-body h3.s-events ~ ul li::before{color:#854F0B}
+.report-body h3.s-marketing ~ ul li::before{color:#3B6D11}
+.report-body h3.s-anomaly ~ ul li::before{color:#cc0000}
+.report-body h3.s-covers ~ ul li::before{color:#534AB7}
+.report-body h3.s-delivery ~ ul li::before{color:#993C1D}
+.report-body h3.s-digital ~ ul li::before{color:#185FA5}
+.report-body h3.s-reputation ~ ul li::before{color:#A32D2D}
+.report-body h3.s-ops ~ ul li::before{color:#3B6D11}
+.report-body h3.s-gm ~ ul li::before{color:#1D9E75}
 .report-body h2{font-size:15px;font-weight:600;color:#185FA5;margin:1em 0 0.5em}
 .report-body h3{font-size:13px;font-weight:600;margin:1.2em 0 0.4em;padding-bottom:3px;border-bottom:1.5px solid currentColor}
 h3.s-revenue{color:#1D9E75!important}h3.s-labor{color:#1a1a18!important}h3.s-food{color:#D85A30!important}
