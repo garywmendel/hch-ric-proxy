@@ -609,7 +609,14 @@ function bucketCogs(cogs,cat,amt){
 async function fetchMarginEdge(date) {
   const headers = {"X-Api-Key": MARGINEDGE_API_KEY, "Accept": "application/json"};
   const base = "https://api.marginedge.com/public", rid = MARGINEDGE_TENANT_ID;
-  const ordersRes = await fetchWithRetry(`${base}/orders?restaurantUnitId=${rid}&startDate=${date}&endDate=${date}&orderStatus=CLOSED`, {headers});
+ 
+  // Rolling 7-day window — accounts for MarginEdge's 24-48hr invoice lag
+  const endDate = date;
+  const startDateObj = new Date(endDate + "T12:00:00");
+  startDateObj.setDate(startDateObj.getDate() - 6);
+  const startDate = startDateObj.toISOString().slice(0, 10);
+  const ordersRes = await fetchWithRetry(`${base}/orders?restaurantUnitId=${rid}&startDate=${startDate}&endDate=${endDate}&orderStatus=CLOSED`, {headers});
+  
   if (!ordersRes.ok) throw new Error(`MarginEdge orders failed: ${ordersRes.status}`);
   const ordersJson = await ordersRes.json();
   const orders = ordersJson.orders||ordersJson.data||(Array.isArray(ordersJson)?ordersJson:[]);
@@ -628,7 +635,7 @@ async function fetchMarginEdge(date) {
     for (const l of lines){const cat=l.category||l.categoryName||l.category_name||l.categoryType||l.vendorItemName||l.vendorItemCode||"";const a=parseFloat(l.linePrice||l.extendedCost||l.extended_cost||l.amount||l.total||l.cost||l.lineTotal||0);if(!a) continue;cogs.total+=a;bucketCogs(cogs,cat,a);}
   }
   for (const k of Object.keys(cogs)) cogs[k]=+cogs[k].toFixed(2);
-  return {invoice_count:orders.length,pending_invoices:0,cogs,food_cost_pct:null,total_cogs_pct:null,data_as_of:nowET()};
+ return {invoice_count:orders.length,pending_invoices:0,cogs,food_cost_pct:null,total_cogs_pct:null,window:"7d",data_as_of:nowET()};
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
