@@ -746,6 +746,7 @@ async function runSync(){
     document.getElementById("s-conn").textContent=lc+" / "+SYSTEMS.length;
     document.getElementById("prog").style.width=Math.round((done/SYSTEMS.length)*60)+"%";
   }
+  fetchedData.gotab_7d = ricLive.gotab_7d || null;
   document.getElementById("s-time").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
   document.getElementById("s-status").textContent="Generating";
   btn.textContent="Generating report...";
@@ -771,8 +772,13 @@ async function generateReport(){
   const ts=liveData.tripleseat||{};
 
   const meCtx=me.invoice_count>0
-    ?`MarginEdge (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)} (${me.total_cogs_pct||"—"}% of sales). Food $${(me.cogs?.food||0).toFixed(2)} (${me.food_cost_pct||"—"}%). Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
-    :"MarginEdge (live): 0 invoices today (24-48hr lag).";
+    ?`MarginEdge 7-day rolling (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)}. Food $${(me.cogs?.food||0).toFixed(2)}. Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
+    :"MarginEdge 7-day rolling (live): 0 invoices in last 7 days.";
+
+  const gt7=fetchedData.gotab_7d||null;
+  const gt7Ctx=gt7
+    ?`GoTab 7-day rolling (live): $${gt7.net_sales.toFixed(2)} net sales across ${gt7.days_covered} days, bar $${gt7.bar_sales.toFixed(2)}, catering $${gt7.catering_sales.toFixed(2)}, ${gt7.tab_count} tabs.`
+    :"GoTab 7-day rolling: unavailable.";
 
   const qbCtx=qb.total_labor
     ?`QuickBooks (live): FOH $${(qb.foh?.total||0).toFixed(2)} (${qb.foh_labor_pct||"—"}%), BOH $${(qb.boh?.total||0).toFixed(2)} (${qb.boh_labor_pct||"—"}%), Mgmt $${(qb.mgmt?.total||0).toFixed(2)}. Total labor $${(qb.total_labor||0).toFixed(2)} (${qb.total_labor_pct||"—"}%). Prime cost ${qb.prime_cost_pct||"—"}%. Net operating income $${(qb.net_operating_income||0).toFixed(2)}.`
@@ -799,14 +805,17 @@ async function generateReport(){
       ].filter(Boolean).join(" ")
     :"TripleSeat: data unavailable.";
 
-  const prompt=`${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})} · ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET · ${svc}
+ const prompt=`${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})} · ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET · ${svc}
 Live sources: ${live.join(", ")||"none"}
 
-GoTab: $${liveData.gotab?.net_sales||0} net sales, ${liveData.gotab?.tab_count||0} tabs, bar $${liveData.gotab?.bar_sales||0}, catering $${liveData.gotab?.catering_sales||0}, comps $${liveData.gotab?.comps||0}, deferred $${liveData.gotab?.deferred_revenue||0}
+GoTab today (live, intraday): $${liveData.gotab?.net_sales||0} net sales, ${liveData.gotab?.tab_count||0} tabs, bar $${liveData.gotab?.bar_sales||0}, catering $${liveData.gotab?.catering_sales||0}, comps $${liveData.gotab?.comps||0}, deferred $${liveData.gotab?.deferred_revenue||0}
+${gt7Ctx}
 ${meCtx}
 ${qbCtx}
 ${mcCtx}
 ${tsCtx}
+
+IMPORTANT: MarginEdge COGS is a 7-day rolling window. For food cost % calculations, divide MarginEdge totals by GoTab 7-day net sales (NOT today's single-day GoTab). The Revenue snapshot section uses today's GoTab. The Food cost section MUST use 7-day vs 7-day.
 
 Write a tight GM briefing using ### headers only. Each section must contain exactly THREE quantitative anchors formatted as a markdown bulleted list (each item starting with "- "):
   - The current value ($ or %, exact figures from the data above).
