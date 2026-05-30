@@ -123,7 +123,6 @@ async function qbRefreshAccessToken() {
   qbState.refreshToken   = data.refresh_token;
   qbState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
   console.log(`QB token refreshed | intuit_tid: ${intuitTid}`);
-  persistQBRefreshToken(data.refresh_token).catch(err => console.error("Background token persist failed:", err.message));
   return qbState.accessToken;
 }
 
