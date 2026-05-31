@@ -638,15 +638,6 @@ function bucketCogs(cogs,cat,amt){
   else{cogs.other+=amt;}
 }
 
-async function fetchGoTabRange(startDate, endDate) {
-  const token = await getGoTabToken();
-  const dates = [];
-  const s = new Date(startDate + "T12:00:00");
-  const e = new Date(endDate + "T12:00:00");
-  for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
-    dates.push(d.toISOString().slice(0, 10));
-  }
-
   const results = await Promise.all(dates.map(async date => {
     try {
       const gqlRes = await fetchWithRetry("https://gotab.io/api/v2/graph", {
