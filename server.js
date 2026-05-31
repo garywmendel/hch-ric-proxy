@@ -603,23 +603,29 @@ function normalizeGoTab(tabs) {
 // ── 7Shifts ───────────────────────────────────────────────────────────────────
 async function fetch7Shifts(date) {
   const headers = {
-    "Authorization": `Bearer ${SHIFTS_TOKEN}`, "Content-Type": "application/json",
-    ...(SHIFTS_COMPANY_GUID ? {"x-company-guid": SHIFTS_COMPANY_GUID} : {}),
+    "Authorization": `Bearer ${SHIFTS_TOKEN}`,
+    "Content-Type": "application/json",
+    ...(SHIFTS_COMPANY_GUID ? { "x-company-guid": SHIFTS_COMPANY_GUID } : {}),
   };
-  const base = `https://api.7shifts.com/v2/company/${SHIFTS_COMPANY_ID}`;
-  const [sRes,pRes] = await Promise.all([
-    fetchWithRetry(`${base}/shifts?location_id=${SHIFTS_LOCATION_ID}&start=${date}T00:00:00&end=${date}T23:59:59&limit=200`, {headers}),
-    fetchWithRetry(`${base}/time_punches?location_id=${SHIFTS_LOCATION_ID}&clocked_in_gte=${date}T00:00:00&clocked_in_lte=${date}T23:59:59&limit=200`, {headers}),
-  ]);
-  if (!sRes.ok) throw new Error(`7Shifts shifts failed: ${sRes.status}`);
-  if (!pRes.ok) throw new Error(`7Shifts punches failed: ${pRes.status}`);
-  const shifts=(await sRes.json()).data||[], punches=(await pRes.json()).data||[];
-  let sh=0,ah=0,lc=0,oh=0,ns=0;
-  for (const s of shifts) sh+=(new Date(s.end)-new Date(s.start))/3600000;
-  for (const p of punches) { if(p.clocked_in&&p.clocked_out){const h=(new Date(p.clocked_out)-new Date(p.clocked_in))/3600000;ah+=h;if(p.wage_cents) lc+=(h*p.wage_cents)/100;if(h>8) oh+=h-8;}}
-  const pi=new Set(punches.map(p=>p.user_id));
-  for (const s of shifts) if(s.user_id&&!pi.has(s.user_id)) ns++;
-  return {scheduled_hours:+sh.toFixed(1),actual_hours:+ah.toFixed(1),labor_cost:+lc.toFixed(2),labor_pct:null,overtime_hours:+oh.toFixed(1),no_shows:ns,shift_count:shifts.length,punch_count:punches.length,data_as_of:nowET()};
+
+  const url = `https://api.7shifts.com/v2/reports/hours_and_wages?company_id=${SHIFTS_COMPANY_ID}&location_id=${SHIFTS_LOCATION_ID}&from=${date}&to=${date}&punches=true`;
+  const res = await fetchWithRetry(url, { headers });
+  if (!res.ok) throw new Error(`7Shifts hours_and_wages failed: ${res.status}`);
+
+  const data = await res.json();
+  const t = data.total;
+
+  return {
+    total_hours:      +t.total_hours.toFixed(2),
+    total_labor_cost: +t.total_pay.toFixed(2),
+    regular_hours:    +t.regular_hours.toFixed(2),
+    overtime_hours:   +t.overtime_hours.toFixed(2),
+    overtime_pay:     +t.overtime_pay.toFixed(2),
+    compliance_cost:  +t.compliance_exceptions_pay.toFixed(2),
+    shift_count:      t.shifts_count,
+    labor_pct:        null,
+    data_as_of:       nowET(),
+  };
 }
 
 // ── MarginEdge ────────────────────────────────────────────────────────────────
