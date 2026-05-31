@@ -900,9 +900,6 @@ app.get("/api/ric",async(req,res)=>{
     console.error("GoTab 7-day fetch failed:", err.message);
     result.gotab_7d = null;
   }
-
-  // TripleSeat — use cache if warm, otherwise fetch with 12s timeout
-
   // TripleSeat — use cache if warm, otherwise fetch with 12s timeout
   if(tsState.accessToken||tsState.refreshToken){
     try{
