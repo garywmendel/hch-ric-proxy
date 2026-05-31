@@ -353,8 +353,9 @@ LIVE sources currently connected:
 - QuickBooks Online: full monthly P&L — all income, COGS, labor, controllable + non-controllable expenses
 - Mailchimp: email audience, campaign performance, open/click rates, list growth
 - TripleSeat: private dining & events — today's events, this week's events, confirmed/tentative pipeline, open leads. Flag if any events are happening today. Note guest counts for staffing awareness.
+- 7Shifts: labor hours, labor cost, overtime, shift count
 
-PENDING sources (integrations in progress): 7Shifts, OpenTable, GA4, Microsoft 365, Marqii, DoorDash.
+PENDING sources (integrations in progress): OpenTable, GA4, Microsoft 365, Marqii, DoorDash.
 
 Only data from live sources is included in reports. Do not fabricate or estimate data for pending sources.
 
@@ -770,7 +771,9 @@ async function generateReport(){
   const qb=liveData.quickbooks||{};
   const mc=liveData.mailchimp||{};
   const ts=liveData.tripleseat||{};
-
+  const s7Ctx = liveData["7shifts"] ? 
+    `7Shifts labor today: ${liveData["7shifts"].total_hours}hrs worked, $${liveData["7shifts"].total_labor_cost} labor cost, ${liveData["7shifts"].labor_pct||"n/a"}% labor-to-sales, ${liveData["7shifts"].shift_count} shifts, OT hrs: ${liveData["7shifts"].overtime_hours}, OT pay: $${liveData["7shifts"].overtime_pay}, compliance cost: $${liveData["7shifts"].compliance_cost}` 
+    : "";
   const meCtx=me.invoice_count>0
     ?`MarginEdge 7-day rolling (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)}. Food $${(me.cogs?.food||0).toFixed(2)}. Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
     :"MarginEdge 7-day rolling (live): 0 invoices in last 7 days.";
@@ -814,6 +817,7 @@ ${meCtx}
 ${qbCtx}
 ${mcCtx}
 ${tsCtx}
+${s7Ctx}
 
 IMPORTANT: MarginEdge COGS is a 7-day rolling window. For food cost % calculations, divide MarginEdge totals by GoTab 7-day net sales (NOT today's single-day GoTab). The Revenue snapshot section uses today's GoTab. The Food cost section MUST use 7-day vs 7-day.
 
@@ -828,6 +832,8 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
 (Anchor on: net sales pace, avg check, bar mix or catering share)
 ### Food cost
 (Anchor on: COGS total or %, biggest category mover, theoretical-vs-actual or recipe drift signal)
+### Labor
+(Anchor on: labor cost %, overtime exposure, staffing efficiency vs revenue pace)
 ### Events & private dining
 (Anchor on: today's event load, this-week pipeline, largest upcoming + staffing implication)
 ### Digital & marketing
