@@ -841,8 +841,20 @@ app.get("/api/ric",async(req,res)=>{
   if(goTabResult.status==="fulfilled"){result.gotab=goTabResult.value;result.sources.gotab="live";}
   else{console.error("GoTab failed:",goTabResult.reason?.message);result.gotab=null;result.sources.gotab=`error: ${goTabResult.reason?.message}`;}
 
-  // 7Shifts (always errors currently — keep fast)
-  result["7shifts"]=null;result.sources["7shifts"]="error: JWT not supported";
+  // 7Shifts
+let shiftsResult;
+try {
+  shiftsResult = await fetch7Shifts(date);
+  result["7shifts"] = shiftsResult;
+  result.sources["7shifts"] = "live";
+  if (result.gotab?.net_sales && shiftsResult?.total_labor_cost) {
+    shiftsResult.labor_pct = +((shiftsResult.total_labor_cost / result.gotab.net_sales) * 100).toFixed(1);
+  }
+} catch(e) {
+  console.error("7Shifts failed:", e.message);
+  result["7shifts"] = null;
+  result.sources["7shifts"] = `error: ${e.message}`;
+}
 
   // MarginEdge
   if(meResult.status==="fulfilled"){
