@@ -724,7 +724,7 @@ async function runSync(){
   document.getElementById("live-flags").innerHTML="";
   SYSTEMS.forEach(s=>updDot(s.id,"idle"));
   fetchedData={};sourceMap={};
-  updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");
+  updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");updDot("7shifts","sync");
   btn.textContent="Fetching live data...";
   // Pre-warm TripleSeat cache (slow two-page fetch) in parallel with /api/ric
   const [ricRes, tsRes] = await Promise.allSettled([
