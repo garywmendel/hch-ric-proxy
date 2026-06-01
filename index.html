@@ -919,6 +919,7 @@ async function askQ(){
     quickbooks: liveData.quickbooks?{income:{total_sales:liveData.quickbooks.income?.total_sales},total_labor:liveData.quickbooks.total_labor,prime_cost_pct:liveData.quickbooks.prime_cost_pct,net_operating_income:liveData.quickbooks.net_operating_income}:null,
     mailchimp: liveData.mailchimp?{total_subscribers:liveData.mailchimp.total_subscribers,open_rate_30d:liveData.mailchimp.open_rate_30d,click_rate_30d:liveData.mailchimp.click_rate_30d,recent_campaigns:liveData.mailchimp.recent_campaigns?.slice(0,3)}:null,
     tripleseat: liveData.tripleseat?{confirmed_revenue:liveData.tripleseat.confirmed_revenue,tentative_revenue:liveData.tripleseat.tentative_revenue,total_pipeline:liveData.tripleseat.total_pipeline,confirmed_count:liveData.tripleseat.confirmed_count,open_leads:liveData.tripleseat.open_leads,upcoming_events:liveData.tripleseat.upcoming_events?.slice(0,5)}:null,
+    "7shifts": liveData["7shifts"]?{total_hours:liveData["7shifts"].total_hours,total_labor_cost:liveData["7shifts"].total_labor_cost,labor_pct:liveData["7shifts"].labor_pct,shift_count:liveData["7shifts"].shift_count,overtime_hours:liveData["7shifts"].overtime_hours}:null,
   };
   const ctx=lastReport?`Today's report:\n${lastReport}\n\nLive data:\n${JSON.stringify(trimmedData,null,2)}\n\n`:`Live data:\n${JSON.stringify(trimmedData,null,2)}\n\n`;
   try{
