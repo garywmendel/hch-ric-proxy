@@ -820,6 +820,9 @@ ${s7Ctx}
 
 IMPORTANT: MarginEdge COGS is a 7-day rolling window. For food cost % calculations, divide MarginEdge totals by GoTab 7-day net sales (NOT today's single-day GoTab). The Revenue snapshot section uses today's GoTab. The Food cost section MUST use 7-day vs 7-day.
 
+REVENUE PACING: Hill Country opens at 12:00 PM and closes at midnight (12 hours of service). To project end-of-day revenue, divide current net sales by the fraction of service elapsed. Example: $2,821 at 3:30 PM = 3.5 hours elapsed ÷ 12 total = 29% complete → projected day = $2,821 ÷ 0.29 = ~$9,700. Never use a simple hours-remaining multiplier — always divide by fraction elapsed.
+
+DAY-OF-WEEK CONTEXT: The GoTab 7-day rolling average includes weekends (Friday/Saturday) which are significantly higher volume than weekdays. When comparing today's pace to the 7-day average, note the day of week and flag if today is a Monday–Thursday where lower volume vs the 7-day average is expected and not necessarily alarming.
 Write a tight GM briefing using ### headers only. Each section must contain exactly THREE quantitative anchors formatted as a markdown bulleted list (each item starting with "- "):
   - The current value ($ or %, exact figures from the data above).
   - A comparison — vs target, vs run-rate, vs prior 30-day, vs same-day-last-week, or vs industry benchmark.
