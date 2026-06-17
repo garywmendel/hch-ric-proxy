@@ -351,7 +351,10 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <textarea class="inp" id="qa-inp" placeholder="Ask any financial, operational, or strategic question..." style="margin-bottom:8px"></textarea>
     <button class="btn-primary" id="qa-btn" onclick="askQ()">Ask RIC</button>
   </div>
-  <div id="qa-out"></div>
+ <div id="qa-out"></div>
+  <div id="qa-export-row" style="display:none;margin-top:8px">
+    <button class="btn-sec export-btn" onclick="exportToPDF('Ask RIC')" style="width:100%">Export PDF</button>
+  </div>
 </div>
 </div>
 
@@ -955,7 +958,8 @@ async function askQ(){
     const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,system:SYS_PROMPT,messages:[{role:"user",content:ctx+"Question: "+q}]})});
     const data=await res.json();
     const txt=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
-    out.innerHTML=`<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-body">${renderReport(txt)}</div></div>`;
+  out.innerHTML=`<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-body">${renderReport(txt)}</div></div>`;
+    document.getElementById("qa-export-row").style.display="block";
   }catch(e){out.innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;}
   btn.disabled=false;btn.textContent="Ask RIC";
 }
