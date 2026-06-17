@@ -314,6 +314,7 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <input type="date" class="pl-date-inp" id="pl-date"/>
     <button class="btn-pl" id="pl-btn" onclick="fetchPL()">Load</button>
     <div class="pl-meta"><div class="pl-dot" id="pl-dot"></div><span id="pl-txt">Select a month-ending date</span></div>
+      <button class="btn-sec export-btn" onclick="exportToPDF('P&amp;L')" style="margin-left:auto">Export PDF</button>
   </div>
   <div id="pl-content">
     <div class="pl-empty">
@@ -887,8 +888,7 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
     const full=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
     console.log("Report stop_reason:", data.stop_reason, "| output_tokens:", data.usage?.output_tokens, "| length:", full.length);
     lastReport=full;clearInterval(timer);
-    document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot done"></div><span>Complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${live.length}/${SYSTEMS.length} live</span></div><div class="report-wrap"><div class="report-body">${renderReport(full)}</div><div class="report-actions"><button class="btn-sec" onclick="copyReport()">Copy</button><button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[3]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button></div><div class="disclaimer">AI-generated. ${live.length}/${SYSTEMS.length} sources live. Verify before operational decisions.</div></div>`;
-  }catch(e){clearInterval(timer);document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;}
+    document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot done"></div><span>Complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${live.length}/${SYSTEMS.length} live</span></div><div class="report-wrap"><div class="report-body">${renderReport(full)}</div><div class="report-actions"><button class="btn-sec" onclick="copyReport()">Copy</button><button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[3]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button><button class="btn-sec export-btn" onclick="exportToPDF('Daily Report')" style="margin-left:auto">Export PDF</button></div><div class="disclaimer">AI-generated. ${live.length}/${SYSTEMS.length} sources live. Verify before operational decisions.</div></div>`;  }catch(e){clearInterval(timer);document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;}
 }
 
 function renderFlags(){
@@ -1032,6 +1032,13 @@ document.addEventListener("keydown",e=>{
 });
 
 initPin();
+  function exportToPDF(tabName){
+  const now=new Date();
+  const ts=now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})+
+    " · "+now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})+" ET";
+  document.getElementById("print-meta").textContent=tabName+" · "+ts;
+  window.print();
+}
 function copyReport(){navigator.clipboard.writeText(lastReport).catch(()=>{});}
 function showTab(id,el){
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
