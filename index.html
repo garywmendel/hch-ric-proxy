@@ -181,6 +181,21 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 .as-of{font-size:10px;color:var(--t2);margin-top:10px}
 .src-note{font-size:10px;color:var(--t2);margin-bottom:10px;padding:6px 10px;background:var(--bg1);border-radius:var(--r-md)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  /* ── Print / PDF ── */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  #pin-screen,.hdr,.tabs,.btn-primary,.btn-sec,.report-actions,
+  .chips,.pl-toolbar,.future-panel,#sync-btn,.btn-pl,
+  .export-btn,.qa-export-row{display:none!important}
+  #shell{border:none;max-width:100%}
+  .panel{display:none!important}
+  .panel.active{display:block!important}
+  .print-header{display:flex!important}
+  body{background:white;padding:0}
+  .report-wrap{border:none;padding:0}
+  .disclaimer{display:none}
+}
+@media screen{.print-header{display:none}}
 </style>
 </head>
 <body>
