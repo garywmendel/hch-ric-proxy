@@ -23,7 +23,7 @@
   --r-md:8px;--r-lg:12px;
   --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
   --mono:"SF Mono","Fira Code",monospace;
-} 
+}
 @media(prefers-color-scheme:dark){
   :root{
     --bg0:#1c1c1a;--bg1:#252522;--bg2:#2e2e2b;
@@ -100,7 +100,7 @@ h3.s-covers{color:#534AB7!important}h3.s-delivery{color:#993C1D!important}h3.s-e
 h3.s-digital{color:#185FA5!important}h3.s-reputation{color:#A32D2D!important}h3.s-ops{color:#3B6D11!important}
 h3.s-gm{color:#1D9E75!important}h3.s-anomaly{color:#cc0000!important}h3.s-marketing{color:#3B6D11!important}
 .report-body strong{font-weight:600}
-.report-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--b2);flex-wrap:wrap}
+.report-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--b2);flex-wrap:wrap;align-items:center}
 .disclaimer{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .chip{padding:6px 11px;border-radius:100px;font-size:12px;border:0.5px solid var(--b1);color:var(--t1);background:none;cursor:pointer;font-family:var(--font);min-height:34px;display:flex;align-items:center}
@@ -181,6 +181,23 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 .as-of{font-size:10px;color:var(--t2);margin-top:10px}
 .src-note{font-size:10px;color:var(--t2);margin-bottom:10px;padding:6px 10px;background:var(--bg1);border-radius:var(--r-md)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* ── Print / PDF ── */
+@media print {
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  #pin-screen,.hdr,.tabs,.btn-primary,.btn-sec,.report-actions,
+  .chips,.pl-toolbar,.future-panel,#sync-btn,.btn-pl,
+  .export-btn,.qa-export-row{display:none!important}
+  #shell{border:none;max-width:100%}
+  .panel{display:none!important}
+  .panel.active{display:block!important}
+  .print-header{display:flex!important}
+  body{background:white;padding:0}
+  .report-wrap{border:none;padding:0}
+  .disclaimer{display:none}
+}
+@media screen{
+  .print-header{display:none}
+}
 </style>
 </head>
 <body>
@@ -224,6 +241,19 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
 </style>
 
 <div id="shell" style="display:none">
+
+<!-- Print Header — visible only when printing -->
+<div class="print-header" style="align-items:center;gap:12px;padding:16px 16px 12px;border-bottom:1.5px solid #1a1a18;margin-bottom:16px">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 134 258" style="height:36px;flex-shrink:0">
+    <polygon fill="red" points="72.2 131.6 86.8 176.4 134 176.4 95.8 204.2 110.4 249 72.2 221.3 34.1 249 48.6 204.2 10.5 176.4 57.6 176.4 72.2 131.6"/>
+    <path fill="#1a1a18" d="M74.6,113.7v-34.4c1-.3,1.8-1.2,1.8-2.4l.5-32.5c0-1.7,1.7-3.8,2-5.6h0c0-.3,0-.5,0-.7h0s.7-7.3.7-7.3h1c.1.9.4,1.4,1.3,1.5,1,0,2-.7,2.2-1.6.3-1.4-.8-2.6-2.1-2.6s-1.3.6-1.4,1.4h-.8c0,0,.5-5.3.5-5.3h1c.1.9.5,1.4,1.3,1.4.9,0,1.7-.5,2-1.4.5-1.5-.6-2.8-2-2.8s-1.2.5-1.4,1.3h-.9c0,0,.5-5.2.5-5.2h1.1c.1.8.5,1.4,1.4,1.4.9,0,1.7-.5,2-1.4.5-1.5-.6-2.8-2-2.8s-1.2.5-1.4,1.3h-.9c0,0,.4-3.8.4-3.8.1-1.5-1-2.7-2.5-2.7h-13.6c-1.5,0-2.6,1.3-2.5,2.7l.4,3.9h-.9c-.1-.8-.5-1.4-1.4-1.4-.9,0-1.7.5-2,1.4-.5,1.5.6,2.8,2,2.8s1.2-.5,1.4-1.3h1.1c0,0,.5,5.2.5,5.2h-.9c-.1-.9-.5-1.4-1.3-1.4-.9,0-1.7.5-2,1.4-.5,1.5.6,2.8,2,2.8s1.2-.5,1.4-1.3h1c0,0,.5,5.3.5,5.3h-.8c-.1-.8-.4-1.4-1.3-1.4-1,0-2,.7-2.2,1.6-.3,1.4.8,2.6,2.1,2.6s1.3-.6,1.4-1.4h1c0,0,.7,7.2.7,7.2h0c0,.2,0,.4,0,.7h0c.4,1.8,2,3.9,2,5.6l.5,32.5c0,1.1.8,2.1,1.8,2.4v34.4c-6.6.3-10.5,5.8-10.5,12.4l-2.7,37.4,12.3-40.4c1.4-2.4,4.8-2.4,6.2,0l12.3,40.4-2.7-37.4c0-6.6-3.8-12.1-10.3-12.4z"/>
+  </svg>
+  <div style="flex:1">
+    <div style="font-size:13px;font-weight:600;color:#1a1a18">Hill Country BBQ — Intelligence Controller</div>
+    <div id="print-meta" style="font-size:11px;color:#6b6b67;margin-top:2px"></div>
+  </div>
+</div>
+
 <div class="hdr">
   <div class="hdr-top">
     <div class="logo-wrap">
@@ -287,6 +317,7 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <input type="date" class="pl-date-inp" id="pl-date"/>
     <button class="btn-pl" id="pl-btn" onclick="fetchPL()">Load</button>
     <div class="pl-meta"><div class="pl-dot" id="pl-dot"></div><span id="pl-txt">Select a month-ending date</span></div>
+    <button class="btn-sec export-btn" onclick="exportToPDF('P&amp;L')" style="margin-left:auto">Export PDF</button>
   </div>
   <div id="pl-content">
     <div class="pl-empty">
@@ -324,6 +355,9 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <button class="btn-primary" id="qa-btn" onclick="askQ()">Ask RIC</button>
   </div>
   <div id="qa-out"></div>
+  <div class="qa-export-row" id="qa-export-row" style="display:none;margin-top:8px">
+    <button class="btn-sec export-btn" onclick="exportToPDF('Ask RIC')" style="width:100%">Export PDF</button>
+  </div>
 </div>
 </div>
 
@@ -394,6 +428,15 @@ function monthRange(endDate){
   return{startDate:start.toISOString().slice(0,10),endDate,label:fmt(end)};
 }
 
+// ── PDF Export ────────────────────────────────────────────────────────────────
+function exportToPDF(tabName){
+  const now=new Date();
+  const ts=now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})+
+    " · "+now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})+" ET";
+  document.getElementById("print-meta").textContent=tabName+" · "+ts;
+  window.print();
+}
+
 async function fetchPL(){
   const endDate=document.getElementById("pl-date").value;if(!endDate) return;
   const btn=document.getElementById("pl-btn"),dot=document.getElementById("pl-dot"),
@@ -433,13 +476,10 @@ function renderMonthlyPL(qb,me,label){
   const hasQb=qb?.ok&&(qb?.income?.total_sales||0)>0;
   const qbInc=qb?.income||{};
   const ns=qbInc.total_sales||0;
-  // QB is always authoritative for COGS total (matches controller report, accrual basis, reconciled)
-  // MarginEdge provides category detail only — we scale ME proportions to the QB total
   const hasQbCogs=(qb?.cogs?.total||0)>0;
-  const hasMeDetail=(me.cogs?.total||0)>1000; // ME has enough data for proportional breakdown
+  const hasMeDetail=(me.cogs?.total||0)>1000;
   const qbCogsTotal=qb?.cogs?.total||0;
 
-  // Scale MarginEdge category proportions to QB total
   let cd={};
   if(hasMeDetail&&hasQbCogs&&qbCogsTotal>0){
     const scale=qbCogsTotal/me.cogs.total;
@@ -455,14 +495,13 @@ function renderMonthlyPL(qb,me,label){
       na_bev: +(( me.cogs.na_bev ||0)*scale).toFixed(2),
       paper:  +(( me.cogs.paper  ||0)*scale).toFixed(2),
       food:   +(( me.cogs.food   ||0)*scale).toFixed(2),
-      total:  qbCogsTotal, // always QB total
+      total:  qbCogsTotal,
     };
   } else {
-    // Fall back to QB categories directly
     cd=qb?.cogs||{};
   }
 
-  const tc=qbCogsTotal||0; // always QB total
+  const tc=qbCogsTotal||0;
   const fc_f=cd.food||0;
   const gp=ns>0&&tc>0?ns-tc:null;
   const qbFoh=qb?.foh||{},qbBoh=qb?.boh||{},qbMgmt=qb?.mgmt||{};
@@ -725,14 +764,12 @@ async function runSync(){
   fetchedData={};sourceMap={};
   updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");updDot("7shifts","sync");
   btn.textContent="Fetching live data...";
-  // Pre-warm TripleSeat cache (slow two-page fetch) in parallel with /api/ric
   const [ricRes, tsRes] = await Promise.allSettled([
     fetch("/api/ric").then(r=>r.ok?r.json():null).catch(()=>null),
     fetch("/api/tripleseat").then(r=>r.ok?r.json():null).catch(()=>null),
   ]);
   let ricLive = ricRes.status==="fulfilled"&&ricRes.value ? ricRes.value : {};
   const tsLive = tsRes.status==="fulfilled"&&tsRes.value ? tsRes.value : null;
-  // Merge TripleSeat into ricLive
   if(tsLive&&tsLive.ok!==false){ricLive.tripleseat=tsLive;if(!ricLive.sources) ricLive.sources={};ricLive.sources.tripleseat="live";}
   let done=0;
   for(const s of SYSTEMS){
@@ -770,8 +807,8 @@ async function generateReport(){
   const qb=liveData.quickbooks||{};
   const mc=liveData.mailchimp||{};
   const ts=liveData.tripleseat||{};
-  const s7Ctx = liveData["7shifts"] ? 
-    `7Shifts labor today: ${liveData["7shifts"].total_hours}hrs worked, $${liveData["7shifts"].total_labor_cost} labor cost, ${liveData["7shifts"].labor_pct||"n/a"}% labor-to-sales, ${liveData["7shifts"].shift_count} shifts, OT hrs: ${liveData["7shifts"].overtime_hours}, OT pay: $${liveData["7shifts"].overtime_pay}, compliance cost: $${liveData["7shifts"].compliance_cost}` 
+  const s7Ctx = liveData["7shifts"] ?
+    `7Shifts labor today: ${liveData["7shifts"].total_hours}hrs worked, $${liveData["7shifts"].total_labor_cost} labor cost, ${liveData["7shifts"].labor_pct||"n/a"}% labor-to-sales, ${liveData["7shifts"].shift_count} shifts, OT hrs: ${liveData["7shifts"].overtime_hours}, OT pay: $${liveData["7shifts"].overtime_pay}, compliance cost: $${liveData["7shifts"].compliance_cost}`
     : "";
   const meCtx=me.invoice_count>0
     ?`MarginEdge 7-day rolling (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)}. Food $${(me.cogs?.food||0).toFixed(2)}. Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
@@ -807,7 +844,7 @@ async function generateReport(){
       ].filter(Boolean).join(" ")
     :"TripleSeat: data unavailable.";
 
- const prompt=`${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})} · ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET · ${svc}
+  const prompt=`${now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})} · ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET · ${svc}
 Live sources: ${live.join(", ")||"none"}
 
 GoTab today (live, intraday): $${liveData.gotab?.net_sales||0} net sales, ${liveData.gotab?.tab_count||0} tabs, bar $${liveData.gotab?.bar_sales||0}, catering $${liveData.gotab?.catering_sales||0}, comps $${liveData.gotab?.comps||0}, deferred $${liveData.gotab?.deferred_revenue||0}
@@ -823,6 +860,7 @@ IMPORTANT: MarginEdge COGS is a 7-day rolling window. For food cost % calculatio
 REVENUE PACING: Hill Country opens at 12:00 PM and closes at midnight (12 hours of service). To project end-of-day revenue, divide current net sales by the fraction of service elapsed. Example: $2,821 at 3:30 PM = 3.5 hours elapsed ÷ 12 total = 29% complete → projected day = $2,821 ÷ 0.29 = ~$9,700. Never use a simple hours-remaining multiplier — always divide by fraction elapsed.
 
 DAY-OF-WEEK CONTEXT: The GoTab 7-day rolling average includes weekends (Friday/Saturday) which are significantly higher volume than weekdays. When comparing today's pace to the 7-day average, note the day of week and flag if today is a Monday–Thursday where lower volume vs the 7-day average is expected and not necessarily alarming.
+
 Write a tight GM briefing using ### headers only. Each section must contain exactly THREE quantitative anchors formatted as a markdown bulleted list (each item starting with "- "):
   - The current value ($ or %, exact figures from the data above).
   - A comparison — vs target, vs run-rate, vs prior 30-day, vs same-day-last-week, or vs industry benchmark.
@@ -849,7 +887,7 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
     let res,attempts=0;
     while(attempts<3){
       attempts++;
-      res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
+      res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:2000,system:SYS_PROMPT,messages:[{role:"user",content:prompt}]})});
       if(res.ok) break;
       if((res.status===502||res.status===504)&&attempts<3){console.log(`Claude ${res.status} — retry ${attempts}/3`);await new Promise(r=>setTimeout(r,3000));continue;}
       break;
@@ -857,161 +895,3 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
     if(!res.ok){const errText=await res.text();throw new Error(`Claude API ${res.status}: ${errText.slice(0,200)}`);}
     const data=await res.json();
     if(data.error) throw new Error(`Claude error: ${data.error.message||JSON.stringify(data.error)}`);
-    const full=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
-    console.log("Report stop_reason:", data.stop_reason, "| output_tokens:", data.usage?.output_tokens, "| length:", full.length);
-    lastReport=full;clearInterval(timer);
-    document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot done"></div><span>Complete — ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})} · ${live.length}/${SYSTEMS.length} live</span></div><div class="report-wrap"><div class="report-body">${renderReport(full)}</div><div class="report-actions"><button class="btn-sec" onclick="copyReport()">Copy</button><button class="btn-sec" onclick="showTab('qa',document.querySelectorAll('.tab')[3]);document.getElementById('qa-inp').value='What needs immediate action today?'">Ask RIC</button></div><div class="disclaimer">AI-generated. ${live.length}/${SYSTEMS.length} sources live. Verify before operational decisions.</div></div>`;
-  }catch(e){clearInterval(timer);document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;}
-}
-
-function renderFlags(){
-  const d=fetchedData,flags=[];
-  const live=Object.entries(sourceMap).filter(([,v])=>v==="live").map(([k])=>k);
-  if(live.length>0) flags.push({t:"info",l:`${live.length} live: ${live.join(", ")}`});
-  if(d.quickbooks?.prime_cost_pct>TARGETS.prime) flags.push({t:"crit",l:`Prime cost ${d.quickbooks.prime_cost_pct}% — above ${TARGETS.prime}% target`});
-  if(d.quickbooks?.total_labor_pct>TARGETS.total_labor) flags.push({t:"warn",l:`Labor ${d.quickbooks.total_labor_pct}% — above ${TARGETS.total_labor}%`});
-  if(d.marginedge?.food_cost_pct>34) flags.push({t:"crit",l:`Food cost ${d.marginedge.food_cost_pct}% — critical`});
-  if(d.gotab?.comps>0&&d.gotab?.net_sales>0&&(d.gotab.comps/d.gotab.net_sales)>0.015) flags.push({t:"warn",l:`Comps ${((d.gotab.comps/d.gotab.net_sales)*100).toFixed(1)}% — review`});
-  if(d.mailchimp?.open_rate_30d&&d.mailchimp.open_rate_30d<20) flags.push({t:"warn",l:`Email open rate ${d.mailchimp.open_rate_30d}% — below 20% threshold`});
-  if(d.mailchimp?.net_list_growth_30d<0) flags.push({t:"warn",l:`Email list shrinking — ${d.mailchimp.net_list_growth_30d} net change (30d)`});
-  if(flags.filter(f=>f.t!=="info").length===0) flags.push({t:"ok",l:"All live metrics within threshold"});
-  document.getElementById("live-flags").innerHTML=flags.map(f=>`<span class="flag ${f.t}">${f.l}</span>`).join("");
-}
-
-function getSectionClass(h){
-  const l=h.toLowerCase();
-  if(l.includes("revenue")||l.includes("sales")||l.includes("snapshot")) return "s-revenue";
-  if(l.includes("labor")||l.includes("staffing")) return "s-labor";
-  if(l.includes("food cost")||l.includes("cogs")) return "s-food";
-  if(l.includes("cover")||l.includes("dining")||l.includes("guest")) return "s-covers";
-  if(l.includes("deliver")) return "s-delivery";
-  if(l.includes("event")||l.includes("banquet")||l.includes("private")||l.includes("catering")) return "s-events";
-  if(l.includes("digital")||l.includes("market")||l.includes("email")||l.includes("mailchimp")||l.includes("online")) return "s-marketing";
-  if(l.includes("reput")||l.includes("review")||l.includes("rating")) return "s-reputation";
-  if(l.includes("ops")||l.includes("comm")||l.includes("operation")) return "s-ops";
-  if(l.includes("gm")||l.includes("narrative")||l.includes("summary")||l.includes("manager")) return "s-gm";
-  if(l.includes("anomal")||l.includes("flag")||l.includes("alert")||l.includes("action")) return "s-anomaly";
-  return "s-digital";
-}
-function renderReport(md){
-  const lines=md.split("\n");let html="",inList=false;
-  for(const line of lines){
-    const t=line.trim();
-    if(!t){if(inList){html+="</ul>";inList=false;}html+="<br>";continue;}
-    if(t.startsWith("## ")){if(inList){html+="</ul>";inList=false;}html+=`<h2>${esc(t.slice(3))}</h2>`;}
-    else if(t.startsWith("### ")){if(inList){html+="</ul>";inList=false;}const tx=t.slice(4);html+=`<h3 class="${getSectionClass(tx)}">${esc(tx)}</h3>`;}
-    else if(t.startsWith("* ")||t.startsWith("- ")){if(!inList){html+="<ul>";inList=true;}html+=`<li>${ri(t.slice(2))}</li>`;}
-    else{if(inList){html+="</ul>";inList=false;}html+=`<p>${ri(t)}</p>`;}
-  }
-  if(inList) html+="</ul>";
-  return html;
-}
-function ri(t){return esc(t).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>");}
-
-async function askQ(){
-  const q=document.getElementById("qa-inp").value.trim();if(!q) return;
-  const btn=document.getElementById("qa-btn");btn.disabled=true;btn.textContent="Thinking...";
-  const out=document.getElementById("qa-out");
-  out.innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Thinking...</span></div>`;
-  const liveData=Object.fromEntries(Object.entries(fetchedData).filter(([k,v])=>sourceMap[k]==="live"&&v!=null));
-  // Trim verbose nested objects before sending to Claude
-  const trimmedData={
-    gotab: liveData.gotab||null,
-    marginedge: liveData.marginedge?{invoice_count:liveData.marginedge.invoice_count,cogs:liveData.marginedge.cogs,food_cost_pct:liveData.marginedge.food_cost_pct}:null,
-    quickbooks: liveData.quickbooks?{income:{total_sales:liveData.quickbooks.income?.total_sales},total_labor:liveData.quickbooks.total_labor,prime_cost_pct:liveData.quickbooks.prime_cost_pct,net_operating_income:liveData.quickbooks.net_operating_income}:null,
-    mailchimp: liveData.mailchimp?{total_subscribers:liveData.mailchimp.total_subscribers,open_rate_30d:liveData.mailchimp.open_rate_30d,click_rate_30d:liveData.mailchimp.click_rate_30d,recent_campaigns:liveData.mailchimp.recent_campaigns?.slice(0,3)}:null,
-    tripleseat: liveData.tripleseat?{confirmed_revenue:liveData.tripleseat.confirmed_revenue,tentative_revenue:liveData.tripleseat.tentative_revenue,total_pipeline:liveData.tripleseat.total_pipeline,confirmed_count:liveData.tripleseat.confirmed_count,open_leads:liveData.tripleseat.open_leads,upcoming_events:liveData.tripleseat.upcoming_events?.slice(0,5)}:null,
-    "7shifts": liveData["7shifts"]?{total_hours:liveData["7shifts"].total_hours,total_labor_cost:liveData["7shifts"].total_labor_cost,labor_pct:liveData["7shifts"].labor_pct,shift_count:liveData["7shifts"].shift_count,overtime_hours:liveData["7shifts"].overtime_hours}:null,
-  };
-  const ctx=lastReport?`Today's report:\n${lastReport}\n\nLive data:\n${JSON.stringify(trimmedData,null,2)}\n\n`:`Live data:\n${JSON.stringify(trimmedData,null,2)}\n\n`;
-  try{
-    const res=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:800,system:SYS_PROMPT,messages:[{role:"user",content:ctx+"Question: "+q}]})});
-    const data=await res.json();
-    const txt=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"No response.";
-    out.innerHTML=`<div class="status"><div class="sdot done"></div><span>Response ready</span></div><div class="report-wrap"><div class="report-body">${renderReport(txt)}</div></div>`;
-  }catch(e){out.innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;}
-  btn.disabled=false;btn.textContent="Ask RIC";
-}
-
-function setQ(q){document.getElementById("qa-inp").value=q;document.getElementById("qa-inp").focus();}
-
-// ── PIN Auth ──────────────────────────────────────────────────────────────────
-let pinEntry="";
-const PIN_KEY="ric_auth";
-const PIN_TTL=8*60*60*1000; // 8 hours
-
-function pinKey(d){
-  if(pinEntry.length>=5) return;
-  pinEntry+=d;
-  updatePinDots();
-  if(pinEntry.length===5) setTimeout(checkPin,120);
-}
-function pinDel(){
-  pinEntry=pinEntry.slice(0,-1);
-  updatePinDots();
-  document.getElementById("pin-error").textContent="";
-}
-function updatePinDots(){
-  document.querySelectorAll(".pd").forEach((dot,i)=>{
-    dot.style.background=i<pinEntry.length?"#E24B4A":"rgba(255,255,255,0.2)";
-  });
-}
-async function checkPin(){
-  try{
-    const res=await fetch("/api/pin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin:pinEntry})});
-    const data=await res.json();
-    if(data.ok){
-      sessionStorage.setItem(PIN_KEY,JSON.stringify({ts:Date.now()}));
-      unlockApp();
-    } else {
-      document.getElementById("pin-error").textContent="Incorrect PIN";
-      pinEntry="";
-      updatePinDots();
-      // Shake animation
-      const dots=document.getElementById("pin-dots");
-      dots.style.animation="shake 0.4s ease";
-      setTimeout(()=>dots.style.animation="",400);
-    }
-  }catch(e){
-    document.getElementById("pin-error").textContent="Connection error";
-    pinEntry="";updatePinDots();
-  }
-}
-function unlockApp(){
-  document.getElementById("pin-screen").style.display="none";
-  document.getElementById("shell").style.display="block";
-}
-function initPin(){
-  const stored=sessionStorage.getItem(PIN_KEY);
-  if(stored){
-    try{
-      const{ts}=JSON.parse(stored);
-      if(Date.now()-ts<PIN_TTL){unlockApp();return;}
-    }catch(e){}
-  }
-  document.getElementById("pin-screen").style.display="flex";
-}
-
-// Shake keyframe
-const pinStyle=document.createElement("style");
-pinStyle.textContent="@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}";
-document.head.appendChild(pinStyle);
-
-// Keyboard support
-document.addEventListener("keydown",e=>{
-  if(document.getElementById("pin-screen").style.display==="none") return;
-  if(e.key>="0"&&e.key<="9") pinKey(e.key);
-  if(e.key==="Backspace") pinDel();
-});
-
-initPin();
-function copyReport(){navigator.clipboard.writeText(lastReport).catch(()=>{});}
-function showTab(id,el){
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
-  if(el) el.classList.add("active");
-  document.getElementById("tab-"+id).classList.add("active");
-}
-</script>
-</body>
-</html>
