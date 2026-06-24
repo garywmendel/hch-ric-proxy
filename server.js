@@ -632,25 +632,21 @@ async function fetch7Shifts(date) {
 // ── Yelp ──────────────────────────────────────────────────────────────────────
 async function fetchYelp() {
   const headers = { "Authorization": `Bearer ${YELP_API_KEY}` };
+  const url = `https://api.yelp.com/v3/businesses/${YELP_BUSINESS_ID}`;
+  const res = await fetchWithRetry(url, { headers });
+  if (!res.ok) throw new Error(`Yelp failed: ${res.status}`);
 
-  const [bizRes, revRes] = await Promise.allSettled([
-    fetchWithRetry(`https://api.yelp.com/v3/businesses/${YELP_BUSINESS_ID}`, { headers }),
-    fetchWithRetry(`https://api.yelp.com/v3/businesses/${YELP_BUSINESS_ID}/reviews?limit=3&sort_by=newest`, { headers }),
-  ]);
+  const data = await res.json();
 
-  if (bizRes.status !== "fulfilled" || !bizRes.value.ok) throw new Error(`Yelp business failed: ${bizRes.value?.status || bizRes.reason}`);
-  const data = await bizRes.value.json();
-
-  let reviews = [];
-  if (revRes.status === "fulfilled" && revRes.value.ok) {
-    const revData = await revRes.value.json();
-    reviews = (revData.reviews || []).map(r => ({
-      rating: r.rating,
-      text: r.text,
-      time_created: r.time_created,
-      user_name: r.user?.name || "Anonymous",
-    }));
-  }
+  return {
+    rating: data.rating,
+    review_count: data.review_count,
+    price: data.price || null,
+    is_open_now: data.business_hours?.[0]?.is_open_now ?? null,
+    yelp_url: data.url ? data.url.split("?")[0] : null,
+    data_as_of: nowET(),
+  };
+}
 
   return {
     rating: data.rating,
