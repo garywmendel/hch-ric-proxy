@@ -883,7 +883,16 @@ app.get("/api/ric",async(req,res)=>{
    result["7shifts"] = null;
    result.sources["7shifts"] = `error: ${e.message}`;
  }
-
+ 
+// Yelp
+try {
+  result.yelp = await fetchYelp();
+  result.sources.yelp = "live";
+} catch(e) {
+  console.error("Yelp failed:", e.message);
+  result.yelp = null;
+  result.sources.yelp = `error: ${e.message}`;
+}
   // MarginEdge
   if(meResult.status==="fulfilled"){
     const me=meResult.value;
