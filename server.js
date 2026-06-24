@@ -16,6 +16,8 @@ const SHIFTS_TOKEN         = process.env.SHIFTS_TOKEN;
 const SHIFTS_COMPANY_GUID  = process.env.SHIFTS_COMPANY_GUID;
 const SHIFTS_COMPANY_ID    = process.env.SHIFTS_COMPANY_ID;
 const SHIFTS_LOCATION_ID   = process.env.SHIFTS_LOCATION_ID;
+const YELP_API_KEY         = process.env.YELP_API_KEY;
+const YELP_BUSINESS_ID     = process.env.YELP_BUSINESS_ID;
 const MARGINEDGE_API_KEY   = process.env.MARGINEDGE_API_KEY;
 const MARGINEDGE_TENANT_ID = process.env.MARGINEDGE_TENANT_ID;
 const QB_CLIENT_ID         = process.env.QB_CLIENT_ID;
@@ -627,6 +629,24 @@ async function fetch7Shifts(date) {
     data_as_of:       nowET(),
   };
 }
+// ── Yelp ──────────────────────────────────────────────────────────────────────
+async function fetchYelp() {
+  const headers = { "Authorization": `Bearer ${YELP_API_KEY}` };
+  const url = `https://api.yelp.com/v3/businesses/${YELP_BUSINESS_ID}`;
+  const res = await fetchWithRetry(url, { headers });
+  if (!res.ok) throw new Error(`Yelp failed: ${res.status}`);
+
+  const data = await res.json();
+
+  return {
+    rating: data.rating,
+    review_count: data.review_count,
+    price: data.price || null,
+    is_open_now: data.business_hours?.[0]?.is_open_now ?? null,
+    yelp_url: data.url ? data.url.split("?")[0] : null,
+    data_as_of: nowET(),
+  };
+}
 
 // ── MarginEdge ────────────────────────────────────────────────────────────────
 function bucketCogs(cogs,cat,amt){
@@ -815,6 +835,11 @@ app.get("/api/gotab",async(req,res)=>{
 app.get("/api/7shifts",async(req,res)=>{
   try{res.json({ok:true,source:"7shifts_live",date:req.query.date||today(),...await fetch7Shifts(req.query.date||today())});}
   catch(err){console.error("7Shifts error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
+
+app.get("/api/yelp",async(req,res)=>{
+  try{res.json({ok:true,source:"yelp_live",...await fetchYelp()});}
+  catch(err){console.error("Yelp error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
 app.get("/api/marginedge",async(req,res)=>{
