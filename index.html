@@ -370,6 +370,7 @@ const SYSTEMS=[
   {id:"ga4",       name:"GA4",           domain:"Digital",       color:"#185FA5",icon:"GA"},
   {id:"m365",      name:"Microsoft 365", domain:"Comms",         color:"#534AB7",icon:"M3"},
   {id:"marqii",    name:"Marqii",        domain:"Reputation",    color:"#1D9E75",icon:"MQ"},
+  {id:"yelp",      name:"Yelp",          domain:"Reputation",    color:"#D32323",icon:"YP"},
   {id:"doordash",  name:"DoorDash",      domain:"Delivery",      color:"#993C1D",icon:"DD"},
 ];
 
@@ -754,8 +755,7 @@ async function runSync(){
   document.getElementById("live-flags").innerHTML="";
   SYSTEMS.forEach(s=>updDot(s.id,"idle"));
   fetchedData={};sourceMap={};
-  updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");updDot("7shifts","sync");
-  btn.textContent="Fetching live data...";
+updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");updDot("7shifts","sync");updDot("yelp","sync");  btn.textContent="Fetching live data...";
   // Pre-warm TripleSeat cache (slow two-page fetch) in parallel with /api/ric
   const [ricRes, tsRes] = await Promise.allSettled([
     fetch("/api/ric").then(r=>r.ok?r.json():null).catch(()=>null),
