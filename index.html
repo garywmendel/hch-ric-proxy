@@ -385,6 +385,7 @@ LIVE sources currently connected:
 - Mailchimp: email audience, campaign performance, open/click rates, list growth
 - TripleSeat: private dining & events — today's events, this week's events, confirmed/tentative pipeline, open leads. Flag if any events are happening today. Note guest counts for staffing awareness.
 - 7Shifts: labor hours, labor cost, overtime, shift count
+- Yelp: current star rating, total review count, price tier
 
 PENDING sources (integrations in progress): OpenTable, GA4, Microsoft 365, Marqii, DoorDash.
 
@@ -403,6 +404,7 @@ Industry benchmarks to reference where relevant:
 - Comp+void %: under 2% of gross
 - Email open rate: 25%+ healthy, <20% concerning
 - Email CTOR: 10-15% healthy
+- Yelp rating: 4.0+ strong, 3.5-3.9 average, below 3.5 concerning for search visibility
 
 Write for a GM reading at 7am. Be direct, specific, numeric. No fluff, no hedging, no narrative filler. Each anchor is one short sentence. Flag anomalies clearly with $ and %.`;
 
@@ -804,6 +806,10 @@ async function generateReport(){
   const s7Ctx = liveData["7shifts"] ? 
     `7Shifts labor today: ${liveData["7shifts"].total_hours}hrs worked, $${liveData["7shifts"].total_labor_cost} labor cost, ${liveData["7shifts"].labor_pct||"n/a"}% labor-to-sales, ${liveData["7shifts"].shift_count} shifts, OT hrs: ${liveData["7shifts"].overtime_hours}, OT pay: $${liveData["7shifts"].overtime_pay}, compliance cost: $${liveData["7shifts"].compliance_cost}` 
     : "";
+  const yelp=liveData.yelp||{};
+  const yelpCtx = yelp.rating
+    ? `Yelp (live): ${yelp.rating} stars across ${yelp.review_count.toLocaleString()} total reviews. Price tier ${yelp.price||"n/a"}.`
+    : "";
   const meCtx=me.invoice_count>0
     ?`MarginEdge 7-day rolling (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)}. Food $${(me.cogs?.food||0).toFixed(2)}. Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
     :"MarginEdge 7-day rolling (live): 0 invoices in last 7 days.";
@@ -848,6 +854,7 @@ ${qbCtx}
 ${mcCtx}
 ${tsCtx}
 ${s7Ctx}
+${yelpCtx}
 
 IMPORTANT: MarginEdge COGS is a 7-day rolling window. For food cost % calculations, divide MarginEdge totals by GoTab 7-day net sales (NOT today's single-day GoTab). The Revenue snapshot section uses today's GoTab. The Food cost section MUST use 7-day vs 7-day.
 
@@ -871,8 +878,9 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
 (Anchor on: today's event load, this-week pipeline, largest upcoming + staffing implication)
 ### Digital & marketing
 (Anchor on: campaign open/click vs benchmark, list growth direction, momentum signal)
+### Reputation
+(Anchor on: current Yelp rating vs industry benchmark, review volume context, implication for search visibility or guest perception)
 ### Watch list
-(Anchor on: top 3 anomalies or risks for the next 24-48 hours, each with a specific number)`;
 
   const timer=setInterval(()=>{elapsed++;const el=document.getElementById("report-timer");if(el) el.textContent=`${elapsed}s`;},1000);
   document.getElementById("report-out").innerHTML=`<div class="status"><div class="sdot thinking"></div><span>Generating — <span id="report-timer">0s</span></span></div>`;
