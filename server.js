@@ -648,16 +648,6 @@ async function fetchYelp() {
   };
 }
 
-  return {
-    rating: data.rating,
-    review_count: data.review_count,
-    price: data.price || null,
-    is_open_now: data.business_hours?.[0]?.is_open_now ?? null,
-    yelp_url: data.url ? data.url.split("?")[0] : null,
-    recent_reviews: reviews,
-    data_as_of: nowET(),
-  };
-}
 
 // ── MarginEdge ────────────────────────────────────────────────────────────────
 function bucketCogs(cogs,cat,amt){
