@@ -400,6 +400,12 @@ async function tsRefreshAccessToken() {
   tsState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
  
   tsState.refreshToken = newRefreshToken;
+ tsState.refreshToken = newRefreshToken;
+await persistRailwayVars({
+  TRIPLESEAT_ACCESS_TOKEN: tsState.accessToken,
+  TRIPLESEAT_REFRESH_TOKEN: tsState.refreshToken,
+});
+console.log("TripleSeat token refreshed");
   console.log("TripleSeat token refreshed");
   return tsState.accessToken;
 }
