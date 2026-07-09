@@ -815,8 +815,9 @@ async function generateReport(){
   const otNoShowPct = ot.reservation_count>0 ? ((ot.no_show_count/ot.reservation_count)*100).toFixed(1) : null;
   const otRevPerCover = (ot.covers>0 && liveData.gotab?.net_sales) ? (liveData.gotab.net_sales/ot.covers).toFixed(2) : null;
   const otCoversPerLaborHr = (ot.covers>0 && liveData["7shifts"]?.total_hours) ? (ot.covers/liveData["7shifts"].total_hours).toFixed(1) : null;
+  const otTagsNote = ot.tagged_count>0 ? ` ${ot.tagged_count} reservation${ot.tagged_count>1?"s":""} flagged with guest notes (${ot.top_tags?.map(t=>t.tag).join(", ")||"—"}).` : "";
   const otCtx = ot.data_as_of
-    ? `OpenTable (live): ${ot.reservation_count} reservations, ${ot.covers} covers, ${ot.cancelled_count} cancelled, ${ot.no_show_count} no-show${otNoShowPct?` (${otNoShowPct}% no-show rate)`:""}.${otRevPerCover?` Revenue per cover (GoTab net sales ÷ OpenTable covers): $${otRevPerCover}.`:""}${otCoversPerLaborHr?` Covers per labor hour (reservation-to-staffing efficiency): ${otCoversPerLaborHr}.`:""}`
+    ? `OpenTable (live): ${ot.reservation_count} reservations, ${ot.covers} covers (avg party size ${ot.avg_party_size??"n/a"}), ${ot.cancelled_count} cancelled, ${ot.no_show_count} no-show${otNoShowPct?` (${otNoShowPct}% no-show rate)`:""}. Peak demand: ${ot.peak_hour||"n/a"}${ot.peak_hour_covers?` (${ot.peak_hour_covers} covers)`:""}. Top booking channel: ${ot.top_channel||"n/a"}${ot.top_channel_pct?` (${ot.top_channel_pct}% of reservations)`:""}.${otRevPerCover?` Revenue per cover (GoTab net sales ÷ OpenTable covers): $${otRevPerCover}.`:""}${otCoversPerLaborHr?` Covers per labor hour (reservation-to-staffing efficiency): ${otCoversPerLaborHr}.`:""}${otTagsNote}`
     : "OpenTable: data unavailable.";
   const meCtx=me.invoice_count>0
     ?`MarginEdge 7-day rolling (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)}. Food $${(me.cogs?.food||0).toFixed(2)}. Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
@@ -890,7 +891,7 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
 ### Reputation
 (Anchor on: current Yelp rating vs industry benchmark, review volume context, implication for search visibility or guest perception)
 ### Reservations & covers
-(Anchor on: covers booked vs GoTab tab count, no-show rate vs benchmark, revenue-per-cover or covers-per-labor-hour efficiency signal)
+(Anchor on: peak-hour demand and its staffing implication, no-show rate vs benchmark, and one of: revenue-per-cover, covers-per-labor-hour, booking channel mix, or notable guest occasions/tags for tonight)
 ### Watch list
 (Anchor on: top 3 anomalies or risks for the next 24-48 hours, each with a specific number)`;
 
@@ -925,6 +926,7 @@ function renderFlags(){
   if(d.mailchimp?.open_rate_30d&&d.mailchimp.open_rate_30d<20) flags.push({t:"warn",l:`Email open rate ${d.mailchimp.open_rate_30d}% — below 20% threshold`});
   if(d.mailchimp?.net_list_growth_30d<0) flags.push({t:"warn",l:`Email list shrinking — ${d.mailchimp.net_list_growth_30d} net change (30d)`});
   if(d.opentable?.reservation_count>0&&(d.opentable.no_show_count/d.opentable.reservation_count)>0.1) flags.push({t:"warn",l:`No-show rate ${((d.opentable.no_show_count/d.opentable.reservation_count)*100).toFixed(1)}% — above 10% threshold`});
+  if(d.opentable?.tagged_count>0) flags.push({t:"info",l:`${d.opentable.tagged_count} reservation${d.opentable.tagged_count>1?"s":""} with guest notes tonight (${d.opentable.top_tags?.map(t=>t.tag).join(", ")||""})`});
   if(flags.filter(f=>f.t!=="info").length===0) flags.push({t:"ok",l:"All live metrics within threshold"});
   document.getElementById("live-flags").innerHTML=flags.map(f=>`<span class="flag ${f.t}">${f.l}</span>`).join("");
 }
@@ -973,7 +975,7 @@ async function askQ(){
     mailchimp: liveData.mailchimp?{total_subscribers:liveData.mailchimp.total_subscribers,open_rate_30d:liveData.mailchimp.open_rate_30d,click_rate_30d:liveData.mailchimp.click_rate_30d,recent_campaigns:liveData.mailchimp.recent_campaigns?.slice(0,3)}:null,
     tripleseat: liveData.tripleseat?{confirmed_revenue:liveData.tripleseat.confirmed_revenue,tentative_revenue:liveData.tripleseat.tentative_revenue,total_pipeline:liveData.tripleseat.total_pipeline,confirmed_count:liveData.tripleseat.confirmed_count,open_leads:liveData.tripleseat.open_leads,upcoming_events:liveData.tripleseat.upcoming_events?.slice(0,5)}:null,
     "7shifts": liveData["7shifts"]?{total_hours:liveData["7shifts"].total_hours,total_labor_cost:liveData["7shifts"].total_labor_cost,labor_pct:liveData["7shifts"].labor_pct,shift_count:liveData["7shifts"].shift_count,overtime_hours:liveData["7shifts"].overtime_hours}:null,
-    opentable: liveData.opentable?{reservation_count:liveData.opentable.reservation_count,covers:liveData.opentable.covers,cancelled_count:liveData.opentable.cancelled_count,no_show_count:liveData.opentable.no_show_count}:null,
+    opentable: liveData.opentable?{reservation_count:liveData.opentable.reservation_count,covers:liveData.opentable.covers,cancelled_count:liveData.opentable.cancelled_count,no_show_count:liveData.opentable.no_show_count,avg_party_size:liveData.opentable.avg_party_size,peak_hour:liveData.opentable.peak_hour,top_channel:liveData.opentable.top_channel,top_channel_pct:liveData.opentable.top_channel_pct,top_tags:liveData.opentable.top_tags}:null,
   };
   const ctx=lastReport?`Today's report:\n${lastReport}\n\nLive data:\n${JSON.stringify(trimmedData,null,2)}\n\n`:`Live data:\n${JSON.stringify(trimmedData,null,2)}\n\n`;
   try{
