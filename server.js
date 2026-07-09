@@ -558,16 +558,56 @@ async function fetchOpenTable(date) {
     guard++;
   }
 
-  let covers = 0, reservation_count = 0, cancelled_count = 0, no_show_count = 0;
+  const fmtHour = (hh) => {
+    const h = parseInt(hh, 10);
+    const period = h >= 12 ? "PM" : "AM";
+    let h12 = h % 12; if (h12 === 0) h12 = 12;
+    return `${h12}:00 ${period}`;
+  };
+
+  let covers = 0, reservation_count = 0, cancelled_count = 0, no_show_count = 0, tagged_count = 0;
+  const hourCovers = {};
+  const channelCounts = {};
+  const tagCounts = {};
+
   for (const r of items) {
     const state = (r.state || "").toLowerCase();
     if (state === "cancelled") { cancelled_count++; continue; }
     if (state === "no_show" || state === "no-show" || state === "noshow") { no_show_count++; continue; }
+
     reservation_count++;
-    covers += r.party_size || 0;
+    const partySize = r.party_size || 0;
+    covers += partySize;
+
+    if (r.scheduled_time) {
+      const hour = r.scheduled_time.slice(11, 13);
+      hourCovers[hour] = (hourCovers[hour] || 0) + partySize;
+    }
+    const origin = r.origin || "Unknown";
+    channelCounts[origin] = (channelCounts[origin] || 0) + 1;
+
+    if (r.visit_tags && r.visit_tags.length > 0) {
+      tagged_count++;
+      for (const tag of r.visit_tags) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    }
   }
 
-  return { reservation_count, covers, cancelled_count, no_show_count, data_as_of: nowET() };
+  const peakHourEntry = Object.entries(hourCovers).sort((a, b) => b[1] - a[1])[0];
+  const channelEntries = Object.entries(channelCounts).sort((a, b) => b[1] - a[1]);
+  const topTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([tag, count]) => ({ tag, count }));
+
+  return {
+    reservation_count, covers, cancelled_count, no_show_count,
+    avg_party_size: reservation_count > 0 ? +(covers / reservation_count).toFixed(1) : null,
+    peak_hour: peakHourEntry ? fmtHour(peakHourEntry[0]) : null,
+    peak_hour_covers: peakHourEntry ? peakHourEntry[1] : null,
+    channel_mix: channelCounts,
+    top_channel: channelEntries[0]?.[0] || null,
+    top_channel_pct: (channelEntries[0] && reservation_count > 0) ? +((channelEntries[0][1] / reservation_count) * 100).toFixed(1) : null,
+    tagged_count,
+    top_tags: topTags,
+    data_as_of: nowET(),
+  };
 }
 async function getGoTabToken() {
   const res = await fetchWithRetry("https://gotab.io/api/oauth/token", {
