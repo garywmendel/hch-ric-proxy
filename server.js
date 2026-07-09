@@ -1002,9 +1002,8 @@ try {
     }catch(e){
       if(tsCache.data){result.tripleseat=tsCache.data;result.sources.tripleseat="live";console.log("TS timeout — using stale cache");}
       else{console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
-    }
+    
   }
-}
 
   // OpenTable — reservations & covers for the day
   try{
@@ -1018,7 +1017,6 @@ try {
     result.opentable=null; result.sources.opentable=`error: ${e.message}`;
   }
 
-  res.json({ok:true,...result});
   res.json({ok:true,...result});
 });
 
