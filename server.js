@@ -1001,8 +1001,8 @@ try {
       result.tripleseat=ts; result.sources.tripleseat="live";
     }catch(e){
       if(tsCache.data){result.tripleseat=tsCache.data;result.sources.tripleseat="live";console.log("TS timeout — using stale cache");}
-      else{console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
-    
+     else{console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
+    }
   }
 
   // OpenTable — reservations & covers for the day
