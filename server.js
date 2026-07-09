@@ -30,10 +30,13 @@ const MC_AUDIENCE_ID       = process.env.MAILCHIMP_AUDIENCE_ID;
 const TS_CLIENT_ID         = process.env.TRIPLESEAT_CLIENT_ID;
 const TS_CLIENT_SECRET     = process.env.TRIPLESEAT_CLIENT_SECRET;
 const TS_REDIRECT_URI      = "https://ric.up.railway.app/auth/tripleseat/callback";
+const OT_CLIENT_ID         = process.env.OPENTABLE_CLIENT_ID;
+const OT_CLIENT_SECRET     = process.env.OPENTABLE_CLIENT_SECRET;
 const RAILWAY_API_TOKEN      = process.env.RAILWAY_API_TOKEN;
 const RAILWAY_PROJECT_ID     = process.env.RAILWAY_PROJECT_ID;
 const RAILWAY_SERVICE_ID     = process.env.RAILWAY_SERVICE_ID;
 const RAILWAY_ENVIRONMENT_ID = process.env.RAILWAY_ENVIRONMENT_ID;
+
 
 app.use(cors({ origin: "*", methods: ["GET","POST","OPTIONS"], allowedHeaders: ["Content-Type","Authorization"] }));
 app.options("*", cors());
@@ -514,6 +517,22 @@ async function fetchTripleSeat() {
   tsCache = { data: result, fetchedAt: Date.now() };
   console.log(`TripleSeat: fetched live data, pipeline=$${result.total_pipeline}, events=${result.event_count_upcoming}`);
   return result;
+}
+// ── OpenTable ─────────────────────────────────────────────────────────────────
+async function getOpenTableToken() {
+  const creds = Buffer.from(`${OT_CLIENT_ID}:${OT_CLIENT_SECRET}`).toString("base64");
+  const res = await fetchWithRetry(
+    "https://oauth.opentable.com/api/v2/oauth/token?grant_type=client_credentials",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${creds}`,
+        "Content-Length": "0",
+      },
+    }
+  );
+  if (!res.ok) throw new Error(`OpenTable auth failed: ${res.status}`);
+  return (await res.json()).access_token;
 }
 async function getGoTabToken() {
   const res = await fetchWithRetry("https://gotab.io/api/oauth/token", {
