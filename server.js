@@ -1004,7 +1004,21 @@ try {
       else{console.error("TripleSeat failed:",e.message);result.tripleseat=null;result.sources.tripleseat=`error: ${e.message}`;}
     }
   }
+}
 
+  // OpenTable — reservations & covers for the day
+  try{
+    const ot=await Promise.race([
+      fetchOpenTable(date),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error("OpenTable timeout")),12000)),
+    ]);
+    result.opentable=ot; result.sources.opentable="live";
+  }catch(e){
+    console.error("OpenTable failed:",e.message);
+    result.opentable=null; result.sources.opentable=`error: ${e.message}`;
+  }
+
+  res.json({ok:true,...result});
   res.json({ok:true,...result});
 });
 
