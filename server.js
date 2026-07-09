@@ -32,6 +32,7 @@ const TS_CLIENT_SECRET     = process.env.TRIPLESEAT_CLIENT_SECRET;
 const TS_REDIRECT_URI      = "https://ric.up.railway.app/auth/tripleseat/callback";
 const OT_CLIENT_ID         = process.env.OPENTABLE_CLIENT_ID;
 const OT_CLIENT_SECRET     = process.env.OPENTABLE_CLIENT_SECRET;
+const OT_RID               = process.env.OPENTABLE_RID;
 const RAILWAY_API_TOKEN      = process.env.RAILWAY_API_TOKEN;
 const RAILWAY_PROJECT_ID     = process.env.RAILWAY_PROJECT_ID;
 const RAILWAY_SERVICE_ID     = process.env.RAILWAY_SERVICE_ID;
@@ -534,6 +535,40 @@ async function getOpenTableToken() {
   if (!res.ok) throw new Error(`OpenTable auth failed: ${res.status}`);
   return (await res.json()).access_token;
 }
+async function fetchOpenTable(date) {
+  const token = await getOpenTableToken();
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`,
+    "Cache-Control": "no-cache",
+  };
+
+  const from = `${date}T00:00:00`;
+  const to   = `${date}T23:59:59`;
+  let url = `https://platform.opentable.com/sync/v2/reservations?rid=${OT_RID}&limit=1000&offset=0&scheduled_time_from=${from}&scheduled_time_to=${to}`;
+
+  let items = [];
+  let guard = 0;
+  while (url && guard < 10) {
+    const res = await fetchWithRetry(url, { headers });
+    if (!res.ok) throw new Error(`OpenTable reservations failed: ${res.status}`);
+    const data = await res.json();
+    items = items.concat(data.items || []);
+    url = data.hasNextPage ? data.nextPageUrl : null;
+    guard++;
+  }
+
+  let covers = 0, reservation_count = 0, cancelled_count = 0, no_show_count = 0;
+  for (const r of items) {
+    const state = (r.state || "").toLowerCase();
+    if (state === "cancelled") { cancelled_count++; continue; }
+    if (state === "no_show" || state === "no-show" || state === "noshow") { no_show_count++; continue; }
+    reservation_count++;
+    covers += r.party_size || 0;
+  }
+
+  return { reservation_count, covers, cancelled_count, no_show_count, data_as_of: nowET() };
+}
 async function getGoTabToken() {
   const res = await fetchWithRetry("https://gotab.io/api/oauth/token", {
     method: "POST", headers: { "Content-Type": "application/json" },
@@ -867,6 +902,11 @@ app.get("/api/marginedge",async(req,res)=>{
   catch(err){console.error("MarginEdge error:",err.message);res.status(500).json({ok:false,error:err.message});}
 });
 
+app.get("/api/opentable",async(req,res)=>{
+  try{res.json({ok:true,source:"opentable_live",date:req.query.date||today(),...await fetchOpenTable(req.query.date||today())});}
+  catch(err){console.error("OpenTable error:",err.message);res.status(500).json({ok:false,error:err.message});}
+});
+ 
 app.get("/api/ric",async(req,res)=>{
   const date=req.query.date||today(), result={date,sources:{}};
 
