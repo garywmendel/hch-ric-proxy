@@ -327,7 +327,6 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
   <div class="future-panel">
     <div class="future-title">Coming online — additional intelligence metrics</div>
     <div class="future-grid">
-      <div class="future-item"><div class="future-src">OpenTable</div><div class="future-metrics">Revenue per cover<br>Table turn time<br>No-show rate</div></div>
       <div class="future-item"><div class="future-src">GA4</div><div class="future-metrics">Online order conversion<br>Digital revenue attribution<br>Search visibility</div></div>
       <div class="future-item"><div class="future-src">Marqii</div><div class="future-metrics">Rating trend<br>Review sentiment score<br>Competitor delta</div></div>
       <div class="future-item"><div class="future-src">DoorDash</div><div class="future-metrics">Delivery margin after fees<br>Avg order value trend<br>Cancellation rate</div></div>
@@ -386,8 +385,9 @@ LIVE sources currently connected:
 - TripleSeat: private dining & events — today's events, this week's events, confirmed/tentative pipeline, open leads. Flag if any events are happening today. Note guest counts for staffing awareness.
 - 7Shifts: labor hours, labor cost, overtime, shift count
 - Yelp: current star rating, total review count, price tier
+- OpenTable: reservation count, covers booked, cancellations, no-shows for the day. Cross-check covers against GoTab net sales for revenue-per-cover, and against 7Shifts labor hours for reservation-to-staffing efficiency.
 
-PENDING sources (integrations in progress): OpenTable, GA4, Microsoft 365, Marqii, DoorDash.
+PENDING sources (integrations in progress): GA4, Microsoft 365, Marqii, DoorDash.
 
 Only data from live sources is included in reports. Do not fabricate or estimate data for pending sources.
 
@@ -405,6 +405,7 @@ Industry benchmarks to reference where relevant:
 - Email open rate: 25%+ healthy, <20% concerning
 - Email CTOR: 10-15% healthy
 - Yelp rating: 4.0+ strong, 3.5-3.9 average, below 3.5 concerning for search visibility
+- No-show rate: under 5% healthy, 5-10% average, above 10% concerning
 
 Write for a GM reading at 7am. Be direct, specific, numeric. No fluff, no hedging, no narrative filler. Each anchor is one short sentence. Flag anomalies clearly with $ and %.`;
 
@@ -757,7 +758,7 @@ async function runSync(){
   document.getElementById("live-flags").innerHTML="";
   SYSTEMS.forEach(s=>updDot(s.id,"idle"));
   fetchedData={};sourceMap={};
-updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");updDot("7shifts","sync");updDot("yelp","sync");  btn.textContent="Fetching live data...";
+updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");updDot("7shifts","sync");updDot("yelp","sync");updDot("opentable","sync");  btn.textContent="Fetching live data...";
   // Pre-warm TripleSeat cache (slow two-page fetch) in parallel with /api/ric
   const [ricRes, tsRes] = await Promise.allSettled([
     fetch("/api/ric").then(r=>r.ok?r.json():null).catch(()=>null),
@@ -810,6 +811,13 @@ async function generateReport(){
   const yelpCtx = yelp.rating
     ? `Yelp (live): ${yelp.rating} stars across ${yelp.review_count.toLocaleString()} total reviews. Price tier ${yelp.price||"n/a"}.`
     : "";
+  const ot=liveData.opentable||{};
+  const otNoShowPct = ot.reservation_count>0 ? ((ot.no_show_count/ot.reservation_count)*100).toFixed(1) : null;
+  const otRevPerCover = (ot.covers>0 && liveData.gotab?.net_sales) ? (liveData.gotab.net_sales/ot.covers).toFixed(2) : null;
+  const otCoversPerLaborHr = (ot.covers>0 && liveData["7shifts"]?.total_hours) ? (ot.covers/liveData["7shifts"].total_hours).toFixed(1) : null;
+  const otCtx = ot.data_as_of
+    ? `OpenTable (live): ${ot.reservation_count} reservations, ${ot.covers} covers, ${ot.cancelled_count} cancelled, ${ot.no_show_count} no-show${otNoShowPct?` (${otNoShowPct}% no-show rate)`:""}.${otRevPerCover?` Revenue per cover (GoTab net sales ÷ OpenTable covers): $${otRevPerCover}.`:""}${otCoversPerLaborHr?` Covers per labor hour (reservation-to-staffing efficiency): ${otCoversPerLaborHr}.`:""}`
+    : "OpenTable: data unavailable.";
   const meCtx=me.invoice_count>0
     ?`MarginEdge 7-day rolling (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)}. Food $${(me.cogs?.food||0).toFixed(2)}. Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
     :"MarginEdge 7-day rolling (live): 0 invoices in last 7 days.";
@@ -855,6 +863,7 @@ ${mcCtx}
 ${tsCtx}
 ${s7Ctx}
 ${yelpCtx}
+${otCtx}
 
 IMPORTANT: MarginEdge COGS is a 7-day rolling window. For food cost % calculations, divide MarginEdge totals by GoTab 7-day net sales (NOT today's single-day GoTab). The Revenue snapshot section uses today's GoTab. The Food cost section MUST use 7-day vs 7-day.
 
@@ -880,6 +889,8 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
 (Anchor on: campaign open/click vs benchmark, list growth direction, momentum signal)
 ### Reputation
 (Anchor on: current Yelp rating vs industry benchmark, review volume context, implication for search visibility or guest perception)
+### Reservations & covers
+(Anchor on: covers booked vs GoTab tab count, no-show rate vs benchmark, revenue-per-cover or covers-per-labor-hour efficiency signal)
 ### Watch list
 (Anchor on: top 3 anomalies or risks for the next 24-48 hours, each with a specific number)`;
 
@@ -913,6 +924,7 @@ function renderFlags(){
   if(d.gotab?.comps>0&&d.gotab?.net_sales>0&&(d.gotab.comps/d.gotab.net_sales)>0.015) flags.push({t:"warn",l:`Comps ${((d.gotab.comps/d.gotab.net_sales)*100).toFixed(1)}% — review`});
   if(d.mailchimp?.open_rate_30d&&d.mailchimp.open_rate_30d<20) flags.push({t:"warn",l:`Email open rate ${d.mailchimp.open_rate_30d}% — below 20% threshold`});
   if(d.mailchimp?.net_list_growth_30d<0) flags.push({t:"warn",l:`Email list shrinking — ${d.mailchimp.net_list_growth_30d} net change (30d)`});
+  if(d.opentable?.reservation_count>0&&(d.opentable.no_show_count/d.opentable.reservation_count)>0.1) flags.push({t:"warn",l:`No-show rate ${((d.opentable.no_show_count/d.opentable.reservation_count)*100).toFixed(1)}% — above 10% threshold`});
   if(flags.filter(f=>f.t!=="info").length===0) flags.push({t:"ok",l:"All live metrics within threshold"});
   document.getElementById("live-flags").innerHTML=flags.map(f=>`<span class="flag ${f.t}">${f.l}</span>`).join("");
 }
@@ -961,6 +973,7 @@ async function askQ(){
     mailchimp: liveData.mailchimp?{total_subscribers:liveData.mailchimp.total_subscribers,open_rate_30d:liveData.mailchimp.open_rate_30d,click_rate_30d:liveData.mailchimp.click_rate_30d,recent_campaigns:liveData.mailchimp.recent_campaigns?.slice(0,3)}:null,
     tripleseat: liveData.tripleseat?{confirmed_revenue:liveData.tripleseat.confirmed_revenue,tentative_revenue:liveData.tripleseat.tentative_revenue,total_pipeline:liveData.tripleseat.total_pipeline,confirmed_count:liveData.tripleseat.confirmed_count,open_leads:liveData.tripleseat.open_leads,upcoming_events:liveData.tripleseat.upcoming_events?.slice(0,5)}:null,
     "7shifts": liveData["7shifts"]?{total_hours:liveData["7shifts"].total_hours,total_labor_cost:liveData["7shifts"].total_labor_cost,labor_pct:liveData["7shifts"].labor_pct,shift_count:liveData["7shifts"].shift_count,overtime_hours:liveData["7shifts"].overtime_hours}:null,
+    opentable: liveData.opentable?{reservation_count:liveData.opentable.reservation_count,covers:liveData.opentable.covers,cancelled_count:liveData.opentable.cancelled_count,no_show_count:liveData.opentable.no_show_count}:null,
   };
   const ctx=lastReport?`Today's report:\n${lastReport}\n\nLive data:\n${JSON.stringify(trimmedData,null,2)}\n\n`:`Live data:\n${JSON.stringify(trimmedData,null,2)}\n\n`;
   try{
