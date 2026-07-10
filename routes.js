@@ -26,6 +26,8 @@ import {
   getCachedVendors,
   syncAllVendorItems,
   syncVendorItemsForVendor,
+  startVendorItemsSyncBackground,
+  getVendorItemsSyncStatus,
   getCachedVendorItems,
   suggestSkuConfigEntries,
 } from './marginEdgeProducts.js';
@@ -308,17 +310,26 @@ router.get('/marginedge/vendors', (req, res) => {
   res.json(getCachedVendors());
 });
 
+// Kicks off the full vendor-items sync in the BACKGROUND and returns
+// immediately — the previous synchronous version could run for minutes
+// across ~50 vendors and risk a proxy/upstream timeout before finishing.
+// Poll GET /marginedge/sync-vendor-items/status for progress.
 router.post('/marginedge/sync-vendor-items', async (req, res) => {
   try {
     const deps = meDeps(req);
     if (meDepsMissing(deps)) {
       return res.status(501).json({ error: 'MarginEdge deps not wired into app.locals yet.' });
     }
-    res.json(await syncAllVendorItems(deps));
+    const status = startVendorItemsSyncBackground(deps);
+    res.status(202).json({ message: 'Sync started in background. Poll /marginedge/sync-vendor-items/status for progress.', ...status });
   } catch (err) {
     console.error('[ppc/marginedge/sync-vendor-items] error', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+router.get('/marginedge/sync-vendor-items/status', (req, res) => {
+  res.json(getVendorItemsSyncStatus());
 });
 
 // Sync just ONE vendor's items+packaging — safer/faster for testing before
