@@ -114,7 +114,12 @@ export async function syncVendorItemsForVendor(deps, vendorId) {
   // Packaging is a separate call per vendor item. Throttled to 3 concurrent
   // requests — firing all of them at once (Promise.all on the full list)
   // is what caused the 429 rate-limit errors on vendors with many items.
+  // Items with no vendorItemCode can't be looked up (malformed URL would
+  // silently fail into empty packaging) — skip them explicitly instead.
   const withPackaging = await mapWithConcurrency(items, 3, async (item) => {
+    if (!item.vendorItemCode) {
+      return { ...item, packaging: [], packaging_skipped_reason: 'no vendorItemCode' };
+    }
     try {
       const packaging = await paginatedGet(
         deps,
@@ -124,7 +129,7 @@ export async function syncVendorItemsForVendor(deps, vendorId) {
       return { ...item, packaging };
     } catch (err) {
       console.error(`[marginEdgeProducts] packaging fetch failed for ${item.vendorItemCode}:`, err.message);
-      return { ...item, packaging: [] };
+      return { ...item, packaging: [], packaging_error: err.message };
     }
   });
 
