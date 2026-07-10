@@ -147,12 +147,22 @@ export async function syncAllVendorItems(deps) {
     throw new Error('No cached vendors — call syncVendors first.');
   }
   const results = {};
+  const errors = [];
   for (const vendor of vendors) {
     const vendorId = vendor.vendorId || vendor.id;
-    results[vendorId] = await syncVendorItemsForVendor(deps, vendorId);
+    try {
+      results[vendorId] = await syncVendorItemsForVendor(deps, vendorId);
+    } catch (err) {
+      // Don't let one vendor's failure (404, unexpected shape, persistent
+      // rate limit, etc.) kill the whole batch — log it and move on to the
+      // rest. Previously an unhandled error here silently stopped the loop
+      // after only a handful of vendors.
+      console.error(`[marginEdgeProducts] vendor ${vendorId} (${vendor.vendorName || 'unknown'}) failed:`, err.message);
+      errors.push({ vendorId, vendorName: vendor.vendorName, error: err.message });
+    }
     await new Promise((r) => setTimeout(r, 300)); // small buffer between vendors
   }
-  return results;
+  return { results, errors, vendorsProcessed: Object.keys(results).length, vendorsFailed: errors.length, vendorsTotal: vendors.length };
 }
 
 export function getCachedVendorItems() {
