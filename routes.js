@@ -249,6 +249,24 @@ router.get('/marginedge/products', (req, res) => {
   res.json(getCachedProducts());
 });
 
+// Diagnostic only — returns MarginEdge's raw, unparsed response for one page
+// of /products, so the actual key names can be confirmed directly instead
+// of guessing. Not used by any other part of the pipeline.
+router.get('/marginedge/debug-products-raw', async (req, res) => {
+  try {
+    const deps = meDeps(req);
+    if (meDepsMissing(deps)) {
+      return res.status(501).json({ error: 'MarginEdge deps not wired into app.locals yet.' });
+    }
+    const url = `https://api.marginedge.com/public/products?restaurantUnitId=${deps.MARGINEDGE_TENANT_ID}&page=0&pageSize=5`;
+    const r = await deps.fetchWithRetry(url, { headers: { 'X-Api-Key': deps.MARGINEDGE_API_KEY, Accept: 'application/json' } });
+    const json = await r.json();
+    res.json({ status: r.status, top_level_keys: Object.keys(json), raw: json });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/marginedge/sync-vendors', async (req, res) => {
   try {
     const deps = meDeps(req);
