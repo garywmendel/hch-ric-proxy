@@ -141,7 +141,22 @@ export async function syncVendorItemsForVendor(deps, vendorId) {
 }
 
 // Convenience: sync vendor items for ALL known vendors in one call.
-export async function syncAllVendorItems(deps) {
+const SYNC_STATUS_KEY = 'ppc_vendor_items_sync_status';
+
+export function getVendorItemsSyncStatus() {
+  return readJSON(SYNC_STATUS_KEY, {
+    running: false,
+    vendorsProcessed: 0,
+    vendorsTotal: 0,
+    vendorsFailed: 0,
+    errors: [],
+    startedAt: null,
+    finishedAt: null,
+  });
+}
+
+// onProgress: optional callback invoked after each vendor, for status tracking.
+export async function syncAllVendorItems(deps, onProgress) {
   const vendors = getCachedVendors().rows;
   if (vendors.length === 0) {
     throw new Error('No cached vendors — call syncVendors first.');
@@ -153,16 +168,62 @@ export async function syncAllVendorItems(deps) {
     try {
       results[vendorId] = await syncVendorItemsForVendor(deps, vendorId);
     } catch (err) {
-      // Don't let one vendor's failure (404, unexpected shape, persistent
-      // rate limit, etc.) kill the whole batch — log it and move on to the
-      // rest. Previously an unhandled error here silently stopped the loop
-      // after only a handful of vendors.
       console.error(`[marginEdgeProducts] vendor ${vendorId} (${vendor.vendorName || 'unknown'}) failed:`, err.message);
       errors.push({ vendorId, vendorName: vendor.vendorName, error: err.message });
+    }
+    if (onProgress) {
+      onProgress({
+        vendorsProcessed: Object.keys(results).length + errors.length,
+        vendorsTotal: vendors.length,
+        vendorsFailed: errors.length,
+        errors,
+      });
     }
     await new Promise((r) => setTimeout(r, 300)); // small buffer between vendors
   }
   return { results, errors, vendorsProcessed: Object.keys(results).length, vendorsFailed: errors.length, vendorsTotal: vendors.length };
+}
+
+// Kicks off the sync WITHOUT waiting for it to finish — returns immediately
+// so the HTTP request doesn't stay open for minutes and risk a proxy
+// timeout ("upstream error"). Progress is written to storage as it goes;
+// check it via getVendorItemsSyncStatus() / GET /marginedge/sync-vendor-items/status.
+export function startVendorItemsSyncBackground(deps) {
+  const vendorsTotal = getCachedVendors().rows.length;
+  const status = {
+    running: true,
+    vendorsProcessed: 0,
+    vendorsTotal,
+    vendorsFailed: 0,
+    errors: [],
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+  };
+  writeJSON(SYNC_STATUS_KEY, status);
+
+  // Deliberately not awaited — this continues running after the route
+  // that called this function has already returned its response.
+  syncAllVendorItems(deps, (progress) => {
+    writeJSON(SYNC_STATUS_KEY, { ...status, ...progress, running: true });
+  })
+    .then((final) => {
+      writeJSON(SYNC_STATUS_KEY, {
+        running: false,
+        ...final,
+        startedAt: status.startedAt,
+        finishedAt: new Date().toISOString(),
+      });
+    })
+    .catch((err) => {
+      writeJSON(SYNC_STATUS_KEY, {
+        running: false,
+        error: err.message,
+        startedAt: status.startedAt,
+        finishedAt: new Date().toISOString(),
+      });
+    });
+
+  return status;
 }
 
 export function getCachedVendorItems() {
