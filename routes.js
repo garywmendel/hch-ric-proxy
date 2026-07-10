@@ -258,7 +258,7 @@ router.get('/marginedge/debug-products-raw', async (req, res) => {
     if (meDepsMissing(deps)) {
       return res.status(501).json({ error: 'MarginEdge deps not wired into app.locals yet.' });
     }
-    const url = `https://api.marginedge.com/public/products?restaurantUnitId=${deps.MARGINEDGE_TENANT_ID}&page=0&pageSize=5`;
+    const url = `https://api.marginedge.com/public/products?restaurantUnitId=${deps.MARGINEDGE_TENANT_ID}`;
     const r = await deps.fetchWithRetry(url, { headers: { 'X-Api-Key': deps.MARGINEDGE_API_KEY, Accept: 'application/json' } });
     const json = await r.json();
     res.json({ status: r.status, top_level_keys: Object.keys(json), raw: json });

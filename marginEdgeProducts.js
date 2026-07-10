@@ -29,14 +29,21 @@ function headers(apiKey) {
 // resourceKeys: possible key names MarginEdge might nest results under for
 // this specific endpoint (e.g. "products", "vendors") — checked before the
 // generic items/data fallback, since your working fetchMarginEdge orders
-// call confirms MarginEdge nests results under a resource-named key
-// (ordersJson.orders), not a generic envelope.
+// call confirms MarginEdge nests results under a resource-named key.
+//
+// Pagination: CONFIRMED cursor-based via a `nextPage` token in the response
+// (not page/pageSize — verified via debug-products-raw, which showed the
+// server ignoring page/pageSize params entirely and returning a `nextPage`
+// cursor instead). Each response's `nextPage` value gets passed back as a
+// query param on the next request; absence of `nextPage` means done.
 async function paginatedGet(deps, path, resourceKeys = []) {
   const results = [];
-  let page = 0;
-  let hasMore = true;
-  while (hasMore) {
-    const url = `${BASE}${path}${path.includes('?') ? '&' : '?'}restaurantUnitId=${deps.MARGINEDGE_TENANT_ID}&page=${page}&pageSize=100`;
+  let cursor = null;
+  let guard = 0;
+  while (true) {
+    const sep = path.includes('?') ? '&' : '?';
+    const cursorParam = cursor ? `&nextPage=${encodeURIComponent(cursor)}` : '';
+    const url = `${BASE}${path}${sep}restaurantUnitId=${deps.MARGINEDGE_TENANT_ID}${cursorParam}`;
     const res = await deps.fetchWithRetry(url, { headers: headers(deps.MARGINEDGE_API_KEY) });
     if (!res.ok) throw new Error(`MarginEdge ${path} failed: ${res.status}`);
     const json = await res.json();
@@ -48,16 +55,15 @@ async function paginatedGet(deps, path, resourceKeys = []) {
     if (!items) items = json.items || json.data || json.content || json.results || (Array.isArray(json) ? json : null);
 
     if (!items) {
-      // Nothing matched — log the actual top-level keys so the real shape
-      // is visible in Railway logs instead of silently returning empty.
       console.error(`[marginEdgeProducts] ${path}: no known result key found. Top-level keys:`, Object.keys(json));
       items = [];
     }
 
     results.push(...items);
-    hasMore = items.length === 100;
-    page++;
-    if (page > 50) break;
+    cursor = json.nextPage || null;
+    guard++;
+
+    if (!cursor || items.length === 0 || guard > 200) break;
   }
   return results;
 }
