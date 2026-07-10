@@ -1,16 +1,18 @@
-
 // storage.js
-// Generic JSON-file persistence for PPC module, following the same pattern
-// already established for tokens.json: write to Railway Volume at /data if
-// mounted, fall back to local ./data for dev.
+// Generic JSON-file persistence for the PPC module. Follows the same pattern
+// as your existing tokens.json approach: write to a Railway Volume at /data
+// if mounted, fall back to local ./data for dev.
 //
-// IMPORTANT: If you have not yet mounted a Railway Volume at /data, do that
-// first (Settings > Volumes on the service). Without it, anything written
-// here is wiped on every redeploy — same lesson learned from the tokens.json
-// issue.
+// IMPORTANT: If you haven't mounted a Railway Volume at /data, do that first
+// (Settings > Volumes on the service). Without it, anything written here is
+// wiped on every redeploy.
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const DATA_DIR = fs.existsSync('/data') ? '/data' : path.join(__dirname, 'data');
 
@@ -22,7 +24,7 @@ function filePath(key) {
   return path.join(DATA_DIR, `${key}.json`);
 }
 
-function readJSON(key, fallback) {
+export function readJSON(key, fallback) {
   const fp = filePath(key);
   if (!fs.existsSync(fp)) return fallback;
   try {
@@ -33,11 +35,11 @@ function readJSON(key, fallback) {
   }
 }
 
-function writeJSON(key, data) {
+export function writeJSON(key, data) {
   const fp = filePath(key);
   const tmp = `${fp}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
   fs.renameSync(tmp, fp); // atomic-ish swap, avoids partial writes on crash
 }
 
-module.exports = { readJSON, writeJSON, DATA_DIR };
+export { DATA_DIR };
