@@ -26,30 +26,44 @@ function headers(apiKey) {
 }
 
 // deps: { fetchWithRetry, MARGINEDGE_API_KEY, MARGINEDGE_TENANT_ID }
-async function paginatedGet(deps, path) {
+// resourceKeys: possible key names MarginEdge might nest results under for
+// this specific endpoint (e.g. "products", "vendors") — checked before the
+// generic items/data fallback, since your working fetchMarginEdge orders
+// call confirms MarginEdge nests results under a resource-named key
+// (ordersJson.orders), not a generic envelope.
+async function paginatedGet(deps, path, resourceKeys = []) {
   const results = [];
   let page = 0;
   let hasMore = true;
-  // Following the "Pagination" pattern documented in the same API guide —
-  // adjust `page`/`pageSize` param names here if MarginEdge's actual
-  // pagination convention differs (the guide's Pagination page would confirm
-  // exact param names; using common `page`/`pageSize` as a starting default).
   while (hasMore) {
     const url = `${BASE}${path}${path.includes('?') ? '&' : '?'}restaurantUnitId=${deps.MARGINEDGE_TENANT_ID}&page=${page}&pageSize=100`;
     const res = await deps.fetchWithRetry(url, { headers: headers(deps.MARGINEDGE_API_KEY) });
     if (!res.ok) throw new Error(`MarginEdge ${path} failed: ${res.status}`);
     const json = await res.json();
-    const items = json.items || json.data || (Array.isArray(json) ? json : []);
+
+    let items = null;
+    for (const key of resourceKeys) {
+      if (Array.isArray(json[key])) { items = json[key]; break; }
+    }
+    if (!items) items = json.items || json.data || json.content || json.results || (Array.isArray(json) ? json : null);
+
+    if (!items) {
+      // Nothing matched — log the actual top-level keys so the real shape
+      // is visible in Railway logs instead of silently returning empty.
+      console.error(`[marginEdgeProducts] ${path}: no known result key found. Top-level keys:`, Object.keys(json));
+      items = [];
+    }
+
     results.push(...items);
-    hasMore = items.length === 100; // stop when a page comes back short
+    hasMore = items.length === 100;
     page++;
-    if (page > 50) break; // safety guard against an infinite loop if pagination shape differs
+    if (page > 50) break;
   }
   return results;
 }
 
 export async function syncProducts(deps) {
-  const products = await paginatedGet(deps, '/products');
+  const products = await paginatedGet(deps, '/products', ['products']);
   writeJSON(PRODUCTS_KEY, { synced_at: new Date().toISOString(), rows: products });
   return products;
 }
@@ -59,7 +73,7 @@ export function getCachedProducts() {
 }
 
 export async function syncVendors(deps) {
-  const vendors = await paginatedGet(deps, '/vendors');
+  const vendors = await paginatedGet(deps, '/vendors', ['vendors']);
   writeJSON(VENDORS_KEY, { synced_at: new Date().toISOString(), rows: vendors });
   return vendors;
 }
@@ -71,7 +85,7 @@ export function getCachedVendors() {
 // Vendor items + packaging, per vendor. This is what answers "which vendor
 // sells this product, in what package size" — the SKU→vendor mapping.
 export async function syncVendorItemsForVendor(deps, vendorId) {
-  const items = await paginatedGet(deps, `/vendors/${vendorId}/vendorItems`);
+  const items = await paginatedGet(deps, `/vendors/${vendorId}/vendorItems`, ['vendorItems']);
 
   // Packaging is a separate call per vendor item — fetch in parallel per
   // vendor rather than serially, since this can be a lot of items.
@@ -80,7 +94,8 @@ export async function syncVendorItemsForVendor(deps, vendorId) {
       try {
         const packaging = await paginatedGet(
           deps,
-          `/vendors/${vendorId}/vendorItems/${item.vendorItemCode}/packaging`
+          `/vendors/${vendorId}/vendorItems/${item.vendorItemCode}/packaging`,
+          ['packaging']
         );
         return { ...item, packaging };
       } catch (err) {
