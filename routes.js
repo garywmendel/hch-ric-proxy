@@ -268,6 +268,29 @@ router.get('/marginedge/debug-products-raw', async (req, res) => {
   }
 });
 
+// Diagnostic only — raw packaging response for one specific vendor item,
+// to confirm whether empty packaging is real data or a parsing mismatch.
+router.get('/marginedge/debug-packaging-raw', async (req, res) => {
+  try {
+    const deps = meDeps(req);
+    if (meDepsMissing(deps)) {
+      return res.status(501).json({ error: 'MarginEdge deps not wired into app.locals yet.' });
+    }
+    const { vendorId, vendorItemCode } = req.query;
+    if (!vendorId || !vendorItemCode) {
+      return res.status(400).json({ error: 'vendorId and vendorItemCode query params required' });
+    }
+    const url = `https://api.marginedge.com/public/vendors/${vendorId}/vendorItems/${vendorItemCode}/packaging?restaurantUnitId=${deps.MARGINEDGE_TENANT_ID}`;
+    const r = await deps.fetchWithRetry(url, { headers: { 'X-Api-Key': deps.MARGINEDGE_API_KEY, Accept: 'application/json' } });
+    const text = await r.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
+    res.json({ status: r.status, top_level_keys: typeof parsed === 'object' ? Object.keys(parsed) : null, raw: parsed });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/marginedge/sync-vendors', async (req, res) => {
   try {
     const deps = meDeps(req);
