@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import ppcRoutes from "./routes.js";
  
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app  = express();
@@ -791,7 +792,19 @@ async function fetchMarginEdge(date) {
  return {invoice_count:orders.length,pending_invoices:0,cogs,food_cost_pct:null,total_cogs_pct:null,window:"7d",data_as_of:nowET()};
 }
 
+// ── PPC module wiring ─────────────────────────────────────────────────────────
+// Exposes existing GoTab/MarginEdge functions + constants to routes.js via
+// app.locals, so the PPC module can reuse them instead of duplicating auth.
+app.locals.getGoTabToken = getGoTabToken;
+app.locals.goTabQuery = goTabQuery;
+app.locals.fetchWithRetry = fetchWithRetry;
+app.locals.GOTAB_LOCATION_UUID = GOTAB_LOCATION_UUID;
+app.locals.MARGINEDGE_API_KEY = MARGINEDGE_API_KEY;
+app.locals.MARGINEDGE_TENANT_ID = MARGINEDGE_TENANT_ID;
+
 // ── Routes ────────────────────────────────────────────────────────────────────
+
+app.use("/api/ppc", ppcRoutes);
 
 app.post("/api/pin",express.json(),(req,res)=>{
   const correct=process.env.RIC_PIN||"000000";
