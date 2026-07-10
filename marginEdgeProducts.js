@@ -25,6 +25,24 @@ function headers(apiKey) {
   return { 'X-Api-Key': apiKey, Accept: 'application/json' };
 }
 
+// Runs fn over items with at most `limit` concurrent in-flight calls, rather
+// than firing everything at once (Promise.all on a large array). This is
+// what caused the 429s: fetching packaging for every vendor item in a
+// vendor simultaneously overwhelmed MarginEdge's rate limit.
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length);
+  let idx = 0;
+  async function worker() {
+    while (idx < items.length) {
+      const current = idx++;
+      results[current] = await fn(items[current], current);
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
 // deps: { fetchWithRetry, MARGINEDGE_API_KEY, MARGINEDGE_TENANT_ID }
 // resourceKeys: possible key names MarginEdge might nest results under for
 // this specific endpoint (e.g. "products", "vendors") — checked before the
@@ -44,7 +62,7 @@ async function paginatedGet(deps, path, resourceKeys = []) {
     const sep = path.includes('?') ? '&' : '?';
     const cursorParam = cursor ? `&nextPage=${encodeURIComponent(cursor)}` : '';
     const url = `${BASE}${path}${sep}restaurantUnitId=${deps.MARGINEDGE_TENANT_ID}${cursorParam}`;
-    const res = await deps.fetchWithRetry(url, { headers: headers(deps.MARGINEDGE_API_KEY) });
+    const res = await deps.fetchWithRetry(url, { headers: headers(deps.MARGINEDGE_API_KEY) }, 3, 1500);
     if (!res.ok) throw new Error(`MarginEdge ${path} failed: ${res.status}`);
     const json = await res.json();
 
@@ -93,23 +111,22 @@ export function getCachedVendors() {
 export async function syncVendorItemsForVendor(deps, vendorId) {
   const items = await paginatedGet(deps, `/vendors/${vendorId}/vendorItems`, ['vendorItems']);
 
-  // Packaging is a separate call per vendor item — fetch in parallel per
-  // vendor rather than serially, since this can be a lot of items.
-  const withPackaging = await Promise.all(
-    items.map(async (item) => {
-      try {
-        const packaging = await paginatedGet(
-          deps,
-          `/vendors/${vendorId}/vendorItems/${item.vendorItemCode}/packaging`,
-          ['packaging']
-        );
-        return { ...item, packaging };
-      } catch (err) {
-        console.error(`[marginEdgeProducts] packaging fetch failed for ${item.vendorItemCode}:`, err.message);
-        return { ...item, packaging: [] };
-      }
-    })
-  );
+  // Packaging is a separate call per vendor item. Throttled to 3 concurrent
+  // requests — firing all of them at once (Promise.all on the full list)
+  // is what caused the 429 rate-limit errors on vendors with many items.
+  const withPackaging = await mapWithConcurrency(items, 3, async (item) => {
+    try {
+      const packaging = await paginatedGet(
+        deps,
+        `/vendors/${vendorId}/vendorItems/${item.vendorItemCode}/packaging`,
+        ['packaging']
+      );
+      return { ...item, packaging };
+    } catch (err) {
+      console.error(`[marginEdgeProducts] packaging fetch failed for ${item.vendorItemCode}:`, err.message);
+      return { ...item, packaging: [] };
+    }
+  });
 
   const cache = readJSON(VENDOR_ITEMS_KEY, { synced_at: null, byVendor: {} });
   cache.byVendor[vendorId] = withPackaging;
@@ -128,6 +145,7 @@ export async function syncAllVendorItems(deps) {
   for (const vendor of vendors) {
     const vendorId = vendor.vendorId || vendor.id;
     results[vendorId] = await syncVendorItemsForVendor(deps, vendorId);
+    await new Promise((r) => setTimeout(r, 300)); // small buffer between vendors
   }
   return results;
 }
