@@ -124,7 +124,7 @@ export async function syncVendorItemsForVendor(deps, vendorId) {
       const packaging = await paginatedGet(
         deps,
         `/vendors/${vendorId}/vendorItems/${item.vendorItemCode}/packaging`,
-        ['packaging']
+        ['packagings']
       );
       return { ...item, packaging };
     } catch (err) {
@@ -161,36 +161,43 @@ export function getCachedVendorItems() {
 
 // Proposes sku_config entries from synced product + vendor item data —
 // PREVIEW ONLY, does not write to sku_config directly. Class, par level,
-// order days, and flex % still need human judgment (shelf life alone
-// doesn't tell you order cadence or how central an item is to the menu),
-// so this returns suggestions for review, matching the same "suggest,
-// don't auto-apply" pattern as the auto-shave feature.
+// order days, and flex % still need human judgment, so this returns
+// suggestions for review rather than auto-applying.
+//
+// Join key: companyConceptProductId, confirmed present on both /products
+// and vendorItems responses. (Not vendorItemCode — that field only exists
+// on the vendor-item side, products don't have it.)
 export function suggestSkuConfigEntries() {
   const products = getCachedProducts().rows;
   const vendorItemsCache = getCachedVendorItems().byVendor;
 
-  // Flip vendor items into a lookup by product/vendorItemCode so we can
-  // find packaging info per product.
-  const vendorItemByCode = {};
+  const vendorItemsByProductId = {};
   for (const vendorId of Object.keys(vendorItemsCache)) {
     for (const vi of vendorItemsCache[vendorId]) {
-      vendorItemByCode[vi.vendorItemCode] = { ...vi, vendorId };
+      const pid = vi.companyConceptProductId;
+      if (!pid) continue;
+      if (!vendorItemsByProductId[pid]) vendorItemsByProductId[pid] = [];
+      vendorItemsByProductId[pid].push({ ...vi, vendorId });
     }
   }
 
   return products.map((p) => {
-    const matchedVendorItem = vendorItemByCode[p.vendorItemCode] || null;
-    const packagingUnit = matchedVendorItem?.packaging?.[0]?.unit || null;
-    const packagingSize = matchedVendorItem?.packaging?.[0]?.size || null;
+    const pid = p.companyConceptProductId;
+    const matches = vendorItemsByProductId[pid] || [];
+    const primary = matches[0] || null; // first known vendor for this product, if any
+    const packagingUnit = primary?.packaging?.[0]?.unit || null;
+    const packagingQty = primary?.packaging?.[0]?.quantity || null;
 
     return {
-      sku_id: p.productId || p.id,
-      name: p.name,
-      suggested_purchase_unit: packagingUnit,
-      suggested_conversion_hint: packagingSize
-        ? `Confirm: 1 ${packagingUnit} = ${packagingSize} recipe units`
-        : 'No packaging data found — confirm manually',
-      vendor_id: matchedVendorItem?.vendorId || null,
+      sku_id: pid,
+      name: p.productName,
+      reported_unit: p.reportByUnit || null, // direct from product data, often usable as-is
+      suggested_purchase_unit: packagingUnit || p.reportByUnit || null,
+      suggested_conversion_hint: packagingQty
+        ? `Confirm: 1 ${packagingUnit} = ${packagingQty} recipe units`
+        : 'No vendor packaging data found — reportByUnit may suffice, confirm manually',
+      vendor_id: primary?.vendorId || null,
+      vendor_options_count: matches.length, // >1 means multiple vendors sell this product
       needs_review: {
         class: true, // no signal for this yet — human call
         par_level: true,
