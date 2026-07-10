@@ -25,6 +25,7 @@ import {
   syncVendors,
   getCachedVendors,
   syncAllVendorItems,
+  syncVendorItemsForVendor,
   getCachedVendorItems,
   suggestSkuConfigEntries,
 } from './marginEdgeProducts.js';
@@ -293,6 +294,22 @@ router.post('/marginedge/sync-vendor-items', async (req, res) => {
     res.json(await syncAllVendorItems(deps));
   } catch (err) {
     console.error('[ppc/marginedge/sync-vendor-items] error', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Sync just ONE vendor's items+packaging — safer/faster for testing before
+// committing to the full ~40-vendor batch, which can take a while given
+// per-item packaging calls (even throttled).
+router.post('/marginedge/sync-vendor-items/:vendorId', async (req, res) => {
+  try {
+    const deps = meDeps(req);
+    if (meDepsMissing(deps)) {
+      return res.status(501).json({ error: 'MarginEdge deps not wired into app.locals yet.' });
+    }
+    res.json(await syncVendorItemsForVendor(deps, req.params.vendorId));
+  } catch (err) {
+    console.error('[ppc/marginedge/sync-vendor-items/:vendorId] error', err);
     res.status(500).json({ error: err.message });
   }
 });
