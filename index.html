@@ -798,8 +798,18 @@ async function generateReport(){
   let elapsed=0;
   const now=new Date();
   const etH=parseInt(now.toLocaleString("en-US",{timeZone:"America/New_York",hour:"numeric",hour12:false}));
-  const svc=etH>=12?"Restaurant is OPEN (12:00 PM ET).":"Restaurant NOT yet open (opens 12:00 PM ET). Pre-noon revenue is catering/events only.";
+  const etM=parseInt(now.toLocaleString("en-US",{timeZone:"America/New_York",minute:"numeric"}));
+  const isOpen=etH>=12;
+  const hoursUntilOpen=isOpen?0:+(((12*60)-(etH*60+etM))/60).toFixed(1);
+  const hoursSinceOpen=isOpen?+(((etH*60+etM)-(12*60))/60).toFixed(1):0;
   const liveData=Object.fromEntries(Object.entries(fetchedData).filter(([k,v])=>sourceMap[k]==="live"&&v!=null));
+  const gtNet=liveData.gotab?.net_sales||0;
+  const gtBar=liveData.gotab?.bar_sales||0;
+  const gtCatering=liveData.gotab?.catering_sales||0;
+  const gtOther=+(gtNet-gtBar-gtCatering).toFixed(2);
+  const svc=isOpen
+    ?`Restaurant is OPEN (12:00 PM ET) — currently ${hoursSinceOpen} hours into service.`
+    :`Restaurant NOT yet open — opens 12:00 PM ET, which is exactly ${hoursUntilOpen} hours from now (currently ${now.toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})} ET). Use ${hoursUntilOpen} as the hours-until-open figure verbatim — do not recalculate it. Pre-noon net sales of $${gtNet.toFixed(2)} break down as: catering $${gtCatering.toFixed(2)}, bar $${gtBar.toFixed(2)}, other/deferred $${gtOther.toFixed(2)} — use these exact category figures; do not characterize all pre-noon revenue as catering.`;
   const me=liveData.marginedge||{};
   const qb=liveData.quickbooks||{};
   const mc=liveData.mailchimp||{};
