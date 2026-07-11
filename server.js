@@ -619,6 +619,12 @@ async function getGoTabToken() {
   return (await res.json()).token;
 }
 
+function nextDay(dateStr) {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 async function fetchGoTabRange(startDate, endDate) {
   const token = await getGoTabToken();
   const dates = [];
@@ -633,7 +639,7 @@ async function fetchGoTabRange(startDate, endDate) {
       const gqlRes = await fetchWithRetry("https://gotab.io/api/v2/graph", {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID, date)),
+        body: JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID, date, nextDay(date))),
       });
       if (!gqlRes.ok) return null;
       const gqlData = await gqlRes.json();
@@ -651,12 +657,17 @@ async function fetchGoTabRange(startDate, endDate) {
   return { ...agg, window: "7d", days_covered: results.filter(r => r).length, data_as_of: nowET() };
 }
 
-function goTabQuery(locationUuid, fiscalDay) {
+// FIXED: previously only had a lower bound (greaterThan), meaning each day's
+// query in a multi-day range (fetchGoTabRange) returned that day's tabs
+// PLUS every subsequent day's tabs with no upper limit — summing 7 such
+// queries counted 28 day-equivalents into what should have been a 7-day
+// total (a 4x inflation). Now takes both a start and an exclusive end bound.
+function goTabQuery(locationUuid, fiscalDayStart, fiscalDayEnd) {
   return {
-    query: `query($locationUuid: String, $tabCreationDate: Datetime) {
+    query: `query($locationUuid: String, $tabCreationDateStart: Datetime, $tabCreationDateEnd: Datetime) {
         locations: locationsList(condition: { locationUuid: $locationUuid }) {
           name locationUuid
-          tabs: tabsList(filter: { created: { greaterThan: $tabCreationDate } ordersPlaced: { greaterThan: 0 } }) {
+          tabs: tabsList(filter: { created: { greaterThan: $tabCreationDateStart, lessThan: $tabCreationDateEnd } ordersPlaced: { greaterThan: 0 } }) {
             name tabMode tax total subtotal tippedSubtotal balanceDue autogratDue href
             items: itemsList(filter: { ordered: { equalTo: true } }) {
               name subtotal subtotalInitial quantity quantityInitial comped voided fee discount
@@ -666,9 +677,14 @@ function goTabQuery(locationUuid, fiscalDay) {
           }
         }
       }`,
-    variables: { locationUuid, tabCreationDate: fiscalDay + "T00:00:00Z" },
+    variables: {
+      locationUuid,
+      tabCreationDateStart: fiscalDayStart + "T00:00:00Z",
+      tabCreationDateEnd: fiscalDayEnd + "T00:00:00Z",
+    },
   };
 }
+
 
 function normalizeGoTab(tabs) {
   let net_sales=0,tax_total=0,bar_sales=0,catering_sales=0,voids=0,comps=0,tip_total=0,tab_count=0,deferred_revenue=0;
@@ -918,7 +934,7 @@ app.get("/api/mailchimp",async(req,res)=>{
 app.get("/api/gotab/streams",async(req,res)=>{
   try {
     const date=req.query.date||today(), token=await getGoTabToken();
-    const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
+    const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date,nextDay(date)))});
     const gqlData=await gqlRes.json(), tabs=gqlData?.data?.locations?.[0]?.tabs||[], streams={};
     for (const tab of tabs) for (const item of tab.items||[]){
       const g=item.accountingStream?.reportingGroup||"NONE",n=item.accountingStream?.name||"NONE",key=`${g} | ${n}`;
@@ -932,7 +948,7 @@ app.get("/api/gotab/streams",async(req,res)=>{
 app.get("/api/gotab",async(req,res)=>{
   try {
     const date=req.query.date||today(), token=await getGoTabToken();
-    const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))});
+    const gqlRes=await fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date,nextDay(date)))});
     if (!gqlRes.ok) throw new Error(`GoTab GraphQL error: ${gqlRes.status}`);
     const gqlData=await gqlRes.json();
     if (gqlData.errors) throw new Error(gqlData.errors[0]?.message||"GraphQL error");
@@ -966,7 +982,7 @@ app.get("/api/ric",async(req,res)=>{
   // Fetch all sources in parallel
   const [goTabResult, meResult, qbResult, mcResult] = await Promise.allSettled([
     // GoTab
-    getGoTabToken().then(token=>fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date))})).then(r=>r.json()).then(d=>normalizeGoTab(d?.data?.locations?.[0]?.tabs||[])),
+    getGoTabToken().then(token=>fetchWithRetry("https://gotab.io/api/v2/graph",{method:"POST",headers:{"Authorization":`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID,date,nextDay(date)))})).then(r=>r.json()).then(d=>normalizeGoTab(d?.data?.locations?.[0]?.tabs||[])),
     // MarginEdge
     fetchMarginEdge(date),
     // QuickBooks
