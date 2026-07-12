@@ -98,7 +98,7 @@ body{font-family:var(--font);background:var(--bg2);min-height:100vh;padding:0}
 h3.s-revenue{color:#1D9E75!important}h3.s-labor{color:#1a1a18!important}h3.s-food{color:#D85A30!important}
 h3.s-covers{color:#534AB7!important}h3.s-delivery{color:#993C1D!important}h3.s-events{color:#854F0B!important}
 h3.s-digital{color:#185FA5!important}h3.s-reputation{color:#A32D2D!important}h3.s-ops{color:#3B6D11!important}
-h3.s-gm{color:#1D9E75!important}h3.s-anomaly{color:#cc0000!important}h3.s-marketing{color:#3B6D11!important}
+h3.s-gm{color:#1D9E75!important}h3.s-anomaly{color:#cc0000!important}h3.s-marketing{color:#3B6D11!important}h3.s-primecost{color:#6B4C9A!important}
 .report-body strong{font-weight:600}
 .report-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:0.5px solid var(--b2);flex-wrap:wrap}
 .disclaimer{font-size:11px;color:var(--t2);margin-top:10px;line-height:1.5}
@@ -756,13 +756,17 @@ async function runSync(){
   SYSTEMS.forEach(s=>updDot(s.id,"idle"));
   fetchedData={};sourceMap={};
 updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");updDot("mailchimp","sync");updDot("tripleseat","sync");updDot("7shifts","sync");updDot("yelp","sync");updDot("opentable","sync");  btn.textContent="Fetching live data...";
-  // Pre-warm TripleSeat cache (slow two-page fetch) in parallel with /api/ric
-  const [ricRes, tsRes] = await Promise.allSettled([
+  // Pre-warm TripleSeat cache (slow two-page fetch) in parallel with /api/ric.
+  // Prime cost trend also runs here — all 14 days compute concurrently
+  // server-side, so this adds negligible latency rather than a separate step.
+  const [ricRes, tsRes, pcRes] = await Promise.allSettled([
     fetch("/api/ric").then(r=>r.ok?r.json():null).catch(()=>null),
     fetch("/api/tripleseat").then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch("/api/insights/prime-cost/recalculate-trend",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({days:14})}).then(r=>r.ok?r.json():null).catch(()=>null),
   ]);
   let ricLive = ricRes.status==="fulfilled"&&ricRes.value ? ricRes.value : {};
   const tsLive = tsRes.status==="fulfilled"&&tsRes.value ? tsRes.value : null;
+  const pcLive = pcRes.status==="fulfilled"&&pcRes.value ? pcRes.value : null;
   // Merge TripleSeat into ricLive
   if(tsLive&&tsLive.ok!==false){ricLive.tripleseat=tsLive;if(!ricLive.sources) ricLive.sources={};ricLive.sources.tripleseat="live";}
   let done=0;
@@ -778,6 +782,7 @@ updDot("gotab","sync");updDot("marginedge","sync");updDot("quickbooks","sync");u
     document.getElementById("prog").style.width=Math.round((done/SYSTEMS.length)*60)+"%";
   }
   fetchedData.gotab_7d = ricLive.gotab_7d || null;
+  fetchedData.prime_cost_trend = pcLive || null;
   document.getElementById("s-time").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
   document.getElementById("s-status").textContent="Generating";
   btn.textContent="Generating report...";
@@ -835,6 +840,22 @@ async function generateReport(){
     ?`GoTab 7-day rolling (live): $${gt7.net_sales.toFixed(2)} net sales across ${gt7.days_covered} days, bar $${gt7.bar_sales.toFixed(2)}, catering $${gt7.catering_sales.toFixed(2)}, ${gt7.tab_count} tabs.`
     :"GoTab 7-day rolling: unavailable.";
 
+  const pct=fetchedData.prime_cost_trend||null;
+  const pctAvailableDays=pct?.days?.filter(d=>d.available)||[];
+  let primeCostCtx="Prime cost trend: unavailable — no baseline set yet (needs POST /api/insights/prime-cost/refresh-baseline from a closed QuickBooks month) or trend not yet calculated.";
+  if(pct&&pctAvailableDays.length>0){
+    const latest=pctAvailableDays[pctAvailableDays.length-1];
+    const earlier=pctAvailableDays.slice(0,Math.max(1,Math.floor(pctAvailableDays.length/2)));
+    const laterHalf=pctAvailableDays.slice(Math.floor(pctAvailableDays.length/2));
+    const avg=(arr,key)=>arr.length?+(arr.reduce((s,d)=>s+d[key],0)/arr.length).toFixed(1):null;
+    const earlyAvgPrime=avg(earlier,"prime_cost_pct");
+    const laterAvgPrime=avg(laterHalf,"prime_cost_pct");
+    const direction=(earlyAvgPrime!=null&&laterAvgPrime!=null)
+      ?(laterAvgPrime>earlyAvgPrime?`trending UP (${earlyAvgPrime}% → ${laterAvgPrime}% across the window)`:laterAvgPrime<earlyAvgPrime?`trending DOWN (${earlyAvgPrime}% → ${laterAvgPrime}% across the window)`:`flat around ${laterAvgPrime}%`)
+      :"insufficient data for a trend direction";
+    primeCostCtx=`Prime cost trend (live, ${pctAvailableDays.length}-day window): most recent available day (${latest.date}) estimated prime cost ${latest.prime_cost_pct}% — labor $${latest.labor_cost.toFixed(2)} (${latest.labor_pct}% of sales, ACTUAL from 7Shifts), COGS estimated at $${latest.cogs_estimated.toFixed(2)} using the last closed month's QuickBooks COGS rate of ${latest.cogs_pct_baseline_used}% (baseline period: ${pct.baseline_period}) — COGS here is an ESTIMATE, not an actual, until daily invoice data catches up. Trend across the window: ${direction}.`;
+  }
+
   const qbCtx=qb.total_labor
     ?`QuickBooks (live): FOH $${(qb.foh?.total||0).toFixed(2)} (${qb.foh_labor_pct||"—"}%), BOH $${(qb.boh?.total||0).toFixed(2)} (${qb.boh_labor_pct||"—"}%), Mgmt $${(qb.mgmt?.total||0).toFixed(2)}. Total labor $${(qb.total_labor||0).toFixed(2)} (${qb.total_labor_pct||"—"}%). Prime cost ${qb.prime_cost_pct||"—"}%. Net operating income $${(qb.net_operating_income||0).toFixed(2)}.`
     :"QuickBooks (live): No labor data for today — posts after payroll runs.";
@@ -867,6 +888,7 @@ GoTab today (live, intraday): $${liveData.gotab?.net_sales||0} net sales, ${live
 ${gt7Ctx}
 ${meCtx}
 ${qbCtx}
+${primeCostCtx}
 ${mcCtx}
 ${tsCtx}
 ${s7Ctx}
@@ -878,6 +900,8 @@ IMPORTANT: MarginEdge COGS is a 7-day rolling window. For food cost % calculatio
 REVENUE PACING: Hill Country opens at 12:00 PM and closes at midnight (12 hours of service). To project end-of-day revenue, divide current net sales by the fraction of service elapsed. Example: $2,821 at 3:30 PM = 3.5 hours elapsed ÷ 12 total = 29% complete → projected day = $2,821 ÷ 0.29 = ~$9,700. Never use a simple hours-remaining multiplier — always divide by fraction elapsed.
 
 DAY-OF-WEEK CONTEXT: The GoTab 7-day rolling average includes weekends (Friday/Saturday) which are significantly higher volume than weekdays. When comparing today's pace to the 7-day average, note the day of week and flag if today is a Monday–Thursday where lower volume vs the 7-day average is expected and not necessarily alarming.
+
+PRIME COST TREND DISCIPLINE: The prime cost trend figure combines an ACTUAL labor cost with an ESTIMATED COGS (based on last closed month's QuickBooks rate applied to today's real revenue) — always say "estimated" when referencing the COGS or blended prime cost % in this section, never state it as if it were an actual/confirmed figure. Do not confuse this with the QuickBooks section's own authoritative (but monthly, not daily) prime cost %.
 Write a tight GM briefing using ### headers only. Each section must contain exactly THREE quantitative anchors formatted as a markdown bulleted list (each item starting with "- "):
   - The current value ($ or %, exact figures from the data above).
   - A comparison — vs target, vs run-rate, vs prior 30-day, vs same-day-last-week, or vs industry benchmark.
@@ -889,6 +913,8 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
 (Anchor on: net sales pace, avg check, bar mix or catering share)
 ### Food cost
 (Anchor on: COGS total or %, biggest category mover, theoretical-vs-actual or recipe drift signal)
+### Prime Cost Trend
+(Anchor on: today's estimated prime cost % vs the closed-month baseline, the trend direction across the trailing window, and the implication — always labeling the COGS portion as estimated, not actual)
 ### Labor
 (Anchor on: labor cost %, overtime exposure, staffing efficiency vs revenue pace)
 ### Events & private dining
@@ -945,6 +971,7 @@ function renderFlags(){
 function getSectionClass(h){
   const l=h.toLowerCase();
   if(l.includes("revenue")||l.includes("sales")||l.includes("snapshot")) return "s-revenue";
+  if(l.includes("prime cost")) return "s-primecost";
   if(l.includes("labor")||l.includes("staffing")) return "s-labor";
   if(l.includes("food cost")||l.includes("cogs")) return "s-food";
   if(l.includes("cover")||l.includes("dining")||l.includes("guest")) return "s-covers";
