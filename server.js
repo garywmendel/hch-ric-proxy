@@ -4,6 +4,7 @@ import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import ppcRoutes from "./routes.js";
+import insightsRoutes from "./insightsRoutes.js";
  
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app  = express();
@@ -818,9 +819,19 @@ app.locals.GOTAB_LOCATION_UUID = GOTAB_LOCATION_UUID;
 app.locals.MARGINEDGE_API_KEY = MARGINEDGE_API_KEY;
 app.locals.MARGINEDGE_TENANT_ID = MARGINEDGE_TENANT_ID;
 
+// ── Insights module wiring (menu engineering + prime cost trend) ──────────────
+// Additional deps beyond the PPC set above — normalizeGoTab/nextDay for the
+// corrected single-day GoTab fetch, fetch7Shifts/fetchQuickBooks for the
+// prime cost trend's real-labor/estimated-COGS blend.
+app.locals.normalizeGoTab = normalizeGoTab;
+app.locals.nextDay = nextDay;
+app.locals.fetch7Shifts = fetch7Shifts;
+app.locals.fetchQuickBooks = fetchQuickBooks;
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 app.use("/api/ppc", ppcRoutes);
+app.use("/api/insights", insightsRoutes);
 
 app.post("/api/pin",express.json(),(req,res)=>{
   const correct=process.env.RIC_PIN||"000000";
