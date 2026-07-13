@@ -1007,17 +1007,51 @@ app.get("/api/ric",async(req,res)=>{
   else{console.error("GoTab failed:",goTabResult.reason?.message);result.gotab=null;result.sources.gotab=`error: ${goTabResult.reason?.message}`;}
 
  // 7Shifts (uses yesterday's date for completed labor data)
+ // FIXED: previously divided yesterday's labor cost by TODAY's live,
+ // partial (still-accumulating) GoTab net sales — two different days
+ // presented as one ratio, producing nonsensical labor % figures (e.g.
+ // 72% against a 28-32% target) especially early in service when today's
+ // sales are still small. Now fetches yesterday's ACTUAL GoTab net sales
+ // for a correctly matched same-day comparison, and exposes the shift
+ // date explicitly so downstream reporting never has to guess or assume
+ // "today."
  let shiftsResult;
  try {
    const shiftsDate = new Date();
    shiftsDate.setDate(shiftsDate.getDate() - 1);
    const shiftsDateStr = shiftsDate.toISOString().split("T")[0];
    shiftsResult = await fetch7Shifts(shiftsDateStr);
+   shiftsResult.shift_date = shiftsDateStr;
+
+   // Fetch the matching day's GoTab net sales (not today's) for a
+   // correctly matched labor-to-sales ratio.
+   let matchedDayNetSales = null;
+   try {
+     const token = await getGoTabToken();
+     const gqlRes = await fetchWithRetry("https://gotab.io/api/v2/graph", {
+       method: "POST",
+       headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+       body: JSON.stringify(goTabQuery(GOTAB_LOCATION_UUID, shiftsDateStr, nextDay(shiftsDateStr))),
+     });
+     if (gqlRes.ok) {
+       const gqlData = await gqlRes.json();
+       if (!gqlData.errors) {
+         matchedDayNetSales = normalizeGoTab(gqlData?.data?.locations?.[0]?.tabs || []).net_sales;
+       }
+     }
+   } catch (matchErr) {
+     console.error("7Shifts matched-day GoTab fetch failed:", matchErr.message);
+   }
+
+   shiftsResult.matched_day_net_sales = matchedDayNetSales;
+   if (matchedDayNetSales && shiftsResult?.total_labor_cost) {
+     shiftsResult.labor_pct = +((shiftsResult.total_labor_cost / matchedDayNetSales) * 100).toFixed(1);
+   } else {
+     shiftsResult.labor_pct = null; // don't fall back to mismatched-period division
+   }
+
    result["7shifts"] = shiftsResult;
    result.sources["7shifts"] = "live";
-   if (result.gotab?.net_sales && shiftsResult?.total_labor_cost) {
-     shiftsResult.labor_pct = +((shiftsResult.total_labor_cost / result.gotab.net_sales) * 100).toFixed(1);
-   }
  } catch(e) {
    console.error("7Shifts failed:", e.message);
    result["7shifts"] = null;
