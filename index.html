@@ -865,8 +865,10 @@ async function generateReport(){
     ?`QuickBooks (live): FOH $${(qb.foh?.total||0).toFixed(2)} (${qb.foh_labor_pct||"—"}%), BOH $${(qb.boh?.total||0).toFixed(2)} (${qb.boh_labor_pct||"—"}%), Mgmt $${(qb.mgmt?.total||0).toFixed(2)}. Total labor $${(qb.total_labor||0).toFixed(2)} (${qb.total_labor_pct||"—"}%). Prime cost ${qb.prime_cost_pct||"—"}%. Net operating income $${(qb.net_operating_income||0).toFixed(2)}.`
     :"QuickBooks (live): No labor data for today — posts after payroll runs.";
 
+  const mcRate=(v)=>v==null?"n/a":`${v}%`;
+  const mcRecent=mc.recent_campaigns?.[0];
   const mcCtx=mc.total_subscribers
-    ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()} emails sent, ${mc.open_rate_30d}% open rate, ${mc.click_rate_30d}% click rate, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth. Most recent campaign: "${mc.recent_campaigns?.[0]?.subject||"—"}" — ${mc.recent_campaigns?.[0]?.open_rate}% open, ${mc.recent_campaigns?.[0]?.click_rate}% click.`
+    ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()||0} emails sent, ${mcRate(mc.open_rate_30d)} open rate, ${mcRate(mc.click_rate_30d)} click rate${mc.emails_sent_30d===0?" (no campaigns sent in the last 30 days — rates are not applicable, not zero)":""}, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth.${mcRecent?` Most recent campaign: "${mcRecent.subject||"—"}" (sent ${mcRecent.send_time?new Date(mcRecent.send_time).toLocaleDateString():"—"}) — ${mcRate(mcRecent.open_rate)} open, ${mcRate(mcRecent.click_rate)} click.`:" No campaign history available."}`
     :"Mailchimp: data unavailable.";
 
   const todayISO=now.toISOString().slice(0,10);
