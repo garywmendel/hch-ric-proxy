@@ -816,8 +816,9 @@ async function generateReport(){
   const qb=liveData.quickbooks||{};
   const mc=liveData.mailchimp||{};
   const ts=liveData.tripleseat||{};
-  const s7Ctx = liveData["7shifts"] ? 
-    `7Shifts labor today: ${liveData["7shifts"].total_hours}hrs worked, $${liveData["7shifts"].total_labor_cost} labor cost, ${liveData["7shifts"].labor_pct||"n/a"}% labor-to-sales, ${liveData["7shifts"].shift_count} shifts, OT hrs: ${liveData["7shifts"].overtime_hours}, OT pay: $${liveData["7shifts"].overtime_pay}, compliance cost: $${liveData["7shifts"].compliance_cost}` 
+  const s7=liveData["7shifts"];
+  const s7Ctx = s7 ?
+    `7Shifts labor — most recently COMPLETED shift day (${s7.shift_date||"prior day"}, NOT today): ${s7.total_hours}hrs worked, $${s7.total_labor_cost} labor cost, ${s7.labor_pct!=null?`${s7.labor_pct}% labor-to-sales (vs that SAME day's GoTab net sales of $${s7.matched_day_net_sales?.toFixed(2)||"n/a"})`:"labor-to-sales % unavailable (matched-day sales data missing)"}, ${s7.shift_count} shifts, OT hrs: ${s7.overtime_hours}, OT pay: $${s7.overtime_pay}, compliance cost: $${s7.compliance_cost}. IMPORTANT: this labor data is from ${s7.shift_date||"a prior day"} — do NOT divide it against today's in-progress GoTab net sales figure elsewhere in this prompt; today's covers-per-labor-hour or labor-to-sales cannot be computed until today's shift data posts (typically the following day).`
     : "";
   const yelp=liveData.yelp||{};
   const yelpCtx = yelp.rating
@@ -826,7 +827,12 @@ async function generateReport(){
   const ot=liveData.opentable||{};
   const otNoShowPct = ot.reservation_count>0 ? ((ot.no_show_count/ot.reservation_count)*100).toFixed(1) : null;
   const otRevPerCover = (ot.covers>0 && liveData.gotab?.net_sales) ? (liveData.gotab.net_sales/ot.covers).toFixed(2) : null;
-  const otCoversPerLaborHr = (ot.covers>0 && liveData["7shifts"]?.total_hours) ? (ot.covers/liveData["7shifts"].total_hours).toFixed(1) : null;
+  // REMOVED: previously divided TODAY's OpenTable covers by YESTERDAY's
+  // 7Shifts hours (same mismatched-period bug as the labor_pct fix above).
+  // There's no valid same-day hours-worked figure available until 7Shifts
+  // posts the following day, so this metric is intentionally left out
+  // rather than computed against mismatched periods.
+  const otCoversPerLaborHr = null;
   const otTagsNote = ot.tagged_count>0 ? ` ${ot.tagged_count} reservation${ot.tagged_count>1?"s":""} flagged with guest notes (${ot.top_tags?.map(t=>t.tag).join(", ")||"—"}).` : "";
   // No-show revenue leakage: no-shows × avg revenue-per-cover (reusing the
   // same figure already computed above) — turns a no-show COUNT into an
@@ -923,7 +929,7 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
 ### Prime Cost Trend
 (Anchor on: today's estimated prime cost % vs the closed-month baseline, the trend direction across the trailing window, and the implication — always labeling the COGS portion as estimated, not actual)
 ### Labor
-(Anchor on: labor cost %, overtime exposure, staffing efficiency vs revenue pace)
+(Anchor on: the labor cost % exactly as given for its stated day — do not recompute or compare it against today's separate, still-accumulating revenue figure; overtime exposure; note explicitly that today's own labor-to-sales efficiency is not yet available since 7Shifts data posts the following day)
 ### Events & private dining
 (Anchor on: today's event load, this-week pipeline, largest upcoming + staffing implication)
 ### Digital & marketing
