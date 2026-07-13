@@ -873,8 +873,15 @@ async function generateReport(){
 
   const mcRate=(v)=>v==null?"n/a":`${v}%`;
   const mcRecent=mc.recent_campaigns?.[0];
+  // CTOR (click-to-open rate) = clicks ÷ opens, NOT clicks ÷ sent. This is
+  // the metric the system prompt actually defines a benchmark for
+  // (10-15% healthy) — computed here so the model reports it rather than
+  // inventing an undefined "click rate" threshold.
+  const mcRecentCtor = (mcRecent?.open_rate>0 && mcRecent?.click_rate!=null)
+    ? +((mcRecent.click_rate/mcRecent.open_rate)*100).toFixed(1)
+    : null;
   const mcCtx=mc.total_subscribers
-    ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()||0} emails sent, ${mcRate(mc.open_rate_30d)} open rate, ${mcRate(mc.click_rate_30d)} click rate${mc.emails_sent_30d===0?" (no campaigns sent in the last 30 days — rates are not applicable, not zero)":""}, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth.${mcRecent?` Most recent campaign: "${mcRecent.subject||"—"}" (sent ${mcRecent.send_time?new Date(mcRecent.send_time).toLocaleDateString():"—"}) — ${mcRate(mcRecent.open_rate)} open, ${mcRate(mcRecent.click_rate)} click.`:" No campaign history available."}`
+    ?`Mailchimp (live): ${mc.total_subscribers.toLocaleString()} subscribers. Last 30 days: ${mc.emails_sent_30d?.toLocaleString()||0} emails sent, ${mcRate(mc.open_rate_30d)} open rate, ${mcRate(mc.click_rate_30d)} click rate${mc.emails_sent_30d===0?" (no campaigns sent in the last 30 days — rates are not applicable, not zero)":""}, ${mc.net_list_growth_30d>0?"+":""}${mc.net_list_growth_30d} net list growth.${mcRecent?` Most recent campaign: "${mcRecent.subject||"—"}" (sent ${mcRecent.send_time?new Date(mcRecent.send_time).toLocaleDateString():"—"}) — ${mcRate(mcRecent.open_rate)} open, ${mcRate(mcRecent.click_rate)} click${mcRecentCtor!=null?`, CTOR (click-to-open rate) ${mcRecentCtor}% — compare THIS figure against the 10-15% CTOR benchmark, not the raw click rate above (there is no defined benchmark for raw click rate alone)`:""}.`:" No campaign history available."}`
     :"Mailchimp: data unavailable.";
 
   const todayISO=now.toISOString().slice(0,10);
@@ -923,7 +930,7 @@ Write a tight GM briefing using ### headers only. Each section must contain exac
 Skip any section whose data is unavailable rather than guessing. No filler, no hedging, no narrative paragraphs. Each anchor = one bullet, one sentence.
 
 ### Revenue snapshot
-(Anchor on: net sales pace, avg check, bar mix or catering share)
+(Anchor on: net sales pace, avg check, bar mix or catering share — for bar mix, ALWAYS compare against the 25-30% benchmark defined above in industry benchmarks; do not substitute a self-computed trailing-period average and call it "healthy" — a trailing average can itself be below target)
 ### Food cost
 (Anchor on: COGS total or %, biggest category mover, theoretical-vs-actual or recipe drift signal)
 ### Prime Cost Trend
@@ -933,7 +940,7 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
 ### Events & private dining
 (Anchor on: today's event load, this-week pipeline, largest upcoming + staffing implication)
 ### Digital & marketing
-(Anchor on: campaign open/click vs benchmark, list growth direction, momentum signal)
+(Anchor on: if a CTOR — click-to-open rate — figure is provided in the data above, compare it against the 10-15% CTOR benchmark defined above; there is no defined benchmark for raw click rate alone, so do not invent one. Also anchor on list growth direction and momentum signal)
 ### Reputation
 (Anchor on: current Yelp rating vs industry benchmark, review volume context, implication for search visibility or guest perception)
 ### Reservations & covers
