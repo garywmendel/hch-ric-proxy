@@ -828,8 +828,13 @@ async function generateReport(){
   const otRevPerCover = (ot.covers>0 && liveData.gotab?.net_sales) ? (liveData.gotab.net_sales/ot.covers).toFixed(2) : null;
   const otCoversPerLaborHr = (ot.covers>0 && liveData["7shifts"]?.total_hours) ? (ot.covers/liveData["7shifts"].total_hours).toFixed(1) : null;
   const otTagsNote = ot.tagged_count>0 ? ` ${ot.tagged_count} reservation${ot.tagged_count>1?"s":""} flagged with guest notes (${ot.top_tags?.map(t=>t.tag).join(", ")||"—"}).` : "";
+  // No-show revenue leakage: no-shows × avg revenue-per-cover (reusing the
+  // same figure already computed above) — turns a no-show COUNT into an
+  // actual dollar figure worth acting on (deposit policy, etc.).
+  const otNoShowLeakage = (ot.no_show_count>0 && otRevPerCover) ? (ot.no_show_count*parseFloat(otRevPerCover)).toFixed(2) : null;
+  const otNoShowLeakageNote = otNoShowLeakage ? ` Estimated no-show revenue leakage: $${otNoShowLeakage} (${ot.no_show_count} no-show${ot.no_show_count>1?"s":""} × $${otRevPerCover} avg revenue-per-cover).` : "";
   const otCtx = ot.data_as_of
-    ? `OpenTable (live): ${ot.reservation_count} reservations, ${ot.covers} covers (avg party size ${ot.avg_party_size??"n/a"}), ${ot.cancelled_count} cancelled, ${ot.no_show_count} no-show${otNoShowPct?` (${otNoShowPct}% no-show rate)`:""}. Peak demand: ${ot.peak_hour||"n/a"}${ot.peak_hour_covers?` (${ot.peak_hour_covers} covers)`:""}. Top booking channel: ${ot.top_channel||"n/a"}${ot.top_channel_pct?` (${ot.top_channel_pct}% of reservations)`:""}.${otRevPerCover?` Revenue per cover (GoTab net sales ÷ OpenTable covers): $${otRevPerCover}.`:""}${otCoversPerLaborHr?` Covers per labor hour (reservation-to-staffing efficiency): ${otCoversPerLaborHr}.`:""}${otTagsNote}`
+    ? `OpenTable (live): ${ot.reservation_count} reservations, ${ot.covers} covers (avg party size ${ot.avg_party_size??"n/a"}), ${ot.cancelled_count} cancelled, ${ot.no_show_count} no-show${otNoShowPct?` (${otNoShowPct}% no-show rate)`:""}. Peak demand: ${ot.peak_hour||"n/a"}${ot.peak_hour_covers?` (${ot.peak_hour_covers} covers)`:""}. Top booking channel: ${ot.top_channel||"n/a"}${ot.top_channel_pct?` (${ot.top_channel_pct}% of reservations)`:""}.${otRevPerCover?` Revenue per cover (GoTab net sales ÷ OpenTable covers): $${otRevPerCover}.`:""}${otCoversPerLaborHr?` Covers per labor hour (reservation-to-staffing efficiency): ${otCoversPerLaborHr}.`:""}${otNoShowLeakageNote}${otTagsNote}`
     : "OpenTable: data unavailable.";
   const meCtx=me.invoice_count>0
     ?`MarginEdge 7-day rolling (live): ${me.invoice_count} invoices. Total COGS $${(me.cogs?.total||0).toFixed(2)}. Food $${(me.cogs?.food||0).toFixed(2)}. Meat $${(me.cogs?.meat||0).toFixed(2)}, Produce $${(me.cogs?.produce||0).toFixed(2)}, Dairy $${(me.cogs?.dairy||0).toFixed(2)}, Liquor $${(me.cogs?.liquor||0).toFixed(2)}, Beer $${(me.cogs?.beer||0).toFixed(2)}, Wine $${(me.cogs?.wine||0).toFixed(2)}.`
@@ -927,7 +932,7 @@ Skip any section whose data is unavailable rather than guessing. No filler, no h
 Required anchors, in this exact order — do not substitute or skip any of the three:
 1. Peak-hour demand: name the exact peak hour and covers booked at that hour; state the staffing implication for that time slot specifically.
 2. Booking channel mix: name the top channel (Web/Walk-in/Phone) and its %; state what it means operationally (heavy walk-in = host stand and wait-time readiness; reservation-heavy = tighter table-turn planning).
-3. No-show rate vs the 5% benchmark.
+3. No-show rate vs the 5% benchmark — if a no-show revenue leakage dollar figure is provided in the data above, state it exactly as given (do not recalculate it yourself).
 If a special-occasion or notable guest tag is present today, add a 4th bullet naming it — but never in place of the three required anchors above.
 ### Watch list
 (Anchor on: top 3 anomalies or risks for the next 24-48 hours, each with a specific number)`;
