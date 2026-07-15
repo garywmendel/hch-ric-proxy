@@ -1070,10 +1070,12 @@ try {
   // MarginEdge
   if(meResult.status==="fulfilled"){
     const me=meResult.value;
-    if(result.gotab?.net_sales){
-      if(me.cogs?.food)  me.food_cost_pct=+((me.cogs.food/result.gotab.net_sales)*100).toFixed(1);
-      if(me.cogs?.total) me.total_cogs_pct=+((me.cogs.total/result.gotab.net_sales)*100).toFixed(1);
-    }
+    // NOTE: food_cost_pct/total_cogs_pct calculated further below, AFTER
+    // gotab_7d is fetched — MarginEdge's cogs figures are a 7-DAY rolling
+    // window, so they must be divided by 7-day GoTab net sales, not
+    // today's single, partial, in-progress net sales. Dividing a week's
+    // COGS by one partial day previously produced impossible figures like
+    // "151.2% food cost."
     result.marginedge=me;result.sources.marginedge="live";
   } else {console.error("MarginEdge failed:",meResult.reason?.message);result.marginedge=null;result.sources.marginedge=`error: ${meResult.reason?.message}`;}
 
@@ -1104,6 +1106,15 @@ try {
   } catch (err) {
     console.error("GoTab 7-day fetch failed:", err.message);
     result.gotab_7d = null;
+  }
+
+  // FIXED: food_cost_pct/total_cogs_pct now correctly use 7-day GoTab net
+  // sales (matching MarginEdge's own 7-day rolling COGS window), instead
+  // of today's single, partial, in-progress net sales.
+  if (result.marginedge && result.gotab_7d?.net_sales) {
+    const me = result.marginedge;
+    if (me.cogs?.food)  me.food_cost_pct  = +((me.cogs.food  / result.gotab_7d.net_sales) * 100).toFixed(1);
+    if (me.cogs?.total) me.total_cogs_pct = +((me.cogs.total / result.gotab_7d.net_sales) * 100).toFixed(1);
   }
   // TripleSeat — use cache if warm, otherwise fetch with 12s timeout
   if(tsState.accessToken||tsState.refreshToken){
