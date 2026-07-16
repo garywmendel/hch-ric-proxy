@@ -1181,11 +1181,18 @@ app.get("/",(_req,res)=>{
 
 app.listen(PORT,()=>{
   console.log(`RIC proxy v3.9 running on port ${PORT}`);
-  // Warm TripleSeat cache on startup — triggers token refresh + persistence if needed
+  // Warm TripleSeat cache on startup — triggers token refresh + persistence if needed.
+  // DELAYED by 5s: this makes a live external network call right at boot,
+  // which can compete with Railway's very first healthcheck request for
+  // CPU/event-loop time immediately after the port opens — a likely
+  // contributor to brief, self-healing "crash" blips seen right after
+  // deploy. Delaying it lets the healthcheck succeed cleanly first.
   if(process.env.TRIPLESEAT_ACCESS_TOKEN||process.env.TRIPLESEAT_REFRESH_TOKEN){
-    console.log("Warming TripleSeat cache on startup...");
-    fetchTripleSeat()
-      .then(d=>console.log(`TripleSeat cache warmed: pipeline=$${d.total_pipeline}, events=${d.event_count_upcoming}`))
-      .catch(e=>console.error("TripleSeat startup warm failed:",e.message));
+    setTimeout(()=>{
+      console.log("Warming TripleSeat cache on startup...");
+      fetchTripleSeat()
+        .then(d=>console.log(`TripleSeat cache warmed: pipeline=$${d.total_pipeline}, events=${d.event_count_upcoming}`))
+        .catch(e=>console.error("TripleSeat startup warm failed:",e.message));
+    }, 5000);
   }
 });
