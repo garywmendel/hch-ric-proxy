@@ -1,65 +1,27 @@
 // driveImport.js
 // Pulls the 4 MarginEdge CSV exports directly from a shared Google Drive
-// folder, using a service account (no OAuth login flow, no user-in-the-loop
-// re-auth to expire — service account credentials don't rotate the way
-// QuickBooks/TripleSeat's do).
+// folder.
 //
-// SETUP (one-time, done in Google Cloud Console + Google Drive — not code):
-//   1. Create/select a Google Cloud project. Enable the "Google Drive API".
-//   2. Create a Service Account (IAM & Admin > Service Accounts > Create).
-//   3. Create a JSON key for that service account, download it.
-//   4. In Google Drive, share the target folder (the one you save the 4
-//      MarginEdge CSVs to) with the service account's email address
-//      (looks like xxxx@yyyy.iam.gserviceaccount.com, found in the JSON
-//      key's "client_email" field) — Viewer access is enough, read-only.
-//   5. Get the folder's ID from its URL:
-//      https://drive.google.com/drive/folders/<THIS_PART_IS_THE_ID>
-//   6. In Railway's Variables tab, add:
-//        GOOGLE_SERVICE_ACCOUNT_KEY = <paste the full JSON key file content>
-//        GOOGLE_DRIVE_FOLDER_ID     = <the folder ID from step 5>
-//   7. Add "googleapis" to package.json dependencies (Railway's build step
-//      runs npm install automatically, no manual install needed beyond
-//      having it listed).
+// Uses OAuth (same pattern as QuickBooks/TripleSeat in server.js) rather
+// than a service account — this account's Google Cloud org policy blocks
+// service account KEY CREATION (iam.disableServiceAccountKeyCreation),
+// confirmed blocked. OAuth via a normal Client ID (Google Cloud Console >
+// Credentials, a different mechanism, unaffected by that policy) sidesteps
+// it entirely.
 //
-// This module reads those two env vars directly (same pattern as
-// MARGINEDGE_API_KEY etc. in server.js) rather than needing app.locals
-// wiring, since there's no existing server.js function to reuse here.
+// Uses plain fetch() against Drive's REST API v3 directly — NO googleapis
+// SDK dependency, so nothing needs adding to package.json for this file.
+//
+// deps required (wired via app.locals in server.js):
+//   getGoogleDriveToken — returns a valid access token, refreshing if needed
+//   GOOGLE_DRIVE_FOLDER_ID — the target Drive folder's ID
 
-import { google } from 'googleapis';
 import {
   importMenuItemCostsCSV,
   importMenuAnalysisCSV,
 } from './menuEngineering.js';
 
-function getDriveClient() {
-  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-  if (!keyJson || !folderId) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY and/or GOOGLE_DRIVE_FOLDER_ID not set in Railway variables — see driveImport.js header for setup steps.');
-  }
-  let credentials;
-  try {
-    credentials = JSON.parse(keyJson);
-  } catch (err) {
-    throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON — paste the entire downloaded key file content, unmodified.');
-  }
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
-  });
-  return { drive: google.drive({ version: 'v3', auth }), folderId };
-}
-
-// Downloads a file's content as text, handling both a plain uploaded CSV
-// and a Google Sheet (in case someone converts it) via export.
-async function downloadFileText(drive, file) {
-  if (file.mimeType === 'application/vnd.google-apps.spreadsheet') {
-    const res = await drive.files.export({ fileId: file.id, mimeType: 'text/csv' }, { responseType: 'text' });
-    return res.data;
-  }
-  const res = await drive.files.get({ fileId: file.id, alt: 'media' }, { responseType: 'text' });
-  return res.data;
-}
+const DRIVE_API = 'https://www.googleapis.com/drive/v3';
 
 // Matches a Drive filename to which importer it should go through. Checked
 // in this order because "Menu Analysis" and "Menu Items" both contain
@@ -73,29 +35,38 @@ function classifyFile(name) {
   return null;
 }
 
-// Lists the folder, matches each of the 4 expected files, downloads and
-// imports each one. Returns a per-file result so partial failures (e.g.
-// one file missing from the folder) are visible rather than silent.
-export async function importAllFromDrive() {
-  const { drive, folderId } = getDriveClient();
+async function downloadFileText(token, file) {
+  const url = file.mimeType === 'application/vnd.google-apps.spreadsheet'
+    ? `${DRIVE_API}/files/${file.id}/export?mimeType=text/csv`
+    : `${DRIVE_API}/files/${file.id}?alt=media`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`Drive download failed for ${file.name}: ${res.status}`);
+  return res.text();
+}
 
-  const listRes = await drive.files.list({
-    q: `'${folderId}' in parents and trashed = false`,
-    fields: 'files(id, name, mimeType, modifiedTime)',
-    orderBy: 'modifiedTime desc',
-  });
-  const files = listRes.data.files || [];
+// deps: { getGoogleDriveToken, GOOGLE_DRIVE_FOLDER_ID }
+export async function importAllFromDrive(deps) {
+  if (!deps.getGoogleDriveToken || !deps.GOOGLE_DRIVE_FOLDER_ID) {
+    throw new Error('Google Drive deps not wired into app.locals yet (getGoogleDriveToken, GOOGLE_DRIVE_FOLDER_ID).');
+  }
+  const token = await deps.getGoogleDriveToken();
+
+  const listUrl = `${DRIVE_API}/files?q=${encodeURIComponent(`'${deps.GOOGLE_DRIVE_FOLDER_ID}' in parents and trashed = false`)}&fields=${encodeURIComponent('files(id,name,mimeType,modifiedTime)')}&orderBy=modifiedTime desc`;
+  const listRes = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` } });
+  if (!listRes.ok) throw new Error(`Drive folder listing failed: ${listRes.status} — confirm the folder is shared with the account you authorized at /auth/google-drive, and that GOOGLE_DRIVE_FOLDER_ID is correct.`);
+  const listData = await listRes.json();
+  const files = listData.files || [];
 
   const results = {};
   const matchedTypes = new Set();
 
   for (const file of files) {
     const type = classifyFile(file.name);
-    if (!type || matchedTypes.has(type)) continue; // skip unrecognized files, and older duplicates (list is sorted newest-first)
+    if (!type || matchedTypes.has(type)) continue; // skip unrecognized files, and older duplicates (list is newest-first)
     matchedTypes.add(type);
 
     try {
-      const csvText = await downloadFileText(drive, file);
+      const csvText = await downloadFileText(token, file);
       let importResult;
       if (type === 'menu_analysis') importResult = importMenuAnalysisCSV(csvText);
       else importResult = importMenuItemCostsCSV(csvText, type);
@@ -112,7 +83,7 @@ export async function importAllFromDrive() {
   return {
     imported_at: new Date().toISOString(),
     results,
-    missing_files: missing, // expected file types not found in the folder — worth checking naming/upload
+    missing_files: missing, // expected file types not found in the folder — check naming/upload if any show up here
     total_files_in_folder: files.length,
   };
 }
