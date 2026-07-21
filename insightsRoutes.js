@@ -23,7 +23,7 @@ import {
   getCachedVelocity,
   buildMenuEngineeringMatrix,
 } from './menuEngineering.js';
-import { importAllFromDrive } from './driveImport.js';
+import { importAllFromDrive, debugDriveAccess } from './driveImport.js';
 import {
   refreshBaseline,
   getCachedBaseline,
@@ -119,6 +119,22 @@ router.post('/menu-engineering/import-from-drive', async (req, res) => {
     res.json(await importAllFromDrive(deps));
   } catch (err) {
     console.error('[insights/menu-engineering/import-from-drive] error', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Diagnostic: use this when import-from-drive returns 0 files to figure
+// out WHY — wrong folder ID vs. not shared with the right account vs.
+// files genuinely not there yet.
+router.get('/menu-engineering/drive-debug', async (req, res) => {
+  try {
+    const deps = {
+      getGoogleDriveToken: req.app.locals.getGoogleDriveToken,
+      GOOGLE_DRIVE_FOLDER_ID: req.app.locals.GOOGLE_DRIVE_FOLDER_ID,
+    };
+    res.json(await debugDriveAccess(deps));
+  } catch (err) {
+    console.error('[insights/menu-engineering/drive-debug] error', err);
     res.status(500).json({ error: err.message });
   }
 });

@@ -37,21 +37,85 @@ function classifyFile(name) {
 
 async function downloadFileText(token, file) {
   const url = file.mimeType === 'application/vnd.google-apps.spreadsheet'
-    ? `${DRIVE_API}/files/${file.id}/export?mimeType=text/csv`
-    : `${DRIVE_API}/files/${file.id}?alt=media`;
+    ? `${DRIVE_API}/files/${file.id}/export?mimeType=text/csv&supportsAllDrives=true`
+    : `${DRIVE_API}/files/${file.id}?alt=media&supportsAllDrives=true`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) throw new Error(`Drive download failed for ${file.name}: ${res.status}`);
   return res.text();
 }
 
 // deps: { getGoogleDriveToken, GOOGLE_DRIVE_FOLDER_ID }
+// Diagnostic: checks the folder ID DIRECTLY (files.get on the folder
+// itself, not its children) — this distinguishes a wrong/inaccessible
+// folder ID (this call fails) from a correct folder that simply doesn't
+// contain the expected files yet (this call succeeds, listing still empty).
+// Also lists everything the authorized account can see, unfiltered by
+// folder, so you can spot where the files actually are if the folder
+// check fails.
+export async function debugDriveAccess(deps) {
+  if (!deps.getGoogleDriveToken || !deps.GOOGLE_DRIVE_FOLDER_ID) {
+    throw new Error('Google Drive deps not wired into app.locals yet (getGoogleDriveToken, GOOGLE_DRIVE_FOLDER_ID).');
+  }
+  const token = await deps.getGoogleDriveToken();
+  const result = { folder_id_configured: deps.GOOGLE_DRIVE_FOLDER_ID };
+
+  // Step 1: does this folder ID exist and is it accessible to this account?
+  try {
+    const folderRes = await fetch(
+      `${DRIVE_API}/files/${deps.GOOGLE_DRIVE_FOLDER_ID}?fields=id,name,mimeType&supportsAllDrives=true`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (folderRes.ok) {
+      const folderData = await folderRes.json();
+      result.folder_accessible = true;
+      result.folder_name = folderData.name;
+      result.folder_mime_type = folderData.mimeType;
+      if (folderData.mimeType !== 'application/vnd.google-apps.folder') {
+        result.warning = 'This ID does not point to a folder — double check you copied the folder ID, not a file ID.';
+      }
+    } else {
+      result.folder_accessible = false;
+      result.folder_error_status = folderRes.status;
+      result.folder_error_hint = folderRes.status === 404
+        ? 'Folder ID not found, OR not shared with the account authorized at /auth/google-drive.'
+        : folderRes.status === 403
+        ? 'Folder exists but access is denied — confirm it is shared with the authorized account.'
+        : `Unexpected status ${folderRes.status}.`;
+    }
+  } catch (err) {
+    result.folder_accessible = false;
+    result.folder_error_hint = err.message;
+  }
+
+  // Step 2: everything this account can see, unfiltered — helps locate the
+  // files if the configured folder check above failed.
+  try {
+    const allRes = await fetch(
+      `${DRIVE_API}/files?q=${encodeURIComponent("trashed = false and (name contains 'Menu' or name contains 'Bar Items' or name contains 'Prepared Items')")}&fields=${encodeURIComponent('files(id,name,parents,mimeType)')}&pageSize=20&supportsAllDrives=true&includeItemsFromAllDrives=true`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (allRes.ok) {
+      const allData = await allRes.json();
+      result.matching_files_visible_to_account = allData.files || [];
+    }
+  } catch (err) {
+    result.search_error = err.message;
+  }
+
+  return result;
+}
+
 export async function importAllFromDrive(deps) {
   if (!deps.getGoogleDriveToken || !deps.GOOGLE_DRIVE_FOLDER_ID) {
     throw new Error('Google Drive deps not wired into app.locals yet (getGoogleDriveToken, GOOGLE_DRIVE_FOLDER_ID).');
   }
   const token = await deps.getGoogleDriveToken();
 
-  const listUrl = `${DRIVE_API}/files?q=${encodeURIComponent(`'${deps.GOOGLE_DRIVE_FOLDER_ID}' in parents and trashed = false`)}&fields=${encodeURIComponent('files(id,name,mimeType,modifiedTime)')}&orderBy=modifiedTime desc`;
+  // supportsAllDrives + includeItemsFromAllDrives: WITHOUT these, Drive's
+  // API silently returns an empty file list (no error at all) if the
+  // target folder is a Shared Drive rather than a personal "My Drive"
+  // folder — safe to include unconditionally, works for both cases.
+  const listUrl = `${DRIVE_API}/files?q=${encodeURIComponent(`'${deps.GOOGLE_DRIVE_FOLDER_ID}' in parents and trashed = false`)}&fields=${encodeURIComponent('files(id,name,mimeType,modifiedTime)')}&orderBy=modifiedTime desc&supportsAllDrives=true&includeItemsFromAllDrives=true`;
   const listRes = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` } });
   if (!listRes.ok) throw new Error(`Drive folder listing failed: ${listRes.status} — confirm the folder is shared with the account you authorized at /auth/google-drive, and that GOOGLE_DRIVE_FOLDER_ID is correct.`);
   const listData = await listRes.json();
