@@ -36,6 +36,10 @@ const OT_CLIENT_ID         = process.env.OPENTABLE_CLIENT_ID;
 const OT_CLIENT_SECRET     = process.env.OPENTABLE_CLIENT_SECRET;
 const OT_RID               = process.env.OPENTABLE_RID;
 const RAILWAY_API_TOKEN      = process.env.RAILWAY_API_TOKEN;
+const GOOGLE_CLIENT_ID       = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET   = process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REDIRECT_URI    = "https://ric.up.railway.app/auth/google-drive/callback";
+const GOOGLE_DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 const RAILWAY_PROJECT_ID     = process.env.RAILWAY_PROJECT_ID;
 const RAILWAY_SERVICE_ID     = process.env.RAILWAY_SERVICE_ID;
 const RAILWAY_ENVIRONMENT_ID = process.env.RAILWAY_ENVIRONMENT_ID;
@@ -414,6 +418,48 @@ async function getTSToken() {
   if (!tsState.accessToken && !tsState.refreshToken) throw new Error("TripleSeat not authorized — visit /auth/tripleseat");
   if (tsState.accessToken && Date.now() < tsState.tokenExpiresAt) return tsState.accessToken;
   return tsRefreshAccessToken();
+}
+
+// ── Google Drive (OAuth, not a service account — see driveImport.js header
+// for why: this account's Google Cloud org policy blocks service account
+// key creation, so this reuses the same OAuth pattern already proven for
+// QuickBooks/TripleSeat instead) ───────────────────────────────────────────
+let gdState = {
+  accessToken:    process.env.GOOGLE_DRIVE_ACCESS_TOKEN  || null,
+  refreshToken:   process.env.GOOGLE_DRIVE_REFRESH_TOKEN || null,
+  tokenExpiresAt: 0,
+};
+
+async function gdRefreshAccessToken() {
+  if (!gdState.refreshToken) throw new Error("No Google Drive refresh token — visit /auth/google-drive");
+  const res = await fetchWithRetry("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type:    "refresh_token",
+      refresh_token: gdState.refreshToken,
+      client_id:     GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Google Drive token refresh failed: ${res.status} | ${body}`);
+  }
+  const data = await res.json();
+  // Google's refresh response does NOT always include a new refresh_token —
+  // keep the existing one unless a new one is explicitly issued.
+  gdState.accessToken    = data.access_token;
+  gdState.tokenExpiresAt = Date.now() + (data.expires_in - 60) * 1000;
+  if (data.refresh_token) gdState.refreshToken = data.refresh_token;
+  console.log("Google Drive token refreshed");
+  return gdState.accessToken;
+}
+
+async function getGoogleDriveToken() {
+  if (!gdState.accessToken && !gdState.refreshToken) throw new Error("Google Drive not authorized — visit /auth/google-drive");
+  if (gdState.accessToken && Date.now() < gdState.tokenExpiresAt) return gdState.accessToken;
+  return gdRefreshAccessToken();
 }
 
 async function fetchTripleSeat() {
@@ -827,6 +873,8 @@ app.locals.normalizeGoTab = normalizeGoTab;
 app.locals.nextDay = nextDay;
 app.locals.fetch7Shifts = fetch7Shifts;
 app.locals.fetchQuickBooks = fetchQuickBooks;
+app.locals.getGoogleDriveToken = getGoogleDriveToken;
+app.locals.GOOGLE_DRIVE_FOLDER_ID = GOOGLE_DRIVE_FOLDER_ID;
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
@@ -912,6 +960,63 @@ h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bo
 <div class="step">Test: <strong>curl https://ric.up.railway.app/api/tripleseat</strong></div>
 </body></html>`);
   } catch(err){res.status(500).send(`<h2>TS Callback error</h2><pre>${err.message}</pre>`);}
+});
+
+app.get("/auth/google-drive",(req,res)=>{
+  if (!GOOGLE_CLIENT_ID) return res.status(500).send("GOOGLE_CLIENT_ID not set.");
+  const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  url.searchParams.set("client_id",     GOOGLE_CLIENT_ID);
+  url.searchParams.set("redirect_uri",  GOOGLE_REDIRECT_URI);
+  url.searchParams.set("response_type","code");
+  url.searchParams.set("scope",         "https://www.googleapis.com/auth/drive.readonly");
+  // access_type=offline + prompt=consent forces Google to issue a refresh
+  // token every time — without prompt=consent, re-authing an already-
+  // authorized account can silently omit the refresh token.
+  url.searchParams.set("access_type",   "offline");
+  url.searchParams.set("prompt",        "consent");
+  url.searchParams.set("state",         Math.random().toString(36).slice(2));
+  res.redirect(url.toString());
+});
+
+app.get("/auth/google-drive/callback",async(req,res)=>{
+  const{code,error}=req.query;
+  if (error) return res.send(`<h2>Google Drive Auth Failed</h2><p>${error}</p>`);
+  if (!code) return res.status(400).send("<h2>Missing code</h2>");
+  try {
+    const tokenRes = await fetchWithRetry("https://oauth2.googleapis.com/token",{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:new URLSearchParams({
+        grant_type:"authorization_code", code,
+        client_id:GOOGLE_CLIENT_ID, client_secret:GOOGLE_CLIENT_SECRET,
+        redirect_uri:GOOGLE_REDIRECT_URI,
+      }),
+    });
+    if (!tokenRes.ok){const body=await tokenRes.text();return res.status(500).send(`<h2>Google Drive token exchange failed</h2><pre>${body}</pre>`);}
+    const tokens = await tokenRes.json();
+    if (!tokens.refresh_token) {
+      return res.status(500).send(`<h2>No refresh token returned</h2><p>Google only issues a refresh token on first consent, or when prompt=consent is used. Revoke this app's access at <a href="https://myaccount.google.com/permissions" target="_blank">myaccount.google.com/permissions</a> and try again.</p>`);
+    }
+    gdState.accessToken    = tokens.access_token;
+    gdState.refreshToken   = tokens.refresh_token;
+    gdState.tokenExpiresAt = Date.now() + (tokens.expires_in - 60) * 1000;
+    await persistRailwayVars({
+      GOOGLE_DRIVE_ACCESS_TOKEN:  tokens.access_token,
+      GOOGLE_DRIVE_REFRESH_TOKEN: tokens.refresh_token,
+    });
+    res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Google Drive Connected</title>
+<style>body{font-family:-apple-system,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#f5f5f3}
+h1{color:#1D9E75}.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:16px;border:0.5px solid rgba(0,0,0,0.1)}
+.label{font-size:11px;font-weight:600;color:#6b6b67;text-transform:uppercase;margin-bottom:6px}
+.value{font-family:monospace;font-size:12px;background:#f5f5f3;padding:10px;border-radius:8px;word-break:break-all}
+.step{background:#e1f5ee;color:#085041;padding:12px;border-radius:8px;font-size:13px}
+.warn{background:#faeeda;color:#633806;padding:12px;border-radius:8px;font-size:13px;margin-top:16px}</style></head>
+<body><h1>✓ Google Drive Connected</h1><p>Tokens saved automatically to Railway.</p>
+<div class="card"><div class="label">Refresh Token</div><div class="value">${tokens.refresh_token}</div></div>
+<div class="step">Test: <strong>curl -X POST https://ric.up.railway.app/api/insights/menu-engineering/import-from-drive</strong></div>
+<div class="warn">⚠️ Confirm the target folder is shared with the Google account you just authorized, and that GOOGLE_DRIVE_FOLDER_ID is set correctly in Railway.</div>
+</body></html>`);
+  } catch(err){res.status(500).send(`<h2>Google Drive Callback error</h2><pre>${err.message}</pre>`);}
 });
 
 app.get("/api/tripleseat",async(req,res)=>{
