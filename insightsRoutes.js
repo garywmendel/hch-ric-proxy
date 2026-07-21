@@ -14,13 +14,16 @@
 import express from 'express';
 import {
   importMenuItemCostsCSV,
+  importMenuAnalysisCSV,
   getCachedMenuCosts,
+  getCachedMenuAnalysis,
   getAliases,
   setAlias,
   recalculateVelocity,
   getCachedVelocity,
   buildMenuEngineeringMatrix,
 } from './menuEngineering.js';
+import { importAllFromDrive } from './driveImport.js';
 import {
   refreshBaseline,
   getCachedBaseline,
@@ -44,14 +47,52 @@ function gotabDepsMissing(deps) {
 
 // ---- Menu Engineering ----
 
-// Upload a MarginEdge "Menu Items" (or "Prepared Items") CSV export as raw
-// text in the request body (Content-Type: text/plain or send as JSON
-// { csv: "..." } — this accepts either).
-router.post('/menu-engineering/import-costs', express.text({ type: '*/*', limit: '5mb' }), (req, res) => {
+// Four dedicated import endpoints, one per MarginEdge export file. Menu
+// Items / Bar Items / Prepared Items all ACCUMULATE into one cost catalog
+// (calling one doesn't erase the others). Menu Analysis is a separate,
+// preferred data source (see menuEngineering.js) that already has real
+// velocity + theoretical cost — import it and the matrix will use it
+// automatically instead of the GoTab-crosswalk fallback path.
+//
+// Send raw CSV text as the request body (Content-Type: text/plain, or
+// text/csv — both accepted), e.g.:
+//   curl -X POST .../menu-engineering/import-menu-items --data-binary @"Menu Items.csv" -H "Content-Type: text/plain"
+
+router.post('/menu-engineering/import-menu-items', express.text({ type: '*/*', limit: '5mb' }), (req, res) => {
   try {
     const csvText = typeof req.body === 'string' ? req.body : req.body?.csv;
     if (!csvText) return res.status(400).json({ error: 'No CSV content received in request body.' });
-    res.json(importMenuItemCostsCSV(csvText));
+    res.json(importMenuItemCostsCSV(csvText, 'menu_items'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/menu-engineering/import-bar-items', express.text({ type: '*/*', limit: '5mb' }), (req, res) => {
+  try {
+    const csvText = typeof req.body === 'string' ? req.body : req.body?.csv;
+    if (!csvText) return res.status(400).json({ error: 'No CSV content received in request body.' });
+    res.json(importMenuItemCostsCSV(csvText, 'bar_items'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/menu-engineering/import-prepared-items', express.text({ type: '*/*', limit: '5mb' }), (req, res) => {
+  try {
+    const csvText = typeof req.body === 'string' ? req.body : req.body?.csv;
+    if (!csvText) return res.status(400).json({ error: 'No CSV content received in request body.' });
+    res.json(importMenuItemCostsCSV(csvText, 'prepared_items'));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/menu-engineering/import-menu-analysis', express.text({ type: '*/*', limit: '5mb' }), (req, res) => {
+  try {
+    const csvText = typeof req.body === 'string' ? req.body : req.body?.csv;
+    if (!csvText) return res.status(400).json({ error: 'No CSV content received in request body.' });
+    res.json(importMenuAnalysisCSV(csvText));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -59,6 +100,23 @@ router.post('/menu-engineering/import-costs', express.text({ type: '*/*', limit:
 
 router.get('/menu-engineering/costs', (req, res) => {
   res.json(getCachedMenuCosts());
+});
+
+router.get('/menu-engineering/menu-analysis', (req, res) => {
+  res.json(getCachedMenuAnalysis());
+});
+
+// The actual Option B automation: reads all 4 files directly from the
+// shared Google Drive folder (via a service account — see driveImport.js
+// header for one-time setup) and imports them in one call. No manual
+// download/curl needed once the 4 CSVs are sitting in that folder.
+router.post('/menu-engineering/import-from-drive', async (req, res) => {
+  try {
+    res.json(await importAllFromDrive());
+  } catch (err) {
+    console.error('[insights/menu-engineering/import-from-drive] error', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.get('/menu-engineering/aliases', (req, res) => {
