@@ -49,8 +49,14 @@ function normalizeTabsToLineItems(tabs) {
 
       lineItems.push({
         menuItemId: item.name, // no numeric menu item id available — using item name as the identifier
-        qty: item.quantity || 0,
-        revenueCents: item.subtotal || 0,
+        // GoTab's GraphQL API returns quantity as a STRING, not a number.
+        // Without converting it, aggregateVelocity's `+=` silently does
+        // STRING CONCATENATION instead of addition (0 + "1" → "01", then
+        // "01" + "1" → "011", compounding across every day in the range) —
+        // confirmed against real output where qty values were long digit
+        // strings instead of real sums. Number() fixes this at the source.
+        qty: Number(item.quantity) || 0,
+        revenueCents: Number(item.subtotal) || 0,
       });
     }
   }
