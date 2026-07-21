@@ -207,6 +207,22 @@ export function getCachedVelocity() {
   return readJSON(VELOCITY_CACHE_KEY, { as_of: null, window_weeks: null, velocity: {} });
 }
 
+// ---- Fuzzy name normalization (fallback path matching) ----
+// Real GoTab vs MarginEdge names are often genuinely different words for
+// the same dish ("8oz - Longhorn Cheddar Mac & Cheese" vs "HC Mac &
+// Cheese") — normalization catches only formatting differences (size
+// prefixes, case, punctuation, extra whitespace), not different wording.
+// Manual aliasing (setAlias) is still required for the rest, by design.
+function normalizeItemName(name) {
+  return name
+    .toLowerCase()
+    .replace(/^\s*\d+\s*oz\s*-\s*/i, '')       // "8oz - ", "16 oz - "
+    .replace(/^\s*(regular|large|small)\s+/i, '') // leading size words
+    .replace(/[^a-z0-9\s]/g, '')                // punctuation
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // ---- Shared classification (median-split quadrants) ----
 
 function median(arr) {
@@ -291,13 +307,31 @@ export function buildMenuEngineeringMatrix() {
   }
 
   const velocityByName = { ...velocityCache.velocity };
+  // Precompute normalized lookup for the fuzzy matching pass
+  const normalizedVelocityLookup = {};
+  for (const gotabName of Object.keys(velocityByName)) {
+    const norm = normalizeItemName(gotabName);
+    if (!normalizedVelocityLookup[norm]) normalizedVelocityLookup[norm] = [];
+    normalizedVelocityLookup[norm].push(gotabName);
+  }
+
   const matched = [];
   const unmatchedCostItems = [];
   const unmatchedGotabItems = new Set(Object.keys(velocityByName));
 
   for (const costItem of costCache.items) {
+    // Try, in order: manual alias -> exact name match -> normalized
+    // (formatting-only) match -> no match.
     const aliasTarget = Object.entries(aliases).find(([, meName]) => meName === costItem.name)?.[0];
-    const gotabName = aliasTarget || (velocityByName[costItem.name] ? costItem.name : null);
+    let gotabName = aliasTarget || (velocityByName[costItem.name] ? costItem.name : null);
+
+    if (!gotabName) {
+      const normMatches = normalizedVelocityLookup[normalizeItemName(costItem.name)];
+      // Only auto-match if there's exactly one candidate — an ambiguous
+      // normalized match (multiple GoTab names collapsing to the same
+      // normalized form) is surfaced as unmatched rather than guessed.
+      if (normMatches && normMatches.length === 1) gotabName = normMatches[0];
+    }
 
     if (!gotabName || !velocityByName[gotabName]) {
       unmatchedCostItems.push(costItem.name);
@@ -321,10 +355,20 @@ export function buildMenuEngineeringMatrix() {
     });
   }
 
+  // Revenue-sorted suggestion list: which UNMATCHED GoTab items are worth
+  // manually aliasing first. Sorting by revenue means the top of this list
+  // is exactly where the highest-value crosswalk work should go, instead
+  // of guessing across ~200+ unmatched names.
+  const suggestedAliasTargets = Array.from(unmatchedGotabItems)
+    .map((name) => ({ gotab_name: name, revenue: +((velocityByName[name]?.revenueCents || 0) / 100).toFixed(2) }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 30);
+
   return classify(matched, {
     source: 'gotab_velocity_plus_cost_catalog',
     unmatched_cost_items: unmatchedCostItems,
     unmatched_gotab_items: Array.from(unmatchedGotabItems),
+    suggested_alias_targets_by_revenue: suggestedAliasTargets,
     velocity_window_weeks: velocityCache.window_weeks,
     costs_imported_at: costCache.imported_at,
   });
