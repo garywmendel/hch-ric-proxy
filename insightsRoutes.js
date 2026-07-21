@@ -112,7 +112,11 @@ router.get('/menu-engineering/menu-analysis', (req, res) => {
 // download/curl needed once the 4 CSVs are sitting in that folder.
 router.post('/menu-engineering/import-from-drive', async (req, res) => {
   try {
-    res.json(await importAllFromDrive());
+    const deps = {
+      getGoogleDriveToken: req.app.locals.getGoogleDriveToken,
+      GOOGLE_DRIVE_FOLDER_ID: req.app.locals.GOOGLE_DRIVE_FOLDER_ID,
+    };
+    res.json(await importAllFromDrive(deps));
   } catch (err) {
     console.error('[insights/menu-engineering/import-from-drive] error', err);
     res.status(500).json({ error: err.message });
