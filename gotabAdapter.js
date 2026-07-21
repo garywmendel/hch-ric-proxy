@@ -26,6 +26,17 @@
 
 const EXCLUDED_GROUPS = ['DEFERRED_REVENUE', 'PROCESSORS', 'EXPENSE'];
 
+// goTabQuery requires an explicit end-date bound (fixed as part of an
+// earlier bug where its absence caused 4x-inflated 7-day aggregates) —
+// this local helper matches the same nextDay logic used everywhere else
+// in the codebase, so this file doesn't depend on it being separately
+// injected via deps.
+function nextDay(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 function normalizeTabsToLineItems(tabs) {
   const lineItems = [];
   for (const tab of tabs) {
@@ -53,7 +64,7 @@ export async function fetchItemizedGoTabDay(deps, dateStr) {
   const res = await deps.fetchWithRetry('https://gotab.io/api/v2/graph', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(deps.goTabQuery(deps.GOTAB_LOCATION_UUID, dateStr)),
+    body: JSON.stringify(deps.goTabQuery(deps.GOTAB_LOCATION_UUID, dateStr, nextDay(dateStr))),
   });
   if (!res.ok) throw new Error(`GoTab itemized fetch failed for ${dateStr}: ${res.status}`);
   const data = await res.json();
