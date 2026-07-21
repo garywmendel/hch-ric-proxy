@@ -251,7 +251,14 @@ export function buildMenuEngineeringMatrix() {
   // PREFERRED PATH: MarginEdge's own Menu Analysis already resolves
   // velocity + actual cost + theoretical cost per item — no crosswalk
   // needed at all, since MarginEdge did the item matching internally.
-  if (analysisCache.items.length > 0) {
+  // CONFIRMED against a real export: MarginEdge's Menu Analysis report for
+  // this account returns only 1 row (not a sample truncation — genuinely
+  // all it exports). A 1-item "matrix" is useless, so only prefer this
+  // source if it actually has enough items to be meaningful; otherwise
+  // fall back to the richer GoTab velocity + accumulated cost catalog,
+  // which will have your full menu.
+  const MIN_ANALYSIS_ITEMS_TO_PREFER = 10;
+  if (analysisCache.items.length >= MIN_ANALYSIS_ITEMS_TO_PREFER) {
     const matched = analysisCache.items
       .filter((i) => i.items_sold != null && i.total_revenue > 0)
       .map((i) => ({
