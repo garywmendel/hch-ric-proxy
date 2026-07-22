@@ -115,7 +115,18 @@ export async function importAllFromDrive(deps) {
   // API silently returns an empty file list (no error at all) if the
   // target folder is a Shared Drive rather than a personal "My Drive"
   // folder — safe to include unconditionally, works for both cases.
-  const listUrl = `${DRIVE_API}/files?q=${encodeURIComponent(`'${deps.GOOGLE_DRIVE_FOLDER_ID}' in parents and trashed = false`)}&fields=${encodeURIComponent('files(id,name,mimeType,modifiedTime)')}&orderBy=modifiedTime desc&supportsAllDrives=true&includeItemsFromAllDrives=true`;
+  // CONFIRMED via /drive-debug: the 4 CSVs genuinely have this folder ID as
+  // their parent, but a plain 'X in parents' query alone was returning 0
+  // results — supportsAllDrives/includeItemsFromAllDrives enable ACCESS to
+  // Shared Drive items but do NOT guarantee they're included in a parents
+  // search; Google's API requires corpora=drive&driveId=X explicitly for
+  // reliably listing a Shared Drive's own top-level contents. Folder IDs
+  // starting with "0A" are Google's Shared Drive root convention.
+  const isSharedDrive = /^0A/.test(deps.GOOGLE_DRIVE_FOLDER_ID);
+  const corporaParams = isSharedDrive
+    ? `&corpora=drive&driveId=${encodeURIComponent(deps.GOOGLE_DRIVE_FOLDER_ID)}`
+    : '';
+  const listUrl = `${DRIVE_API}/files?q=${encodeURIComponent(`'${deps.GOOGLE_DRIVE_FOLDER_ID}' in parents and trashed = false`)}&fields=${encodeURIComponent('files(id,name,mimeType,modifiedTime)')}&orderBy=modifiedTime desc&supportsAllDrives=true&includeItemsFromAllDrives=true${corporaParams}`;
   const listRes = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` } });
   if (!listRes.ok) throw new Error(`Drive folder listing failed: ${listRes.status} — confirm the folder is shared with the account you authorized at /auth/google-drive, and that GOOGLE_DRIVE_FOLDER_ID is correct.`);
   const listData = await listRes.json();
