@@ -583,6 +583,31 @@ async function getOpenTableToken() {
   if (!res.ok) throw new Error(`OpenTable auth failed: ${res.status}`);
   return (await res.json()).access_token;
 }
+// Determines the correct EDT/EST UTC offset in effect for a given date
+// (handles DST transitions correctly, unlike a hardcoded -4/-5).
+function etUtcOffsetHours(dateStr) {
+  const ref = new Date(dateStr + "T12:00:00Z");
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", timeZoneName: "shortOffset",
+  }).formatToParts(ref);
+  const offsetPart = parts.find((p) => p.type === "timeZoneName")?.value || "GMT-4";
+  const match = offsetPart.match(/GMT([+-]\d+)/);
+  return match ? parseInt(match[1], 10) : -4;
+}
+
+// Extracts the correct LOCAL ET hour (00-23) from any timestamp, regardless
+// of what timezone/offset format it arrives in. Fixes a bug where the hour
+// was previously sliced directly from the raw string with no timezone
+// conversion — silently treating a UTC hour as if it were already ET,
+// producing nonsensical results (e.g. a real 7 PM ET dinner peak showing
+// up as "11:00 PM").
+function etHourOf(isoString) {
+  const d = new Date(isoString);
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23",
+  }).format(d);
+}
+
 async function fetchOpenTable(date) {
   const token = await getOpenTableToken();
   const headers = {
@@ -591,8 +616,15 @@ async function fetchOpenTable(date) {
     "Cache-Control": "no-cache",
   };
 
-  const from = `${date}T00:00:00`;
-  const to   = `${date}T23:59:59`;
+  // FIXED: previously these had NO timezone/offset at all — completely
+  // ambiguous, risking wrong-day contamination depending on how OpenTable's
+  // API defaults a bare timestamp. Now explicitly states the correct
+  // EDT/EST offset for this date, so the query window unambiguously spans
+  // the restaurant's real ET business day.
+  const offsetH = etUtcOffsetHours(date);
+  const offsetStr = `${offsetH < 0 ? "-" : "+"}${String(Math.abs(offsetH)).padStart(2, "0")}:00`;
+  const from = `${date}T00:00:00${offsetStr}`;
+  const to   = `${date}T23:59:59${offsetStr}`;
   let url = `https://platform.opentable.com/sync/v2/reservations?rid=${OT_RID}&limit=1000&offset=0&scheduled_time_from=${from}&scheduled_time_to=${to}`;
 
   let items = [];
@@ -628,7 +660,7 @@ async function fetchOpenTable(date) {
     covers += partySize;
 
     if (r.scheduled_time) {
-      const hour = r.scheduled_time.slice(11, 13);
+      const hour = etHourOf(r.scheduled_time);
       hourCovers[hour] = (hourCovers[hour] || 0) + partySize;
     }
     const origin = r.origin || "Unknown";
