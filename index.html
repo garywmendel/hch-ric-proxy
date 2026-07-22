@@ -281,6 +281,7 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <button class="tab" onclick="showTab('report',this)">Daily Report</button>
     <button class="tab" onclick="showTab('pl',this)">P&amp;L</button>
     <button class="tab" onclick="showTab('qa',this)">Ask RIC</button>
+    <button class="tab" onclick="showTab('ricsays',this)">RIC Says...</button>
   </div>
 </div>
 
@@ -342,6 +343,8 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
     <button class="chip" onclick="setQ('What is our true brisket margin after trim loss and current beef prices?')">Brisket margin</button>
     <button class="chip" onclick="setQ('What labor changes would have the biggest impact on prime cost?')">Labor optimization</button>
     <button class="chip" onclick="setQ('Where are our biggest hidden profit opportunities?')">Hidden opportunities</button>
+    <button class="chip" onclick="openRicSays('ppc')">Angelo - PPC</button>
+    <button class="chip" onclick="openRicSays('menu-eng')">Menu Engineering</button>
   </div>
   <div style="margin-bottom:14px">
     <textarea class="inp" id="qa-inp" placeholder="Ask any financial, operational, or strategic question..." style="margin-bottom:8px"></textarea>
@@ -350,6 +353,14 @@ textarea.inp{min-height:100px;resize:vertical;font-family:var(--mono);font-size:
  <div id="qa-out"></div>
   <div id="qa-export-row" style="display:none;margin-top:8px">
     <button class="btn-sec export-btn" onclick="exportToPDF('Ask RIC')" style="width:100%">Export PDF</button>
+  </div>
+</div>
+
+<!-- RIC Says -->
+<div id="tab-ricsays" class="panel">
+  <h2 class="sr-only">RIC Says</h2>
+  <div id="ricsays-out">
+    <div class="status"><div class="sdot"></div><span>Select a report from Ask RIC to view it here.</span></div>
   </div>
 </div>
 </div>
@@ -1135,6 +1146,100 @@ function showTab(id,el){
   document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
   if(el) el.classList.add("active");
   document.getElementById("tab-"+id).classList.add("active");
+}
+
+// ── RIC Says... ───────────────────────────────────────────────────────────
+// Shared destination screen for any generated structured report, regardless
+// of which chip/bubble triggered it — same pattern used for PPC and now
+// Menu Engineering.
+
+function openRicSays(type){
+  const tabs=document.querySelectorAll(".tab");
+  showTab("ricsays",tabs[tabs.length-1]);
+  if(type==="ppc") renderPPCPlaceholder();
+  else if(type==="menu-eng") renderMenuEngineering();
+}
+
+function renderPPCPlaceholder(){
+  // HONEST STUB: PPC's purchase-order report generation isn't wired into
+  // this screen yet — this says so plainly rather than faking a result.
+  document.getElementById("ricsays-out").innerHTML=
+    `<div class="status"><div class="sdot"></div><span>Angelo's PPC purchasing report isn't wired into this screen yet — check back soon.</span></div>`;
+}
+
+async function renderMenuEngineering(){
+  const out=document.getElementById("ricsays-out");
+  out.innerHTML=`<div class="status"><div class="sdot"></div><span>Loading menu engineering matrix...</span></div>`;
+  try{
+    const res=await fetch("/api/insights/menu-engineering/matrix");
+    const data=await res.json();
+    if(data.error){ out.innerHTML=renderMenuEngSetupNeeded(data.error); return; }
+    out.innerHTML=renderMenuEngMatrix(data);
+  }catch(e){
+    out.innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;
+  }
+}
+
+function renderMenuEngSetupNeeded(errMsg){
+  return `<div class="flags"><div class="flag warn">Setup needed</div></div>
+  <div class="pl-empty" style="text-align:left">${esc(errMsg)}</div>
+  <button class="btn-sec" style="width:100%" onclick="syncFromDrive()">Sync from Drive</button>`;
+}
+
+async function syncFromDrive(){
+  const out=document.getElementById("ricsays-out");
+  out.innerHTML=`<div class="status"><div class="sdot"></div><span>Syncing from Google Drive...</span></div>`;
+  try{
+    const res=await fetch("/api/insights/menu-engineering/import-from-drive",{method:"POST"});
+    const data=await res.json();
+    if(data.total_files_in_folder===0){ out.innerHTML=renderEmptyDriveCard(data); return; }
+    renderMenuEngineering();
+  }catch(e){
+    out.innerHTML=`<div class="status"><div class="sdot err"></div><span>Error: ${esc(e.message)}</span></div>`;
+  }
+}
+
+function renderEmptyDriveCard(data){
+  const labels={menu_items:"Menu Items",bar_items:"Bar Items",prepared_items:"Prepared Items",menu_analysis:"Menu Analysis"};
+  const missing=(data.missing_files||[]).map(f=>`<li>${esc(labels[f]||f)}</li>`).join("");
+  return `<div class="flags"><div class="flag warn">⚠️ Waiting for menu cost files</div></div>
+  <div class="pl-empty" style="text-align:left">
+    No files found yet in the shared Drive folder.<br><br>
+    <strong>Still needed:</strong>
+    <ul style="margin:8px 0 8px 20px">${missing}</ul>
+    Drop the 4 MarginEdge exports into the shared folder, then tap "Check again."
+  </div>
+  <button class="btn-sec" style="width:100%" onclick="syncFromDrive()">Check again</button>`;
+}
+
+function renderMenuEngMatrix(data){
+  const quadLabels={star:"⭐ Stars",plowhorse:"🐴 Plowhorses",puzzle:"🧩 Puzzles",dog:"🐶 Dogs",unclassified:"Unclassified"};
+  const groups={};
+  (data.matrix||[]).forEach(item=>{ (groups[item.quadrant]=groups[item.quadrant]||[]).push(item); });
+
+  let html=`<div class="status"><div class="sdot done"></div><span>Menu Engineering Matrix — source: ${esc(data.source||"—")}</span></div>`;
+  for(const q of ["star","plowhorse","puzzle","dog","unclassified"]){
+    if(!groups[q] || !groups[q].length) continue;
+    html+=`<h3 style="margin:16px 0 8px;font-size:14px">${quadLabels[q]} (${groups[q].length})</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px">
+      <tr style="text-align:left;color:var(--t1)"><th style="padding:4px 6px">Item</th><th style="padding:4px 6px">Units</th><th style="padding:4px 6px">Revenue</th><th style="padding:4px 6px">Margin %</th></tr>
+      ${groups[q].map(i=>`<tr style="border-top:0.5px solid var(--b1)">
+        <td style="padding:4px 6px">${esc(i.name)}</td>
+        <td style="padding:4px 6px">${typeof i.units_sold==="number"?i.units_sold.toFixed(1):esc(String(i.units_sold))}</td>
+        <td style="padding:4px 6px">$${(i.revenue||0).toFixed(2)}</td>
+        <td style="padding:4px 6px">${i.margin_pct!=null?i.margin_pct+"%":"—"}</td>
+      </tr>`).join("")}
+    </table>`;
+  }
+
+  if(data.unmatched_gotab_items?.length){
+    html+=`<div class="pl-empty" style="text-align:left;font-size:12px">
+      Note: ${data.unmatched_gotab_items.length} sold items and ${data.unmatched_cost_items?.length||0} cost-catalog items aren't matched yet —
+      use the suggested_alias_targets_by_revenue list from the API to prioritize which ones are worth aliasing.
+    </div>`;
+  }
+  html+=`<button class="btn-sec" style="width:100%;margin-top:8px" onclick="syncFromDrive()">Refresh from Drive</button>`;
+  return html;
 }
 </script>
 </body>
