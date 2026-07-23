@@ -621,11 +621,25 @@ async function fetchOpenTable(date) {
   // API defaults a bare timestamp. Now explicitly states the correct
   // EDT/EST offset for this date, so the query window unambiguously spans
   // the restaurant's real ET business day.
-  const offsetH = etUtcOffsetHours(date);
-  const offsetStr = `${offsetH < 0 ? "-" : "+"}${String(Math.abs(offsetH)).padStart(2, "0")}:00`;
-  const from = `${date}T00:00:00${offsetStr}`;
-  const to   = `${date}T23:59:59${offsetStr}`;
-  let url = `https://platform.opentable.com/sync/v2/reservations?rid=${OT_RID}&limit=1000&offset=0&scheduled_time_from=${from}&scheduled_time_to=${to}`;
+ // OpenTable's sync API rejects local-offset timestamps (e.g. "...-04:00")
+  // with a 400 — confirmed by isolation testing: bare + UTC-'Z' windows both
+  // return 200, the offset form 400s. So convert the restaurant's ET business
+  // day to explicit UTC 'Z' boundaries. etUtcOffsetHours() gives the ET->UTC
+  // offset for this date (handles EDT/EST); subtracting it shifts ET-midnight
+  // to the correct UTC instant. Encoded for safety, though 'Z' has no reserved
+  // chars.
+  const offsetH = etUtcOffsetHours(date);          // e.g. -4 (EDT) or -5 (EST)
+  const utcShift = -offsetH;                        // ET 00:00 -> UTC 04:00/05:00
+  const dayStartUtc = new Date(`${date}T00:00:00Z`);
+  dayStartUtc.setUTCHours(dayStartUtc.getUTCHours() + utcShift);
+  const dayEndUtc = new Date(dayStartUtc.getTime() + 24 * 60 * 60 * 1000 - 1000); // +23:59:59
+  const from = dayStartUtc.toISOString().slice(0, 19) + "Z";  // YYYY-MM-DDTHH:MM:SSZ
+  const to   = dayEndUtc.toISOString().slice(0, 19) + "Z";
+  const qs = new URLSearchParams({
+    rid: OT_RID, limit: "1000", offset: "0",
+    scheduled_time_from: from, scheduled_time_to: to,
+  });
+  let url = `https://platform.opentable.com/sync/v2/reservations?${qs.toString()}`;
 
   let items = [];
   let guard = 0;
