@@ -32,28 +32,63 @@ const VELOCITY_CACHE_KEY = 'ric_menu_velocity_cache';  // GoTab-derived velocity
 // Dependency-free CSV parser handling quoted fields (commas/quotes inside
 // names) — MarginEdge exports quote every field, and some names contain
 // literal quote characters (e.g. 9" pie sizes).
+//
+// IMPORTANT: MarginEdge cost-summary exports are NOT strictly RFC-4180
+// compliant. A name containing an inch mark (e.g. 'Apple Streusel Pie 3"')
+// is emitted with an UN-doubled trailing quote — the field is written as
+//   "Apple Streusel Pie 3""      (open, content, one stray quote)
+// instead of the correct
+//   "Apple Streusel Pie 3"""     (open, content, doubled quote, close).
+// A strict single-pass parser reads that "" as an escaped quote, never
+// leaves quote mode, and swallows the following comma, newline, and every
+// SUBSEQUENT ROW into one giant field until quote parity happens to
+// resync — silently destroying a run of rows on each occurrence (this is
+// why Prepared Items imported 106 of ~114, with garbled multi-row blobs
+// showing up as bogus "item names").
+//
+// Two layered defenses:
+//  1) Split into physical lines FIRST. MarginEdge cost/analysis rows never
+//     contain a real embedded newline, so the line breaks ARE the row
+//     boundaries. This alone caps the blast radius: a malformed line can
+//     only corrupt itself, never consume the rows after it.
+//  2) Within a line, a quote-pair ("") that is immediately followed by a
+//     delimiter (comma or end-of-line) is treated as literal-quote + close
+//     — what MarginEdge actually meant. A "" followed by more content is
+//     still a normal escaped quote, so well-formed CSV (RFC doubled quotes,
+//     $1,234.56 thousands-commas) parses unchanged.
 function parseCSV(text) {
+  const lines = text.split(/\r\n|\r|\n/);
   const rows = [];
-  let row = [];
-  let field = '';
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
-      } else field += c;
-    } else {
-      if (c === '"') inQuotes = true;
-      else if (c === ',') { row.push(field); field = ''; }
-      else if (c === '\n' || c === '\r') {
-        if (field.length || row.length) { row.push(field); rows.push(row); row = []; field = ''; }
-      } else field += c;
+  for (const line of lines) {
+    if (line === '') continue;
+    const row = [];
+    let field = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (line[i + 1] === '"') {
+            const after = line[i + 2];
+            if (after === undefined || after === ',') {
+              // MarginEdge's un-doubled trailing quote: literal " then close
+              field += '"'; inQuotes = false; i++;
+            } else {
+              // genuine RFC escaped quote mid-field
+              field += '"'; i++;
+            }
+          } else inQuotes = false; // normal closing quote
+        } else field += c;
+      } else {
+        if (c === '"') inQuotes = true;
+        else if (c === ',') { row.push(field); field = ''; }
+        else field += c;
+      }
     }
+    row.push(field); // force-close at line end — contains any in-line desync
+    if (row.some((f) => f.trim() !== '')) rows.push(row);
   }
-  if (field.length || row.length) { row.push(field); rows.push(row); }
-  return rows.filter((r) => r.length && r.some((c) => c.trim() !== ''));
+  return rows;
 }
 
 function parseMoney(str) {
