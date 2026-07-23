@@ -630,8 +630,11 @@ async function fetchOpenTable(date) {
   let items = [];
   let guard = 0;
   while (url && guard < 10) {
-    const res = await fetchWithRetry(url, { headers });
-    if (!res.ok) throw new Error(`OpenTable reservations failed: ${res.status}`);
+   const res = await fetchWithRetry(url, { headers });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(`OpenTable reservations failed: ${res.status} — url=${url} — body=${body.slice(0, 400)}`);
+    }
     const data = await res.json();
     items = items.concat(data.items || []);
     url = data.hasNextPage ? data.nextPageUrl : null;
