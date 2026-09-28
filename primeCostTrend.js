@@ -56,4 +56,138 @@ export async function refreshBaseline(deps) {
     cogs_pct: +((cogsTotal / netSales) * 100).toFixed(2),
     labor_total: laborTotal,
     labor_pct: +((laborTotal / netSales) * 100).toFixed(2),
-    prime_cost_pct: qb.prime_cost_pct ||
+    prime_cost_pct: qb.prime_cost_pct || null,
+    refreshed_at: new Date().toISOString(),
+  };
+
+  writeJSON(BASELINE_KEY, baseline);
+  return baseline;
+}
+
+// Manual override — sets the baseline from confirmed monthly actuals (e.g.
+// the accounting team's monthly P&L export) instead of the live QuickBooks
+// API pull. Use this when the live API's report structure doesn't match
+// the confirmed accounting figures (different tabs/bases can disagree —
+// see the July/August P&L review) and reconciling that gap isn't worth
+// blocking on. Persists with source: 'manual' so it's clear in any report
+// or recap output that this baseline was hand-entered, not auto-refreshed.
+//
+// input: { period_start, period_end, net_sales, cogs_total, labor_total,
+//          entered_by (optional), note (optional) }
+export function setManualBaseline(input) {
+  const { period_start, period_end, net_sales, cogs_total, labor_total, entered_by, note } = input;
+
+  if (!period_start || !period_end) {
+    throw new Error('period_start and period_end are required (YYYY-MM-DD).');
+  }
+  if (!(net_sales > 0)) {
+    throw new Error('net_sales must be a positive number — cannot compute a COGS %/labor % baseline without it.');
+  }
+
+  const baseline = {
+    source: 'manual',
+    period_start,
+    period_end,
+    net_sales: +net_sales,
+    cogs_total: +cogs_total,
+    cogs_pct: +((cogs_total / net_sales) * 100).toFixed(2),
+    labor_total: +labor_total,
+    labor_pct: +((labor_total / net_sales) * 100).toFixed(2),
+    prime_cost_pct: +(((cogs_total + labor_total) / net_sales) * 100).toFixed(2),
+    entered_by: entered_by || null,
+    note: note || null,
+    refreshed_at: new Date().toISOString(),
+  };
+
+  writeJSON(BASELINE_KEY, baseline);
+  return baseline;
+}
+
+export function getCachedBaseline() {
+  return readJSON(BASELINE_KEY, null);
+}
+
+// Fetches one day's real net sales (GoTab) — reuses the corrected
+// date-bounded query, single day only (not the 7-day aggregate).
+// deps: { getGoTabToken, goTabQuery, fetchWithRetry, GOTAB_LOCATION_UUID, normalizeGoTab, nextDay }
+async function fetchDailyNetSales(deps, dateStr) {
+  const token = await deps.getGoTabToken();
+  const res = await deps.fetchWithRetry('https://gotab.io/api/v2/graph', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(deps.goTabQuery(deps.GOTAB_LOCATION_UUID, dateStr, deps.nextDay(dateStr))),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data.errors) return null;
+  const normalized = deps.normalizeGoTab(data?.data?.locations?.[0]?.tabs || []);
+  return normalized.net_sales;
+}
+
+// deps: everything above + { fetch7Shifts }
+export async function computeDailyPrimeCostTrend(deps, days = 14) {
+  const baseline = getCachedBaseline();
+  if (!baseline) {
+    throw new Error('No baseline yet — call refreshBaseline first (needs last closed month from QuickBooks).');
+  }
+
+  const dates = [];
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+
+  const rows = await Promise.all(dates.map(async (dateStr) => {
+    const [netSales, shiftsData] = await Promise.allSettled([
+      fetchDailyNetSales(deps, dateStr),
+      deps.fetch7Shifts(dateStr),
+    ]);
+
+    const realNetSales = netSales.status === 'fulfilled' ? netSales.value : null;
+    const realLaborCost = shiftsData.status === 'fulfilled' ? shiftsData.value?.total_labor_cost : null;
+
+    if (realNetSales == null || realLaborCost == null) {
+      return { date: dateStr, available: false };
+    }
+
+    const estimatedCogs = +((realNetSales * baseline.cogs_pct) / 100).toFixed(2);
+    const primeCostDollars = +(estimatedCogs + realLaborCost).toFixed(2);
+    const primeCostPct = realNetSales > 0 ? +((primeCostDollars / realNetSales) * 100).toFixed(1) : null;
+    const laborPct = realNetSales > 0 ? +((realLaborCost / realNetSales) * 100).toFixed(1) : null;
+
+    return {
+      date: dateStr,
+      available: true,
+      net_sales: realNetSales,
+      labor_cost: realLaborCost,
+      labor_pct: laborPct,
+      cogs_estimated: estimatedCogs,
+      cogs_pct_baseline_used: baseline.cogs_pct,
+      prime_cost_estimated: primeCostDollars,
+      prime_cost_pct: primeCostPct,
+    };
+  }));
+
+  const sourceLabel = baseline.source === 'manual'
+    ? `manually-entered actuals${baseline.entered_by ? ` (entered by ${baseline.entered_by})` : ''}`
+    : "the last closed month's live QuickBooks pull";
+
+  const result = {
+    generated_at: new Date().toISOString(),
+    baseline_period: `${baseline.period_start} to ${baseline.period_end}`,
+    baseline_source: baseline.source || 'quickbooks_auto',
+    baseline_cogs_pct: baseline.cogs_pct,
+    baseline_note: `COGS %/$ in this trend are ESTIMATES using ${sourceLabel}'s COGS rate applied to each day's real GoTab revenue. Labor is 100% actual (7Shifts). Replace with real COGS once available at daily granularity.${baseline.note ? ` Baseline note: ${baseline.note}` : ''}`,
+    days: rows,
+  };
+
+  writeJSON(TREND_CACHE_KEY, result);
+  return result;
+}
+
+export function getCachedTrend() {
+  return readJSON(TREND_CACHE_KEY, { generated_at: null, days: [] });
+}
