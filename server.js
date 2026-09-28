@@ -5,6 +5,9 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import ppcRoutes from "./routes.js";
 import insightsRoutes from "./insightsRoutes.js";
+import agentRicRoutes from "./agentRicRoutes.js";
+import { scheduleNightlySnapshot } from "./dailySnapshot.js";
+import { scheduleWeeklyDraft } from "./weeklyRecap.js";
  
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app  = express();
@@ -928,11 +931,21 @@ app.locals.fetch7Shifts = fetch7Shifts;
 app.locals.fetchQuickBooks = fetchQuickBooks;
 app.locals.getGoogleDriveToken = getGoogleDriveToken;
 app.locals.GOOGLE_DRIVE_FOLDER_ID = GOOGLE_DRIVE_FOLDER_ID;
+app.locals.fetchTripleSeat = fetchTripleSeat;
+app.locals.fetchMailchimp = fetchMailchimp;
+app.locals.fetchYelp = fetchYelp;
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 app.use("/api/ppc", ppcRoutes);
 app.use("/api/insights", insightsRoutes);
+
+const agentRicDeps = {
+  getGoTabToken, goTabQuery, fetchWithRetry, GOTAB_LOCATION_UUID,
+  normalizeGoTab, nextDay, fetch7Shifts, fetchTripleSeat, fetchMailchimp, fetchYelp,
+};
+scheduleNightlySnapshot(agentRicDeps);
+scheduleWeeklyDraft();
 
 app.post("/api/pin",express.json(),(req,res)=>{
   const correct=process.env.RIC_PIN||"000000";
