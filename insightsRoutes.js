@@ -26,6 +26,7 @@ import {
 import { importAllFromDrive, debugDriveAccess } from './driveImport.js';
 import {
   refreshBaseline,
+  setManualBaseline,
   getCachedBaseline,
   computeDailyPrimeCostTrend,
   getCachedTrend,
@@ -192,8 +193,21 @@ router.post('/prime-cost/refresh-baseline', async (req, res) => {
 
 router.get('/prime-cost/baseline', (req, res) => {
   const baseline = getCachedBaseline();
-  if (!baseline) return res.status(404).json({ error: 'No baseline yet — call /prime-cost/refresh-baseline first.' });
+  if (!baseline) return res.status(404).json({ error: 'No baseline yet — call /prime-cost/refresh-baseline or /prime-cost/baseline/manual first.' });
   res.json(baseline);
+});
+
+// Manual override — key in confirmed monthly actuals (e.g. from the
+// accounting team's monthly P&L) instead of relying on the live QuickBooks
+// pull. Body: { period_start, period_end, net_sales, cogs_total,
+// labor_total, entered_by?, note? }. Overwrites whatever baseline is
+// currently cached (manual or auto) — there's only ever one active baseline.
+router.post('/prime-cost/baseline/manual', (req, res) => {
+  try {
+    res.json(setManualBaseline(req.body || {}));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 router.post('/prime-cost/recalculate-trend', async (req, res) => {
