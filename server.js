@@ -939,6 +939,7 @@ app.locals.fetchYelp = fetchYelp;
 
 app.use("/api/ppc", ppcRoutes);
 app.use("/api/insights", insightsRoutes);
+app.use("/api/agent-ric", agentRicRoutes);
 
 const agentRicDeps = {
   getGoTabToken, goTabQuery, fetchWithRetry, GOTAB_LOCATION_UUID,
