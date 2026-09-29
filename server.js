@@ -468,7 +468,35 @@ async function getGoogleDriveToken() {
   if (gdState.accessToken && Date.now() < gdState.tokenExpiresAt) return gdState.accessToken;
   return gdRefreshAccessToken();
 }
-
+// Sends mail via the Gmail API, reusing the same Google OAuth client/token
+// state as Drive (gdState) — requires the gmail.send scope, added above.
+// The account authorized at /auth/google-drive is the sender.
+async function sendGmail({ to, subject, body }) {
+  const token = await getGoogleDriveToken();
+  const toHeader = Array.isArray(to) ? to.join(", ") : to;
+  const message = [
+    `To: ${toHeader}`,
+    `Subject: ${subject}`,
+    `Content-Type: text/plain; charset="UTF-8"`,
+    ``,
+    body,
+  ].join("\r\n");
+  const encodedMessage = Buffer.from(message)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  const res = await fetchWithRetry("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw: encodedMessage }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Gmail send failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
 async function fetchTripleSeat() {
   // Return cached data if fresh
   if (tsCache.data && (Date.now() - tsCache.fetchedAt) < TS_CACHE_TTL) {
@@ -931,6 +959,7 @@ app.locals.fetch7Shifts = fetch7Shifts;
 app.locals.fetchQuickBooks = fetchQuickBooks;
 app.locals.getGoogleDriveToken = getGoogleDriveToken;
 app.locals.GOOGLE_DRIVE_FOLDER_ID = GOOGLE_DRIVE_FOLDER_ID;
+app.locals.sendGmail = sendGmail;
 app.locals.fetchTripleSeat = fetchTripleSeat;
 app.locals.fetchMailchimp = fetchMailchimp;
 app.locals.fetchYelp = fetchYelp;
@@ -1035,7 +1064,7 @@ app.get("/auth/google-drive",(req,res)=>{
   url.searchParams.set("client_id",     GOOGLE_CLIENT_ID);
   url.searchParams.set("redirect_uri",  GOOGLE_REDIRECT_URI);
   url.searchParams.set("response_type","code");
-  url.searchParams.set("scope",         "https://www.googleapis.com/auth/drive.readonly");
+    url.searchParams.set("scope", "https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/gmail.send");
   // access_type=offline + prompt=consent forces Google to issue a refresh
   // token every time — without prompt=consent, re-authing an already-
   // authorized account can silently omit the refresh token.
