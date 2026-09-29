@@ -474,9 +474,10 @@ async function getGoogleDriveToken() {
 async function sendGmail({ to, subject, body }) {
   const token = await getGoogleDriveToken();
   const toHeader = Array.isArray(to) ? to.join(", ") : to;
+  const encodedSubject = `=?UTF-8?B?${Buffer.from(subject, "utf-8").toString("base64")}?=`;
   const message = [
     `To: ${toHeader}`,
-    `Subject: ${subject}`,
+    `Subject: ${encodedSubject}`,
     `Content-Type: text/plain; charset="UTF-8"`,
     ``,
     body,
